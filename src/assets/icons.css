@@ -1,0 +1,78 @@
+/* Icon styles and FontAwesome placeholder classes */
+
+/* FontAwesome icon replacements with Unicode characters */
+.fa {
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+.fa-save::before {
+  content: "💾";
+}
+
+.fa-share::before {
+  content: "🔗";
+}
+
+.fa-chevron-up::before {
+  content: "▲";
+  font-size: 0.8em;
+}
+
+.fa-chevron-down::before {
+  content: "▼";
+  font-size: 0.8em;
+}
+
+.fa-search::before {
+  content: "🔍";
+}
+
+.fa-check::before {
+  content: "✓";
+}
+
+/* Custom icon classes */
+.icon-picture-wall::before {
+  content: "🖼️";
+}
+
+.icon-pictures::before {
+  content: "🎨";
+}
+
+.icon-article::before {
+  content: "📄";
+}
+
+.icon-frame::before {
+  content: "🖼️";
+}
+
+.icon-close::before {
+  content: "✕";
+  font-size: 1.2em;
+}
+
+/* Icon container styles */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cart icon */
+.cart-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  position: relative;
+}
+
+.cart-icon::before {
+  content: "🛒";
+  font-size: 24px;
+}
