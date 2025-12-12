@@ -25,6 +25,7 @@ export default function LandingPage() {
       description: "Relaxing bedroom environments"
     },
     {
+      
       id: "dining-room",
       name: "Dining Room",
       image: "PLACEHOLDER_IMAGE_URL_3",
