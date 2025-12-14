@@ -9,6 +9,92 @@ export default function LandingPage() {
   const [selectedLayout, setSelectedLayout] = useState(null)
   const [activeVariants, setActiveVariants] = useState({})
   const [expandedSection, setExpandedSection] = useState(null)
+  const [selectedArtworks, setSelectedArtworks] = useState({}) // frameIndex: artworkObject
+  const [activeFrameIndex, setActiveFrameIndex] = useState(null) // which frame is being edited
+
+  // Shopify Products - This will be replaced with actual Shopify API data
+  // Structure matches Shopify product response for easy integration
+  const artworkProducts = [
+    {
+      id: "artwork-1",
+      title: "Abstract Mountains",
+      category: "Abstract",
+      sizes: ["30x40", "50x70", "70x100"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_1",
+      price: "29.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_1" // For Shopify integration
+    },
+    {
+      id: "artwork-2",
+      title: "Botanical Leaves",
+      category: "Botanical",
+      sizes: ["30x40", "50x70", "21x30"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_2",
+      price: "24.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_2"
+    },
+    {
+      id: "artwork-3",
+      title: "Minimalist Line Art",
+      category: "Line Art",
+      sizes: ["50x70", "70x100"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_3",
+      price: "34.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_3"
+    },
+    {
+      id: "artwork-4",
+      title: "Geometric Shapes",
+      category: "Geometric",
+      sizes: ["30x40", "50x70", "70x100"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_4",
+      price: "27.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_4"
+    },
+    {
+      id: "artwork-5",
+      title: "Vintage Typography",
+      category: "Typography",
+      sizes: ["21x30", "30x40", "50x70"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_5",
+      price: "22.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_5"
+    },
+    {
+      id: "artwork-6",
+      title: "Ocean Waves",
+      category: "Nature",
+      sizes: ["50x70", "70x100"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_6",
+      price: "31.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_6"
+    },
+    {
+      id: "artwork-7",
+      title: "City Skyline",
+      category: "Urban",
+      sizes: ["30x40", "50x70", "70x100"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_7",
+      price: "29.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_7"
+    },
+    {
+      id: "artwork-8",
+      title: "Floral Bouquet",
+      category: "Botanical",
+      sizes: ["30x40", "50x70"],
+      image: "PLACEHOLDER_ARTWORK_IMAGE_8",
+      price: "26.99",
+      shopifyProductId: "SHOPIFY_PRODUCT_ID_8"
+    }
+  ]
+
+  // Function to filter artworks by frame size
+  const getArtworksForFrameSize = (frameSize) => {
+    return artworkProducts.filter(artwork => 
+      artwork.sizes.includes(frameSize.toUpperCase())
+    )
+  }
 
   // Room/Place Categories
   const placeCategories = [
@@ -919,6 +1005,7 @@ export default function LandingPage() {
           <div className="px-6 py-4 border-t border-gray-200 space-y-3">
             <button 
               disabled={!selectedLayout}
+              onClick={() => selectedLayout && setCurrentStep("step4")}
               className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
             >
               NEXT
@@ -994,6 +1081,234 @@ export default function LandingPage() {
                 <span className="text-gray-600 font-semibold text-sm">
                   {frame.size}
                 </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 4: Select Designs/Artworks
+  if (currentStep === "step4") {
+    // Get available artworks for the currently active frame
+    const activeFrame = activeFrameIndex !== null && selectedLayout ? selectedLayout.frames[activeFrameIndex] : null
+    const availableArtworks = activeFrame ? getArtworksForFrameSize(activeFrame.size) : []
+
+    return (
+      <div className="h-screen bg-white flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
+          {/* Logo - Fixed at top */}
+          <div className="px-6 py-6 border-b border-gray-200">
+            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          </div>
+
+          {/* Step Header with Close Button - Fixed */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <p className="text-sm font-semibold tracking-wide">4. SELECT DESIGNS</p>
+            <button
+              onClick={() => setCurrentStep("intro")}
+              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Instructions or Artwork List */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {activeFrameIndex === null ? (
+              /* Show instructions when no frame is selected */
+              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                <div className="mb-6">
+                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-base font-semibold text-gray-700 mb-3">
+                  Click on a picture on the wall to select a design
+                </p>
+                <p className="text-sm text-gray-500">
+                  Select each frame on your gallery wall to choose artwork that fits perfectly
+                </p>
+              </div>
+            ) : (
+              /* Show artwork options for selected frame */
+              <div>
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">Selecting design for:</p>
+                  <p className="text-lg font-bold text-black">Frame {activeFrameIndex + 1}</p>
+                  <p className="text-sm text-gray-600">Size: {activeFrame.size}</p>
+                </div>
+
+                {availableArtworks.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No artworks available for this size</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {availableArtworks.map((artwork) => (
+                      <div
+                        key={artwork.id}
+                        onClick={() => {
+                          setSelectedArtworks({
+                            ...selectedArtworks,
+                            [activeFrameIndex]: artwork
+                          })
+                        }}
+                        className={`relative cursor-pointer transition-all duration-200 group ${
+                          selectedArtworks[activeFrameIndex]?.id === artwork.id
+                            ? 'ring-2 ring-black ring-offset-2'
+                            : 'hover:shadow-lg'
+                        }`}
+                      >
+                        {/* Artwork Image */}
+                        <div className="relative h-48 bg-gray-200 overflow-hidden">
+                          <img 
+                            src={artwork.image}
+                            alt={artwork.title}
+                            className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                          />
+                          {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
+                            <div className="absolute top-3 left-3 bg-black text-white rounded w-8 h-8 flex items-center justify-center">
+                              <span className="text-lg font-bold">✓</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Artwork Info */}
+                        <div className="p-3 bg-white border border-t-0 border-gray-200">
+                          <h3 className="text-sm font-bold text-black mb-1">{artwork.title}</h3>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">{artwork.category}</span>
+                            <span className="text-sm font-semibold text-black">£{artwork.price}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Buttons - Fixed at bottom */}
+          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+            {activeFrameIndex !== null && (
+              <button 
+                onClick={() => setActiveFrameIndex(null)}
+                className="w-full bg-gray-100 text-black py-3 font-bold text-sm tracking-wide border border-gray-300 hover:bg-gray-200 transition-all duration-200 cursor-pointer"
+              >
+                ← BACK TO FRAMES
+              </button>
+            )}
+            <button 
+              onClick={() => setCurrentStep("step5")}
+              className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+            >
+              NEXT
+            </button>
+            <button 
+              onClick={() => setCurrentStep("step3")}
+              className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+            >
+              PREVIOUS
+            </button>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Top Navigation */}
+          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ▼ SAVED GALLERY WALLS
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                💾 SAVE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ↗ SHARE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ■ CREATE NEW
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-semibold">0</span>
+                <span className="text-lg">🛍️</span>
+              </div>
+              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £0
+              </button>
+            </div>
+          </div>
+
+          {/* Breadcrumb */}
+          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+          </div>
+
+          {/* Main Canvas with Background and Clickable Frames */}
+          <div
+            className="flex-1 relative bg-cover bg-center transition-all duration-500"
+            style={{
+              backgroundImage: selectedBackground 
+                ? `url(${selectedBackground.image})` 
+                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+            }}
+          >
+            {/* Clickable Frame Placeholders with Selected Artworks */}
+            {selectedLayout && selectedLayout.frames.map((frame, idx) => (
+              <div
+                key={idx}
+                onClick={() => setActiveFrameIndex(idx)}
+                className={`absolute flex items-center justify-center transition-all duration-300 cursor-pointer group ${
+                  activeFrameIndex === idx 
+                    ? 'bg-white border-2 border-gray-400 z-10' 
+                    : ''
+                } ${
+                  selectedArtworks[idx] && activeFrameIndex !== idx
+                    ? 'bg-white border-2 border-gray-400'
+                    : activeFrameIndex !== idx
+                    ? 'bg-gray-300 border-2 border-gray-400'
+                    : ''
+                }`}
+                style={{
+                  width: frame.width,
+                  height: frame.height,
+                  top: frame.top,
+                  bottom: frame.bottom,
+                  left: frame.left,
+                  right: frame.right,
+                  transform: frame.transform
+                }}
+              >
+                {selectedArtworks[idx] ? (
+                  /* Show selected artwork */
+                  <div className="relative w-full h-full overflow-hidden">
+                    <img 
+                      src={selectedArtworks[idx].image}
+                      alt={selectedArtworks[idx].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                      CHANGE
+                    </div>
+                  </div>
+                ) : (
+                  /* Show placeholder */
+                  <>
+                    <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                      {frame.size}
+                    </span>
+                    <div className="absolute inset-0 border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors"></div>
+                  </>
+                )}
               </div>
             ))}
           </div>
