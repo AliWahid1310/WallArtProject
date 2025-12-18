@@ -4,26 +4,60 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 
 export default function LandingPage() {
-  const [currentStep, setCurrentStep] = useState("intro")
-  const [selectedPlace, setSelectedPlace] = useState(null)
-  const [selectedBackground, setSelectedBackground] = useState(null)
-  const [selectedLayout, setSelectedLayout] = useState(null)
-  const [activeVariants, setActiveVariants] = useState({})
+  const [currentStep, setCurrentStep] = useState(() => {
+    // Load current step from localStorage
+    const savedStep = localStorage.getItem('galleryCurrentStep')
+    return savedStep || "intro"
+  })
+  const [selectedPlace, setSelectedPlace] = useState(() => {
+    const saved = localStorage.getItem('gallerySelectedPlace')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [selectedBackground, setSelectedBackground] = useState(() => {
+    const saved = localStorage.getItem('gallerySelectedBackground')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [selectedLayout, setSelectedLayout] = useState(() => {
+    const saved = localStorage.getItem('gallerySelectedLayout')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [activeVariants, setActiveVariants] = useState(() => {
+    const saved = localStorage.getItem('galleryActiveVariants')
+    return saved ? JSON.parse(saved) : {}
+  })
   const [expandedSection, setExpandedSection] = useState(null)
-  const [selectedArtworks, setSelectedArtworks] = useState({}) // frameIndex: artworkObject
+  const [selectedArtworks, setSelectedArtworks] = useState(() => {
+    const saved = localStorage.getItem('gallerySelectedArtworks')
+    return saved ? JSON.parse(saved) : {}
+  }) // frameIndex: artworkObject
   const [activeFrameIndex, setActiveFrameIndex] = useState(null) // which frame is being edited
   const [artworkProducts, setArtworkProducts] = useState([])
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [showFilter, setShowFilter] = useState(false)
-  const [selectedColorFilter, setSelectedColorFilter] = useState(null)
-  const [selectedFrames, setSelectedFrames] = useState({}) // frameIndex: frameStyleObject
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedColorFilters, setSelectedColorFilters] = useState([])
+  const [selectedFrames, setSelectedFrames] = useState(() => {
+    const saved = localStorage.getItem('gallerySelectedFrames')
+    return saved ? JSON.parse(saved) : {}
+  }) // frameIndex: frameStyleObject
   const [activeFrameForStyle, setActiveFrameForStyle] = useState(null) // which artwork is being styled (null = "All")
   const [showCart, setShowCart] = useState(false)
-  const [cartItems, setCartItems] = useState({ artworks: {}, frames: {} }) // Items added to cart
-  const [quantities, setQuantities] = useState({ artworks: {}, frames: {} }) // Quantities for each item
+  const [cartItems, setCartItems] = useState(() => {
+    // Load cart from localStorage on initial mount
+    const savedCart = localStorage.getItem('galleryCart')
+    return savedCart ? JSON.parse(savedCart) : { artworks: {}, frames: {} }
+  }) // Items added to cart
+  const [quantities, setQuantities] = useState(() => {
+    // Load quantities from localStorage on initial mount
+    const savedQuantities = localStorage.getItem('galleryQuantities')
+    return savedQuantities ? JSON.parse(savedQuantities) : { artworks: {}, frames: {} }
+  }) // Quantities for each item
   const [displayedArtworkCount, setDisplayedArtworkCount] = useState(20) // Number of artworks to display
   const [isLoadingMore, setIsLoadingMore] = useState(false) // Loading more artworks
   const artworkScrollRef = useRef(null) // Ref for artwork scroll container
+  const [showLayoutChangeModal, setShowLayoutChangeModal] = useState(false) // Confirmation modal for layout change
+  const [pendingLayout, setPendingLayout] = useState(null) // Store the layout user wants to switch to
+  const [showEmptyArtworkModal, setShowEmptyArtworkModal] = useState(false) // Validation modal for no artworks selected
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -43,10 +77,54 @@ export default function LandingPage() {
     loadProducts()
   }, [])
 
+  // Save cart items to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('galleryCart', JSON.stringify(cartItems))
+  }, [cartItems])
+
+  // Save quantities to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('galleryQuantities', JSON.stringify(quantities))
+  }, [quantities])
+
+  // Save current step to localStorage
+  useEffect(() => {
+    localStorage.setItem('galleryCurrentStep', currentStep)
+  }, [currentStep])
+
+  // Save selections to localStorage
+  useEffect(() => {
+    if (selectedPlace) localStorage.setItem('gallerySelectedPlace', JSON.stringify(selectedPlace))
+  }, [selectedPlace])
+
+  useEffect(() => {
+    if (selectedBackground) localStorage.setItem('gallerySelectedBackground', JSON.stringify(selectedBackground))
+  }, [selectedBackground])
+
+  useEffect(() => {
+    if (selectedLayout) localStorage.setItem('gallerySelectedLayout', JSON.stringify(selectedLayout))
+  }, [selectedLayout])
+
+  useEffect(() => {
+    localStorage.setItem('galleryActiveVariants', JSON.stringify(activeVariants))
+  }, [activeVariants])
+
+  useEffect(() => {
+    localStorage.setItem('gallerySelectedArtworks', JSON.stringify(selectedArtworks))
+  }, [selectedArtworks])
+
+  useEffect(() => {
+    localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames))
+  }, [selectedFrames])
+
+  useEffect(() => {
+    localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames))
+  }, [selectedFrames])
+
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
     setDisplayedArtworkCount(20)
-  }, [activeFrameIndex, selectedColorFilter])
+  }, [activeFrameIndex, searchQuery, selectedColorFilters])
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
@@ -80,24 +158,148 @@ export default function LandingPage() {
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
 
-  // Function to filter artworks by frame size and color
+  // Function to toggle color filter
+  const toggleColorFilter = (color) => {
+    setSelectedColorFilters(prev => {
+      if (prev.includes(color)) {
+        return prev.filter(c => c !== color)
+      } else {
+        return [...prev, color]
+      }
+    })
+  }
+
+  // Function to filter artworks
   const getArtworksForFrameSize = (frameSize) => {
-    // Start with all products (show all products regardless of size)
     let filtered = [...artworkProducts]
 
-    // Apply color filter if selected
-    if (selectedColorFilter) {
+    console.log('Frame size requested:', frameSize)
+    console.log('Total products:', artworkProducts.length)
+    
+    // Filter by size
+    if (frameSize) {
+      // Normalize the frame size (e.g., "50X70" -> "50x70")
+      const normalizedFrameSize = frameSize.toLowerCase().replace(/[×\s]/gi, 'x').replace(/cm/gi, '')
+      console.log('Normalized frame size:', normalizedFrameSize)
+      
+      // Extract dimensions
+      const frameParts = normalizedFrameSize.split('x')
+      const frameWidth = parseInt(frameParts[0])
+      const frameHeight = parseInt(frameParts[1])
+      
+      console.log('Frame dimensions:', frameWidth, 'x', frameHeight)
+      
       filtered = filtered.filter(artwork => {
-        // Search in existing tags (case-insensitive)
-        const hasColorTag = artwork.tags?.some(tag => 
-          tag.toLowerCase().includes(selectedColorFilter.toLowerCase())
-        )
+        // Check if product has sizes array with actual values
+        if (!artwork.sizes || !Array.isArray(artwork.sizes) || artwork.sizes.length === 0) {
+          console.log(`Product "${artwork.title}" has no sizes array - SHOWING IT`)
+          return true // Include products without size info (show for all frames)
+        }
         
-        // Also search in category and title as fallback
-        const searchText = `${artwork.category} ${artwork.title}`.toLowerCase()
-        const hasColorInText = searchText.includes(selectedColorFilter.toLowerCase())
+        // Check if sizes array has valid data
+        const hasValidSizes = artwork.sizes.some(size => size && size.trim())
+        if (!hasValidSizes) {
+          console.log(`Product "${artwork.title}" has empty sizes - SHOWING IT`)
+          return true // Include if sizes are empty/invalid
+        }
         
-        return hasColorTag || hasColorInText
+        // Check each size in the product
+        const hasMatchingSize = artwork.sizes.some(size => {
+          const normalizedSize = size.toLowerCase().replace(/[×\s]/gi, 'x').replace(/cm/gi, '')
+          const sizeParts = normalizedSize.split('x')
+          
+          if (sizeParts.length !== 2) return false
+          
+          const sizeWidth = parseInt(sizeParts[0])
+          const sizeHeight = parseInt(sizeParts[1])
+          
+          if (isNaN(sizeWidth) || isNaN(sizeHeight)) return false
+          
+          // Match in either orientation
+          const matches = (sizeWidth === frameWidth && sizeHeight === frameHeight) ||
+                         (sizeWidth === frameHeight && sizeHeight === frameWidth)
+          
+          if (matches) {
+            console.log(`Product "${artwork.title}" matches with size: ${size}`)
+          }
+          
+          return matches
+        })
+        
+        if (!hasMatchingSize) {
+          console.log(`Product "${artwork.title}" sizes:`, artwork.sizes, `- doesn't match ${frameWidth}x${frameHeight} - SHOWING IT ANYWAY`)
+          return true // Show all products regardless of size match for now
+        }
+        
+        return hasMatchingSize
+      })
+      
+      console.log('Filtered products count:', filtered.length)
+    }
+
+    // Determine frame orientation from activeFrame dimensions
+    if (activeFrameIndex !== null && selectedLayout) {
+      const activeFrame = selectedLayout.frames[activeFrameIndex]
+      if (activeFrame) {
+        // Parse width and height percentages to determine orientation
+        const widthPercent = parseFloat(activeFrame.width)
+        const heightPercent = parseFloat(activeFrame.height)
+        
+        let requiredOrientation = null
+        
+        // Determine orientation based on frame dimensions
+        if (heightPercent > widthPercent * 1.2) {
+          // Frame is portrait (taller than wide)
+          requiredOrientation = 'portrait'
+        } else if (widthPercent > heightPercent * 1.2) {
+          // Frame is landscape (wider than tall)
+          requiredOrientation = 'landscape'
+        } else {
+          // Frame is roughly square
+          requiredOrientation = 'square'
+        }
+
+        // Filter by orientation tag
+        if (requiredOrientation) {
+          filtered = filtered.filter(artwork => {
+            if (!artwork.tags || !Array.isArray(artwork.tags)) return true
+            
+            // Check if product has orientation tag matching required orientation
+            const hasMatchingOrientation = artwork.tags.some(tag => 
+              tag.toLowerCase() === requiredOrientation.toLowerCase()
+            )
+            
+            // If no orientation tag found, include the artwork (backwards compatibility)
+            const hasOrientationTag = artwork.tags.some(tag => 
+              ['portrait', 'landscape', 'square'].includes(tag.toLowerCase())
+            )
+            
+            return hasMatchingOrientation || !hasOrientationTag
+          })
+        }
+      }
+    }
+
+    // Apply search query filter (searches in title, category, and tags)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(artwork => {
+        const searchableText = `${artwork.title} ${artwork.category} ${artwork.tags?.join(' ')}`.toLowerCase()
+        return searchableText.includes(query)
+      })
+    }
+
+    // Apply color filters
+    if (selectedColorFilters.length > 0) {
+      filtered = filtered.filter(artwork => {
+        return selectedColorFilters.some(colorFilter => {
+          const hasColorTag = artwork.tags?.some(tag => 
+            tag.toLowerCase().includes(colorFilter.toLowerCase())
+          )
+          const searchText = `${artwork.category} ${artwork.title}`.toLowerCase()
+          const hasColorInText = searchText.includes(colorFilter.toLowerCase())
+          return hasColorTag || hasColorInText
+        })
       })
     }
 
@@ -172,6 +374,21 @@ export default function LandingPage() {
       artworks: { ...selectedArtworks },
       frames: { ...selectedFrames }
     })
+    
+    // Initialize quantities for new cart items if not already set
+    const newQuantities = { ...quantities }
+    Object.keys(selectedArtworks).forEach(frameIdx => {
+      if (!newQuantities.artworks[frameIdx]) {
+        newQuantities.artworks[frameIdx] = 1
+      }
+    })
+    Object.keys(selectedFrames).forEach(frameIdx => {
+      if (!newQuantities.frames[frameIdx]) {
+        newQuantities.frames[frameIdx] = 1
+      }
+    })
+    setQuantities(newQuantities)
+    
     setShowCart(true)
   }
 
@@ -179,35 +396,48 @@ export default function LandingPage() {
   const calculateCartTotal = () => {
     let total = 0
     
-    // Add artwork prices from cart
-    Object.values(cartItems.artworks).forEach(artwork => {
-      total += parseFloat(artwork.price) || 0
-    })
+    // Add artwork prices from cart with quantities
+    if (cartItems.artworks && typeof cartItems.artworks === 'object') {
+      Object.entries(cartItems.artworks).forEach(([frameIdx, artwork]) => {
+        const quantity = quantities.artworks?.[frameIdx] || 1
+        const price = parseFloat(artwork.price) || 0
+        total += price * quantity
+      })
+    }
     
-    // Add frame prices from cart
-    Object.values(cartItems.frames).forEach(frame => {
-      total += parseFloat(frame.price) || 0
-    })
+    // Add frame prices from cart with quantities
+    if (cartItems.frames && typeof cartItems.frames === 'object') {
+      Object.entries(cartItems.frames).forEach(([frameIdx, frame]) => {
+        const quantity = quantities.frames?.[frameIdx] || 1
+        const price = parseFloat(frame.price) || 0
+        total += price * quantity
+      })
+    }
     
     return total.toFixed(2)
   }
 
   // Handle Checkout - Redirect to Shopify Checkout
   const handleCheckout = async () => {
+    alert("Checkout button clicked! Function is running...");
+    console.log("=== CHECKOUT FUNCTION CALLED ===");
+    console.log("Cart items:", cartItems);
+    console.log("Quantities:", quantities);
     try {
       // Prepare line items from cart
       const lineItems = []
       
-      // Add artworks to line items
-      Object.values(cartItems.artworks).forEach(artwork => {
+      // Add artworks to line items with quantities
+      Object.entries(cartItems.artworks).forEach(([frameIdx, artwork]) => {
         console.log('Processing artwork for checkout:', artwork)
         // Use the first available variant ID from the artwork
         const variantId = artwork.variants?.[0]?.id || artwork.shopifyProductId
-        console.log('Variant ID:', variantId)
+        const quantity = quantities.artworks?.[frameIdx] || 1
+        console.log('Variant ID:', variantId, 'Quantity:', quantity)
         if (variantId) {
           lineItems.push({
             variantId: variantId,
-            quantity: 1
+            quantity: quantity
           })
         }
       })
@@ -830,15 +1060,15 @@ export default function LandingPage() {
                     <div className="border-t border-gray-200 p-4 bg-gray-50">
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-bold">TOTAL AMOUNT</span>
-                        <span className="text-lg font-bold">£{calculateTotalPrice()}</span>
+                        <span className="text-lg font-bold">£{calculateCartTotal()}</span>
                       </div>
-                      <button className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
+                      <button onClick={handleCheckout} className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
                     </div>
                   </div>
                 )}
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
+              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £{calculateCartTotal()}
               </button>
             </div>
           </div>
@@ -974,11 +1204,11 @@ export default function LandingPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
+              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £{calculateCartTotal()}
               </button>
             </div>
           </div>
@@ -1131,11 +1361,11 @@ export default function LandingPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
+              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £{calculateCartTotal()}
               </button>
             </div>
           </div>
@@ -1188,7 +1418,26 @@ export default function LandingPage() {
             {layoutOptions.map((layout) => (
               <div
                 key={layout.id}
-                onClick={() => setSelectedLayout(layout)}
+                onClick={() => {
+                  // Check if user has already selected artworks
+                  const hasSelectedArtworks = Object.keys(selectedArtworks).length > 0
+                  
+                  console.log('Layout clicked:', layout.id)
+                  console.log('Has artworks:', hasSelectedArtworks)
+                  console.log('Current layout:', selectedLayout?.id)
+                  console.log('Different layout?', selectedLayout?.id !== layout.id)
+                  
+                  // If changing to a different layout and artworks are selected, show confirmation
+                  if (hasSelectedArtworks && selectedLayout?.id !== layout.id) {
+                    console.log('Showing modal')
+                    setPendingLayout(layout)
+                    setShowLayoutChangeModal(true)
+                  } else {
+                    // No artworks selected or same layout, just set it
+                    console.log('Setting layout directly')
+                    setSelectedLayout(layout)
+                  }
+                }}
                 className="relative cursor-pointer transition-all duration-200 group hover:shadow-lg"
               >
                 {/* Layout Preview */}
@@ -1276,11 +1525,11 @@ export default function LandingPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
+              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £{calculateCartTotal()}
               </button>
             </div>
           </div>
@@ -1323,11 +1572,75 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal for Layout Change */}
+        {showLayoutChangeModal && (
+          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="bg-white p-8 max-w-md w-full mx-4 relative shadow-2xl border border-gray-200">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowLayoutChangeModal(false)
+                  setPendingLayout(null)
+                }}
+                className="absolute top-4 right-4 text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+              >
+                ✕
+              </button>
+
+              {/* Modal Content */}
+              <h2 className="text-xl font-bold text-center mb-6 tracking-wide">
+                WOULD YOU LIKE TO CONTINUE?
+              </h2>
+              
+              <p className="text-center text-gray-600 mb-8 leading-relaxed">
+                YOU HAVE MADE CHANGES THAT HAVE NOT BEEN SAVED. WOULD YOU LIKE TO SAVE YOUR PICTURE WALL NOW?
+              </p>
+
+              {/* Modal Buttons */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    // Save option - keep current artworks and don't change layout
+                    setShowLayoutChangeModal(false)
+                    setPendingLayout(null)
+                  }}
+                  className="bg-black text-white px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                >
+                  SAVE
+                </button>
+                <button
+                  onClick={() => {
+                    // Don't save - clear artworks and change to new layout
+                    setSelectedArtworks({})
+                    setActiveFrameIndex(null)
+                    setSelectedLayout(pendingLayout)
+                    setShowLayoutChangeModal(false)
+                    setPendingLayout(null)
+                  }}
+                  className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+                >
+                  DON'T SAVE
+                </button>
+                <button
+                  onClick={() => {
+                    // Cancel - do nothing
+                    setShowLayoutChangeModal(false)
+                    setPendingLayout(null)
+                  }}
+                  className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
-  // Step 4: Select Designs/Artworks
+  // Step 4: Select Designs/Artworks  
   if (currentStep === "step4") {
     // Get available artworks for the currently active frame
     const activeFrame = activeFrameIndex !== null && selectedLayout ? selectedLayout.frames[activeFrameIndex] : null
@@ -1373,10 +1686,28 @@ export default function LandingPage() {
             ) : (
               /* Show artwork options for selected frame */
               <div className="relative">
+                {/* Selected Filters Chips */}
+                {selectedColorFilters.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {selectedColorFilters.map(color => (
+                      <button
+                        key={color}
+                        onClick={() => toggleColorFilter(color)}
+                        className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm font-medium text-gray-800 rounded cursor-pointer transition-colors"
+                      >
+                        {color.charAt(0).toUpperCase() + color.slice(1)} ✕
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Filter Bar */}
                 <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-4">
                   <button 
-                    onClick={() => setSelectedColorFilter(null)}
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSelectedColorFilters([])
+                    }}
                     className="text-sm font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer"
                   >
                     ALL PRODUCTS
@@ -1399,7 +1730,10 @@ export default function LandingPage() {
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex items-center justify-end mb-4">
                         <button 
-                          onClick={() => setSelectedColorFilter(null)}
+                          onClick={() => {
+                            setSearchQuery('')
+                            setSelectedColorFilters([])
+                          }}
                           className="text-xs font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer border border-gray-300 px-3 py-1.5"
                         >
                           CLEAR FILTER
@@ -1407,11 +1741,13 @@ export default function LandingPage() {
                       </div>
 
                       {/* Search Box */}
-                      <div className="relative">
+                      <div className="relative mb-4">
                         <input 
                           type="text" 
-                          placeholder="Search..."
-                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:border-black"
+                          placeholder="Search abstract, typography..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full px-3 py-2 pr-10 border border-gray-300 text-sm focus:outline-none focus:border-black"
                         />
                         <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1428,10 +1764,10 @@ export default function LandingPage() {
                         {colorOptions.map((color) => (
                           <button
                             key={color.value}
-                            onClick={() => setSelectedColorFilter(color.value)}
+                            onClick={() => toggleColorFilter(color.value)}
                             className={`flex flex-col items-center gap-1.5 px-2 py-2.5 border-2 transition-all cursor-pointer ${
-                              selectedColorFilter === color.value
-                                ? 'border-black bg-gray-50'
+                              selectedColorFilters.includes(color.value)
+                                ? 'border-black bg-black text-white'
                                 : 'border-gray-300 hover:border-gray-400'
                             }`}
                           >
@@ -1439,7 +1775,9 @@ export default function LandingPage() {
                               className="w-7 h-7 border border-gray-300"
                               style={{ background: color.color }}
                             />
-                            <span className="text-xs font-medium text-center leading-tight">{color.name}</span>
+                            <span className={`text-xs font-medium text-center leading-tight ${
+                              selectedColorFilters.includes(color.value) ? 'text-white' : 'text-gray-800'
+                            }`}>{color.name}</span>
                           </button>
                         ))}
                       </div>
@@ -1517,14 +1855,21 @@ export default function LandingPage() {
           {/* Navigation Buttons - Fixed at bottom */}
           <div className="px-6 py-4 border-t border-gray-200 space-y-3">
             <button 
-              onClick={() => setCurrentStep("checkout")}
+              onClick={() => {
+                // Check if at least one artwork is selected
+                const hasArtworks = Object.keys(selectedArtworks).length > 0
+                if (!hasArtworks) {
+                  setShowEmptyArtworkModal(true)
+                } else {
+                  setCurrentStep("checkout")
+                }
+              }}
               className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
             >
               NEXT
             </button>
             <button 
               onClick={() => {
-                setSelectedArtworks({})
                 setActiveFrameIndex(null)
                 setCurrentStep("step3")
               }}
@@ -1556,12 +1901,10 @@ export default function LandingPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
-              </button>
+              <button onClick={handleCheckout} className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
             </div>
           </div>
 
@@ -1617,6 +1960,20 @@ export default function LandingPage() {
                       <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
                         CHANGE
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const newArtworks = { ...selectedArtworks }
+                          delete newArtworks[idx]
+                          setSelectedArtworks(newArtworks)
+                        }}
+                        className="absolute top-2 left-2 bg-white text-black w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white shadow-lg cursor-pointer"
+                        title="Remove design"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </>
                   ) : (
                     /* Show placeholder */
@@ -1632,6 +1989,39 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Validation Modal - No Artworks Selected */}
+        {showEmptyArtworkModal && (
+          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="bg-white p-8 max-w-md w-full mx-4 relative shadow-2xl border border-gray-200 rounded-lg">
+              {/* Modal Content */}
+              <div className="text-center">
+                {/* Icon */}
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+                  <svg className="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  No Designs Selected
+                </h2>
+                
+                <p className="text-gray-600 mb-6">
+                  Please select at least one design for your gallery wall before proceeding to checkout.
+                </p>
+
+                {/* Button */}
+                <button
+                  onClick={() => setShowEmptyArtworkModal(false)}
+                  className="w-full bg-black text-white px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer rounded"
+                >
+                  OK, GOT IT
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -1865,7 +2255,7 @@ export default function LandingPage() {
           {/* Navigation Buttons */}
           <div className="px-6 py-4 border-t border-gray-200 space-y-3">
             <button
-              onClick={() => setCurrentStep("checkout")}
+              onClick={handleCheckout}
               className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
             >
               DONE
@@ -1900,11 +2290,11 @@ export default function LandingPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £0
+              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £{calculateCartTotal()}
               </button>
             </div>
           </div>
@@ -2269,7 +2659,7 @@ export default function LandingPage() {
                     <div className="border-t border-gray-200 p-4 bg-gray-50">
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-bold">TOTAL AMOUNT</span>
-                        <span className="text-lg font-bold">{currency}{calculateCartTotal()}</span>
+                        <span className="text-lg font-bold">£{calculateCartTotal()}</span>
                       </div>
                       <button 
                         onClick={handleCheckout}
@@ -2282,7 +2672,10 @@ export default function LandingPage() {
                 )}
               </div>
               
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button 
+                onClick={handleCheckout}
+                className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
+              >
                 CHECKOUT {currency}{totalPrice}
               </button>
             </div>
@@ -2340,3 +2733,4 @@ export default function LandingPage() {
     )
   }
 }
+
