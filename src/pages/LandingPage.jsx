@@ -58,6 +58,7 @@ export default function LandingPage() {
   const [showLayoutChangeModal, setShowLayoutChangeModal] = useState(false) // Confirmation modal for layout change
   const [pendingLayout, setPendingLayout] = useState(null) // Store the layout user wants to switch to
   const [showEmptyArtworkModal, setShowEmptyArtworkModal] = useState(false) // Validation modal for no artworks selected
+  const [showResetModal, setShowResetModal] = useState(false) // Confirmation modal for starting over
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -370,8 +371,18 @@ export default function LandingPage() {
 
   // Handle Add to Cart
   const handleAddToCart = () => {
+    // Add frame size to each artwork from the selected layout
+    const artworksWithSize = {}
+    Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
+      const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
+      artworksWithSize[frameIdx] = {
+        ...artwork,
+        frameSize: frameSize
+      }
+    })
+    
     setCartItems({
-      artworks: { ...selectedArtworks },
+      artworks: artworksWithSize,
       frames: { ...selectedFrames }
     })
     
@@ -419,7 +430,6 @@ export default function LandingPage() {
 
   // Handle Checkout - Redirect to Shopify Checkout
   const handleCheckout = async () => {
-    alert("Checkout button clicked! Function is running...");
     console.log("=== CHECKOUT FUNCTION CALLED ===");
     console.log("Cart items:", cartItems);
     console.log("Quantities:", quantities);
@@ -427,18 +437,68 @@ export default function LandingPage() {
       // Prepare line items from cart
       const lineItems = []
       
-      // Add artworks to line items with quantities
+      // Add artworks to line items with quantities and find matching size variant
       Object.entries(cartItems.artworks).forEach(([frameIdx, artwork]) => {
-        console.log('Processing artwork for checkout:', artwork)
-        // Use the first available variant ID from the artwork
-        const variantId = artwork.variants?.[0]?.id || artwork.shopifyProductId
+        console.log('=== PROCESSING ARTWORK ===')
+        console.log('Artwork title:', artwork.title)
+        console.log('Artwork frameSize:', artwork.frameSize)
+        console.log('Artwork has variants:', artwork.variants?.length || 0)
+        
+        // Try to find the variant that matches the selected frame size
+        let variantId = artwork.variants?.[0]?.id || artwork.shopifyProductId
+        
+        if (artwork.frameSize && artwork.variants && artwork.variants.length > 0) {
+          // Normalize the frame size for comparison (remove spaces, make uppercase, normalize x vs X)
+          const normalizedFrameSize = artwork.frameSize.replace(/\s+/g, '').toUpperCase().replace(/[×]/g, 'X')
+          console.log('Normalized frame size to match:', normalizedFrameSize)
+          console.log('Available variants:')
+          artwork.variants.forEach((v, idx) => {
+            console.log(`  ${idx + 1}. "${v.title}" (ID: ${v.id})`)
+          })
+          
+          // Search for a variant that matches the frame size
+          const matchingVariant = artwork.variants.find(variant => {
+            const variantTitle = variant.title || ''
+            const normalizedVariantTitle = variantTitle.replace(/\s+/g, '').toUpperCase().replace(/[×]/g, 'X')
+            
+            const matches = normalizedVariantTitle.includes(normalizedFrameSize)
+            console.log(`  Comparing "${variantTitle}" -> "${normalizedVariantTitle}" contains "${normalizedFrameSize}"? ${matches}`)
+            
+            // Check if variant title contains the frame size
+            return matches
+          })
+          
+          if (matchingVariant) {
+            variantId = matchingVariant.id
+            console.log('✓ FOUND MATCHING VARIANT:', matchingVariant.title, 'ID:', matchingVariant.id)
+          } else {
+            console.warn('✗ NO MATCH FOUND for size', artwork.frameSize, '- Using first variant:', artwork.variants[0]?.title)
+          }
+        } else {
+          console.log('Skipping variant matching (no frameSize or no variants)')
+        }
+        
         const quantity = quantities.artworks?.[frameIdx] || 1
-        console.log('Variant ID:', variantId, 'Quantity:', quantity)
+        console.log('Final: Variant ID:', variantId, 'Quantity:', quantity, 'Frame Size:', artwork.frameSize)
+        console.log('=========================\n')
+        
         if (variantId) {
-          lineItems.push({
+          const lineItem = {
             variantId: variantId,
             quantity: quantity
-          })
+          }
+          
+          // Add frame size as custom attribute if available
+          if (artwork.frameSize) {
+            lineItem.customAttributes = [
+              {
+                key: "Frame Size",
+                value: artwork.frameSize
+              }
+            ]
+          }
+          
+          lineItems.push(lineItem)
         }
       })
       
@@ -473,6 +533,39 @@ export default function LandingPage() {
     }
   }
 
+  // Handle Reset - Clear all selections and return to intro
+  const handleReset = () => {
+    // Clear all localStorage
+    localStorage.removeItem('galleryCurrentStep')
+    localStorage.removeItem('gallerySelectedPlace')
+    localStorage.removeItem('gallerySelectedBackground')
+    localStorage.removeItem('gallerySelectedLayout')
+    localStorage.removeItem('galleryActiveVariants')
+    localStorage.removeItem('gallerySelectedArtworks')
+    localStorage.removeItem('gallerySelectedFrames')
+    localStorage.removeItem('galleryCart')
+    localStorage.removeItem('galleryQuantities')
+    
+    // Reset all state
+    setCurrentStep('intro')
+    setSelectedPlace(null)
+    setSelectedBackground(null)
+    setSelectedLayout(null)
+    setActiveVariants({})
+    setSelectedArtworks({})
+    setSelectedFrames({})
+    setCartItems({ artworks: {}, frames: {} })
+    setQuantities({ artworks: {}, frames: {} })
+    setActiveFrameIndex(null)
+    setActiveFrameForStyle(null)
+    setExpandedSection(null)
+    setShowFilter(false)
+    setSearchQuery('')
+    setSelectedColorFilters([])
+    setShowCart(false)
+    setShowResetModal(false)
+  }
+
   // Room/Place Categories
   const placeCategories = [
     {
@@ -488,7 +581,6 @@ export default function LandingPage() {
       description: "Relaxing bedroom environments"
     },
     {
-      
       id: "dining-room",
       name: "Dining Room",
       image: "PLACEHOLDER_IMAGE_URL_3",
@@ -520,8 +612,8 @@ export default function LandingPage() {
       name: "Two 50x70",
       image: "https://gwt.desenio.co.uk/walls/2-50x70.png",
       frames: [
-        { width: "14%", height: "35%", size: "50X70", top: "20%", left: "36%" },
-         { width: "14%", height: "35%", size: "50X70", top: "20%", right: "36%" }
+        { width: "12%", height: "35%", size: "50X70", top: "20%", left: "37%" },
+         { width: "12%", height: "35%", size: "50X70", top: "20%", right: "37%" }
       ]
     },
     {
@@ -529,8 +621,8 @@ export default function LandingPage() {
       name: "Two 70x100",
       image: "https://gwt.desenio.co.uk/walls/2-70x100.png",
       frames: [
-        { width: "12%", height: "31%", size: "70x100", top: "20%", left: "36%" },
-        { width: "12%", height: "31%", size: "70x100", top: "20%", right: "36%" }
+        { width: "15%", height: "44%", size: "70x100", top: "20%", left: "34%" },
+        { width: "15%", height: "44%", size: "70x100", top: "20%", right: "34%" }
       ]
     },
     {
@@ -538,9 +630,9 @@ export default function LandingPage() {
       name: "Three 50x70",
       image: "https://gwt.desenio.co.uk/walls/3-50x70.png",
       frames: [
-        { width: "13%", height: "31.5%", size: "50x70", top: "25%", left: "30%" },
-        { width: "13%", height: "31.5%", size: "50x70", top: "25%", left: "50%", transform: "translateX(-50%)" },
-        { width: "13%", height: "31.5%", size: "50x70", top: "25%", right: "30%" }
+        { width: "12%", height: "35%", size: "50x70", top: "25%", left: "30%" },
+        { width: "12%", height: "35%", size: "50x70", top: "25%", left: "50%", transform: "translateX(-50%)" },
+        { width: "12%", height: "35%", size: "50x70", top: "25%", right: "30%" }
       ]
     },
     {
@@ -548,9 +640,9 @@ export default function LandingPage() {
       name: "Center 70x100 + Sides",
       image: "https://gwt.desenio.co.uk/walls/3-mixed.png",
       frames: [
-        { width: "10.5%", height: "26.25%", size: "50x75", top: "25%", left: "33%" },
-        { width: "14%", height: "35.625%", size: "70x100", top: "20%", left: "50%", transform: "translateX(-50%)" },
-        { width: "10.5%", height: "26.25%", size: "50x75", top: "25%", right: "33%", }
+        { width: "11.5%", height: "31.25%", size: "50x75", top: "27%", left: "30%" },
+        { width: "15%", height: "44%", size: "70x100", top: "20%", left: "50%", transform: "translateX(-50%)" },
+        { width: "11.5%", height: "31.25%", size: "50x75", top: "27%", right: "30%", }
       ]
     },
     {
@@ -558,10 +650,10 @@ export default function LandingPage() {
       name: "Four 30x40 Grid",
       image: "https://gwt.desenio.co.uk/walls/4-30x40.png",
       frames: [
-        { width: "10.5%", height: "25%", size: "30x40", top: "15%", left: "40%" },
-        { width: "10.5%", height: "25%", size: "30x40", top: "15%", right: "40%" },
-        { width: "10.5%", height: "25%", size: "30x40", bottom: "30%", left: "40%" },
-        { width: "10.5%", height: "25%", size: "30x40", bottom: "30%", right: "40%" }
+        { width: "9%", height: "27%", size: "30x40", top: "15%", left: "39.95%" },
+        { width: "9%", height: "27%", size: "30x40", top: "15%", right: "39.95%" },
+        { width: "9%", height: "27%", size: "30x40", bottom: "30%", left: "39.95%" },
+        { width: "9%", height: "27%", size: "30x40", bottom: "30%", right: "39.95%" }
       ]
     },
     {
@@ -859,18 +951,58 @@ export default function LandingPage() {
   // Intro page (original)
   if (currentStep === "intro") {
     return (
-      <div className="h-screen bg-white flex overflow-hidden">
+      <>
+        {/* Reset Confirmation Modal */}
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowResetModal(false)}
+                  className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl"
+                >
+                  Yes, Start Over
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-72 bg-white border-r border-gray-300 px-6 py-8 flex flex-col">
+        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 px-4 sm:px-6 py-3 sm:py-4 flex flex-col h-auto lg:h-screen overflow-hidden">
           {/* Logo */}
-          <h1 className="text-4xl font-bold tracking-tight mb-6 text-center">DESENIO</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">DESENIO</h1>
 
           {/* Steps Container */}
-          <div className="flex-1 flex flex-col justify-start pt-4 space-y-8">
+          <div className="flex-1 flex flex-col justify-start space-y-3 sm:space-y-4 overflow-y-auto min-h-0">
             {/* Step 1 - NEW: Select Place */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-3 group">
+            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
               {/* House/Room icon */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2 sm:mb-3">
                 <div className="relative w-10 h-10">
                   <div className="w-8 h-6 border-2 border-b-0 border-black group-hover:border-gray-400 transition-colors"></div>
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[12px] border-b-black group-hover:border-b-gray-400 transition-colors"></div>
@@ -882,9 +1014,9 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 - Background */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-3 group">
+            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
               {/* Overlapping frames icon */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2 sm:mb-3">
                 <div className="relative w-10 h-10">
                   {/* Back frame */}
                   <div className="absolute top-0 right-0 w-7 h-9 border-2 border-black group-hover:border-gray-400 bg-white transition-colors transform rotate-6"></div>
@@ -900,9 +1032,9 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 - Picture Wall */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-3 group">
+            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
               {/* Picture wall layout icon */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2 sm:mb-3">
                 <div className="flex gap-1 items-start">
                   {/* Large rectangle on left */}
                   <div className="w-5 h-8 bg-black group-hover:bg-gray-400 transition-colors"></div>
@@ -918,9 +1050,9 @@ export default function LandingPage() {
             </div>
 
             {/* Step 4 - Design */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-3 group">
+            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
               {/* Tall rectangle with circle icon */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2 sm:mb-3">
                 <div className="relative w-6 h-9 border-2 border-black group-hover:border-gray-400 flex items-center justify-center transition-colors">
                   <div className="w-2 h-2 bg-black group-hover:bg-gray-400 rounded-full transition-colors"></div>
                 </div>
@@ -931,14 +1063,17 @@ export default function LandingPage() {
           </div>
 
           {/* Bottom Section */}
-          <div className="mt-auto space-y-6">
+          <div className="mt-auto pt-3 sm:pt-4 space-y-2 sm:space-y-3 flex-shrink-0">
             {/* Price */}
             <div>
-              <p className="text-3xl font-bold text-center">£ 0</p>
+              <p className="text-xl sm:text-2xl font-bold text-center">£ 0</p>
             </div>
 
             {/* Add to Basket Button */}
-            <button className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-105 active:scale-95">
+            <button
+              onClick={handleAddToCart}
+              className="w-full bg-black text-white py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-105 active:scale-95"
+            >
               ADD TO <span>🛍️</span>
             </button>
           </div>
@@ -947,23 +1082,26 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105">
-                ▼ SAVED GALLERY WALLS
+          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
                 📋 SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
                 🔗 SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105">
-                ■ CREATE NEW
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+              >
+                ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Cart Icon with Badge */}
               <div className="relative">
                 <button
@@ -980,17 +1118,20 @@ export default function LandingPage() {
 
                 {/* Cart Dropdown - shown when items exist */}
                 {showCart && (Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) && (
-                  <div className="absolute top-full right-0 mt-2 w-96 bg-white border border-gray-200 shadow-2xl z-50 max-h-[600px] flex flex-col">
+                  <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl z-50 max-h-[400px] sm:max-h-[600px] flex flex-col">
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                       {/* Artwork Items */}
-                      {Object.entries(selectedArtworks).map(([frameIdx, artwork]) => (
+                      {Object.entries(cartItems.artworks).map(([frameIdx, artwork]) => (
                         <div key={`artwork-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
                           <div className="w-20 h-28 flex-shrink-0 border border-gray-200">
                             <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
                           </div>
                           <div className="flex-1 flex flex-col">
                             <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
+                            {artwork.frameSize && (
+                              <p className="text-xs text-gray-500 mb-1">{artwork.frameSize}</p>
+                            )}
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-red-600 font-bold text-base">£ {artwork.price}</span>
                             </div>
@@ -1011,7 +1152,7 @@ export default function LandingPage() {
                               <option value="10">10</option>
                             </select>
                           </div>
-                          <button onClick={() => { const newArtworks = { ...selectedArtworks }; delete newArtworks[frameIdx]; setSelectedArtworks(newArtworks); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
+                          <button onClick={() => { const newArtworks = { ...cartItems.artworks }; delete newArtworks[frameIdx]; setCartItems({ ...cartItems, artworks: newArtworks }); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -1019,8 +1160,8 @@ export default function LandingPage() {
                         </div>
                       ))}
                       {/* Frame Items */}
-                      {Object.entries(selectedFrames).map(([frameIdx, frame]) => {
-                        const artwork = selectedArtworks[frameIdx];
+                      {Object.entries(cartItems.frames).map(([frameIdx, frame]) => {
+                        const artwork = cartItems.artworks[frameIdx];
                         if (!artwork) return null;
                         return (
                           <div key={`frame-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
@@ -1047,7 +1188,7 @@ export default function LandingPage() {
                                 <option value="10">10</option>
                               </select>
                             </div>
-                            <button onClick={() => { const newFrames = { ...selectedFrames }; delete newFrames[frameIdx]; setSelectedFrames(newFrames); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
+                            <button onClick={() => { const newFrames = { ...cartItems.frames }; delete newFrames[frameIdx]; setCartItems({ ...cartItems, frames: newFrames }); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
@@ -1068,13 +1209,13 @@ export default function LandingPage() {
                 )}
               </div>
               <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £{calculateCartTotal()}
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
 
           {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-500 border-b border-gray-300">
+          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
@@ -1088,19 +1229,19 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-black/40"></div>
 
             {/* Content */}
-            <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-8">
+            <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-4 sm:px-8">
               {/* Dark Box Container */}
-              <div className="bg-black/70 backdrop-blur-sm px-20 py-16 max-w-3xl">
-                <p className="text-xs tracking-[0.3em] mb-6 text-gray-300 font-light">STEP-BY-STEP</p>
-                <h2 className="text-5xl font-serif italic mb-8 text-white font-light leading-tight">
+              <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-12 md:px-20 py-8 sm:py-12 md:py-16 max-w-3xl">
+                <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] mb-3 sm:mb-6 text-gray-300 font-light">STEP-BY-STEP</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif italic mb-4 sm:mb-6 md:mb-8 text-white font-light leading-tight">
                   Create the perfect gallery wall
                 </h2>
-                <p className="text-base mb-12 text-gray-200 font-light leading-relaxed">
+                <p className="text-xs sm:text-sm md:text-base mb-6 sm:mb-8 md:mb-12 text-gray-200 font-light leading-relaxed">
                   Use our new tool to find designs and frames that match each other
                 </p>
                 <button
                   onClick={() => setCurrentStep("step1")}
-                  className="bg-white text-black px-12 py-4 font-bold text-sm tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
+                  className="bg-white text-black px-6 sm:px-8 md:px-12 py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
                 >
                   START HERE
                 </button>
@@ -1109,23 +1250,53 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   // Step 1: Select Place/Room Category
   if (currentStep === "step1") {
     return (
-      <div className="h-screen bg-white flex overflow-hidden">
+      <>
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
+                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
+              </div>
+            </div>
+          </div>
+        )}
+      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
+        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
           {/* Logo - Fixed at top */}
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <p className="text-sm font-semibold tracking-wide">1. SELECT PLACE</p>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <p className="text-xs sm:text-sm font-semibold tracking-wide">1. SELECT PLACE</p>
             <button
               onClick={() => setCurrentStep("intro")}
               className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
@@ -1135,7 +1306,7 @@ export default function LandingPage() {
           </div>
 
           {/* Scrollable Place Options */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-6">
               {placeCategories.map((place) => (
                 <div
@@ -1172,11 +1343,11 @@ export default function LandingPage() {
           </div>
 
           {/* Next Button - Fixed at bottom */}
-          <div className="px-6 py-4 border-t border-gray-200">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
             <button 
               disabled={!selectedPlace}
               onClick={() => selectedPlace && setCurrentStep("step2")}
-              className="w-full bg-black text-white py-4 font-bold text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
             >
               NEXT
             </button>
@@ -1186,35 +1357,38 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
+          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 📋 SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 🔗 SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+              >
+                ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-lg">🛍️</span>
+                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                <span className="text-base sm:text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £{calculateCartTotal()}
+              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
 
           {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-500 border-b border-gray-300">
+          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
@@ -1239,23 +1413,53 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   // Step 2: Select Background
   if (currentStep === "step2") {
     return (
-      <div className="h-screen bg-white flex overflow-hidden">
+      <>
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
+                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
+              </div>
+            </div>
+          </div>
+        )}
+      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-70 bg-white border-r border-gray-300 flex flex-col">
+        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
           {/* Logo - Fixed at top */}
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <p className="text-sm font-semibold tracking-wide">2. SELECT BACKGROUND</p>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <p className="text-xs sm:text-sm font-semibold tracking-wide">2. SELECT BACKGROUND</p>
             <button
               onClick={() => setCurrentStep("intro")}
               className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
@@ -1265,7 +1469,7 @@ export default function LandingPage() {
           </div>
 
           {/* Scrollable Background Options */}
-          <div className="flex-1 overflow-y-auto px-3 py-6">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
             <div className="space-y-6">
               {backgroundOptions.map((section, sectionIdx) => {
                 const activeVariant = activeVariants[sectionIdx] || section.variants[0]
@@ -1365,7 +1569,7 @@ export default function LandingPage() {
                 <span className="text-lg">🛍️</span>
               </div>
               <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £{calculateCartTotal()}
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
@@ -1387,23 +1591,53 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   // Step 3: Select Picture Wall Layout
   if (currentStep === "step3") {
     return (
-      <div className="h-screen bg-white flex overflow-hidden">
+      <>
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
+                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
+              </div>
+            </div>
+          </div>
+        )}
+      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
+        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
           {/* Logo - Fixed at top */}
           <div className="px-6 py-6 border-b border-gray-200">
             <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <p className="text-sm font-semibold tracking-wide">3. SELECT PICTURE WALL</p>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <p className="text-xs sm:text-sm font-semibold tracking-wide">3. SELECT PICTURE WALL</p>
             <button
               onClick={() => setCurrentStep("intro")}
               className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
@@ -1413,8 +1647,8 @@ export default function LandingPage() {
           </div>
 
           {/* Scrollable Layout Options */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-6 mb-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+            <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
             {layoutOptions.map((layout) => (
               <div
                 key={layout.id}
@@ -1487,17 +1721,17 @@ export default function LandingPage() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 space-y-3">
             <button 
               disabled={!selectedLayout}
               onClick={() => selectedLayout && setCurrentStep("step4")}
-              className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
             >
               NEXT
             </button>
             <button 
               onClick={() => setCurrentStep("step2")}
-              className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+              className="w-full bg-white text-black py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
             >
               PREVIOUS
             </button>
@@ -1507,35 +1741,38 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
+          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 💾 SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 ↗ SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+              >
+                ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-lg">🛍️</span>
+                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                <span className="text-base sm:text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £{calculateCartTotal()}
+              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
 
           {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
@@ -1550,62 +1787,62 @@ export default function LandingPage() {
           >
             <div className="absolute inset-0">
               {/* Frame Placeholders - Only show when layout is selected */}
-              {selectedLayout && selectedLayout.frames.map((frame, idx) => (
-              <div
-                key={idx}
-                className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
-                style={{
-                  width: frame.width,
-                  height: frame.height,
-                  top: frame.top,
-                  bottom: frame.bottom,
-                  left: frame.left,
-                  right: frame.right,
-                  transform: frame.transform
-                }}
-              >
-                <span className="text-gray-600 font-semibold text-sm">
-                  {frame.size}
-                </span>
-              </div>
-            ))}
+                {selectedLayout && selectedLayout.frames.map((frame, idx) => (
+                <div
+                  key={idx}
+                  className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                  style={{
+                    width: frame.width,
+                    height: frame.height,
+                    top: frame.top,
+                    bottom: frame.bottom,
+                    left: frame.left,
+                    right: frame.right,
+                    transform: frame.transform
+                  }}
+                >
+                  <span className="text-gray-600 font-semibold text-sm">
+                    {frame.size}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Confirmation Modal for Layout Change */}
         {showLayoutChangeModal && (
-          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
-            <div className="bg-white p-8 max-w-md w-full mx-4 relative shadow-2xl border border-gray-200">
+          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 sm:p-8 max-w-md w-full relative shadow-2xl border border-gray-200">
               {/* Close button */}
               <button
                 onClick={() => {
                   setShowLayoutChangeModal(false)
                   setPendingLayout(null)
                 }}
-                className="absolute top-4 right-4 text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-xl sm:text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
               >
                 ✕
               </button>
 
               {/* Modal Content */}
-              <h2 className="text-xl font-bold text-center mb-6 tracking-wide">
+              <h2 className="text-lg sm:text-xl font-bold text-center mb-4 sm:mb-6 tracking-wide pr-8">
                 WOULD YOU LIKE TO CONTINUE?
               </h2>
               
-              <p className="text-center text-gray-600 mb-8 leading-relaxed">
+              <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 leading-relaxed">
                 YOU HAVE MADE CHANGES THAT HAVE NOT BEEN SAVED. WOULD YOU LIKE TO SAVE YOUR PICTURE WALL NOW?
               </p>
 
               {/* Modal Buttons */}
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => {
                     // Save option - keep current artworks and don't change layout
                     setShowLayoutChangeModal(false)
                     setPendingLayout(null)
                   }}
-                  className="bg-black text-white px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                  className="bg-black text-white px-6 sm:px-8 py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer"
                 >
                   SAVE
                 </button>
@@ -1618,7 +1855,7 @@ export default function LandingPage() {
                     setShowLayoutChangeModal(false)
                     setPendingLayout(null)
                   }}
-                  className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+                  className="bg-white text-black px-6 sm:px-8 py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
                 >
                   DON'T SAVE
                 </button>
@@ -1628,7 +1865,7 @@ export default function LandingPage() {
                     setShowLayoutChangeModal(false)
                     setPendingLayout(null)
                   }}
-                  className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+                  className="bg-white text-black px-6 sm:px-8 py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wider border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
                 >
                   CANCEL
                 </button>
@@ -1637,6 +1874,7 @@ export default function LandingPage() {
           </div>
         )}
       </div>
+      </>
     )
   }
 
@@ -1647,17 +1885,46 @@ export default function LandingPage() {
     const availableArtworks = activeFrame ? getArtworksForFrameSize(activeFrame.size) : []
 
     return (
-      <div className="h-screen bg-white flex overflow-hidden">
+      <>
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
+                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
+              </div>
+            </div>
+          </div>
+        )}
+      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
+        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
           {/* Logo - Fixed at top */}
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <p className="text-sm font-semibold tracking-wide">4. SELECT DESIGNS</p>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <p className="text-xs sm:text-sm font-semibold tracking-wide">4. SELECT DESIGNS</p>
             <button
               onClick={() => setCurrentStep("intro")}
               className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
@@ -1667,7 +1934,7 @@ export default function LandingPage() {
           </div>
 
           {/* Instructions or Artwork List */}
-          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-6 py-6">
+          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             {activeFrameIndex === null ? (
               /* Show instructions when no frame is selected */
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -1725,7 +1992,7 @@ export default function LandingPage() {
 
                 {/* Color Filter Panel - Flyout to the right of sidebar */}
                 {showFilter && (
-                  <div className="fixed left-80 top-[132px] h-[calc(100%-132px)] w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
+                  <div className="fixed left-0 lg:left-80 top-0 lg:top-[132px] h-full lg:h-[calc(100%-132px)] w-full lg:w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
                     {/* Header with Clear Filter and Search - aligned with ALL PRODUCTS / HIDE FILTER */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex items-center justify-end mb-4">
@@ -1792,7 +2059,7 @@ export default function LandingPage() {
                 ) : (
                   <div>
                     {/* 2-Column Grid */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {availableArtworks.slice(0, displayedArtworkCount).map((artwork) => (
                         <div
                           key={artwork.id}
@@ -1825,8 +2092,7 @@ export default function LandingPage() {
                           {/* Artwork Info */}
                           <div className="p-2 bg-white border border-t-0 border-gray-200">
                             <h3 className="text-xs font-bold text-black mb-1 line-clamp-1">{artwork.title}</h3>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600 line-clamp-1">{artwork.category}</span>
+                            <div className="flex items-center justify-center">
                               <span className="text-xs font-semibold text-black">£{artwork.price}</span>
                             </div>
                           </div>
@@ -1853,7 +2119,7 @@ export default function LandingPage() {
           </div>
 
           {/* Navigation Buttons - Fixed at bottom */}
-          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 space-y-3">
             <button 
               onClick={() => {
                 // Check if at least one artwork is selected
@@ -1864,7 +2130,7 @@ export default function LandingPage() {
                   setCurrentStep("checkout")
                 }
               }}
-              className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
             >
               NEXT
             </button>
@@ -1873,7 +2139,7 @@ export default function LandingPage() {
                 setActiveFrameIndex(null)
                 setCurrentStep("step3")
               }}
-              className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+              className="w-full bg-white text-black py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
             >
               PREVIOUS
             </button>
@@ -1883,33 +2149,33 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
+          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 💾 SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 ↗ SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+                ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-lg">🛍️</span>
+                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                <span className="text-base sm:text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
+              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">CHECKOUT</button>
             </div>
           </div>
 
           {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
@@ -1992,29 +2258,29 @@ export default function LandingPage() {
 
         {/* Validation Modal - No Artworks Selected */}
         {showEmptyArtworkModal && (
-          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
-            <div className="bg-white p-8 max-w-md w-full mx-4 relative shadow-2xl border border-gray-200 rounded-lg">
+          <div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 sm:p-8 max-w-md w-full relative shadow-2xl border border-gray-200 rounded-lg">
               {/* Modal Content */}
               <div className="text-center">
                 {/* Icon */}
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-                  <svg className="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mx-auto flex items-center justify-center h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-yellow-100 mb-4">
+                  <svg className="h-7 w-7 sm:h-8 sm:w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
 
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
                   No Designs Selected
                 </h2>
                 
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm sm:text-base text-gray-600 mb-5 sm:mb-6">
                   Please select at least one design for your gallery wall before proceeding to checkout.
                 </p>
 
                 {/* Button */}
                 <button
                   onClick={() => setShowEmptyArtworkModal(false)}
-                  className="w-full bg-black text-white px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer rounded"
+                  className="w-full bg-black text-white px-6 sm:px-8 py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer rounded"
                 >
                   OK, GOT IT
                 </button>
@@ -2023,6 +2289,7 @@ export default function LandingPage() {
           </div>
         )}
       </div>
+      </>
     )
   }
 
@@ -2294,7 +2561,7 @@ export default function LandingPage() {
                 <span className="text-lg">🛍️</span>
               </div>
               <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT £{calculateCartTotal()}
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
@@ -2367,16 +2634,45 @@ export default function LandingPage() {
     const currency = selectedArtworks[Object.keys(selectedArtworks)[0]]?.currency || '£'
 
     return (
-      <div className="flex h-screen bg-white">
+      <>
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
+                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-gray-700 leading-relaxed">
+                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
+                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
+                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
+              </div>
+            </div>
+          </div>
+        )}
+      <div className="flex flex-col lg:flex-row min-h-screen bg-white">
         {/* Left Sidebar - Summary */}
-        <div className="w-80 border-r border-gray-200 flex flex-col">
+        <div className="w-full lg:w-80 border-b lg:border-r border-gray-200 flex flex-col max-h-screen lg:h-screen">
           {/* Logo */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Completed Steps */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-8">
               {/* Step 1 - Background */}
               <button
@@ -2479,10 +2775,10 @@ export default function LandingPage() {
             </div>
             <button
               onClick={handleAddToCart}
-              className="w-full bg-black text-white py-4 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               ADD TO 
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </button>
@@ -2492,23 +2788,26 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
+          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 📋 SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
                 🔗 SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+              >
+                ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Cart Icon with Dropdown */}
               <div className="relative">
                 <button
@@ -2525,7 +2824,7 @@ export default function LandingPage() {
 
                 {/* Cart Dropdown */}
                 {showCart && (
-                  <div className="fixed top-20 right-0 w-[600px] bg-white border border-gray-200 shadow-2xl z-50 max-h-[600px] flex flex-col">
+                  <div className="fixed top-16 sm:top-20 right-0 w-full sm:w-[500px] md:w-[600px] bg-white border border-gray-200 shadow-2xl z-50 max-h-[400px] sm:max-h-[600px] flex flex-col">
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                       {/* Artwork Items */}
@@ -2543,6 +2842,9 @@ export default function LandingPage() {
                           {/* Details */}
                           <div className="flex-1 flex flex-col">
                             <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
+                            {artwork.frameSize && (
+                              <p className="text-xs text-gray-500 mb-1">{artwork.frameSize}</p>
+                            )}
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-red-600 font-bold text-base">£ {artwork.price}</span>
                             </div>
@@ -2676,7 +2978,7 @@ export default function LandingPage() {
                 onClick={handleCheckout}
                 className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
               >
-                CHECKOUT {currency}{totalPrice}
+                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
@@ -2730,7 +3032,11 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
+
+  // This should never render as all returns are handled above
+  return <div>Error: Invalid step</div>
 }
 
