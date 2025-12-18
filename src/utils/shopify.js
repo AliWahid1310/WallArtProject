@@ -2,90 +2,117 @@
 // Replace these with your actual Shopify store credentials
 
 const shopifyConfig = {
-  domain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || 'your-store.myshopify.com',
-  storefrontAccessToken: process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN || 'YOUR_STOREFRONT_ACCESS_TOKEN'
+  domain: import.meta.env.VITE_SHOPIFY_DOMAIN || 'your-store.myshopify.com',
+  storefrontAccessToken: import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN || 'YOUR_STOREFRONT_ACCESS_TOKEN'
 }
 
 /**
- * Fetch artwork products from Shopify Storefront API
+ * Fetch artwork products from Shopify Storefront API with pagination
  * @returns {Promise<Array>} Array of formatted artwork products
  */
 export async function fetchArtworkProducts() {
-  const query = `
-    {
-      products(first: 50, query: "tag:artwork OR tag:print") {
-        edges {
-          node {
-            id
-            title
-            handle
-            description
-            tags
-            priceRange {
-              minVariantPrice {
-                amount
-                currencyCode
-              }
+  let allProducts = []
+  let hasNextPage = true
+  let cursor = null
+  
+  try {
+    while (hasNextPage && allProducts.length < 2000) {
+      const query = `
+        {
+          products(first: 250${cursor ? `, after: "${cursor}"` : ''}) {
+            pageInfo {
+              hasNextPage
+              endCursor
             }
-            images(first: 1) {
-              edges {
-                node {
-                  url
-                  altText
-                }
-              }
-            }
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  title
-                  availableForSale
-                  priceV2 {
+            edges {
+              cursor
+              node {
+                id
+                title
+                handle
+                description
+                tags
+                priceRange {
+                  minVariantPrice {
                     amount
                     currencyCode
                   }
                 }
+                featuredImage {
+                  url
+                  altText
+                }
+                images(first: 1) {
+                  edges {
+                    node {
+                      url
+                      altText
+                    }
+                  }
+                }
+                variants(first: 10) {
+                  edges {
+                    node {
+                      id
+                      title
+                      availableForSale
+                      priceV2 {
+                        amount
+                        currencyCode
+                      }
+                    }
+                  }
+                }
+                metafields(identifiers: [
+                  { namespace: "custom", key: "frame_sizes" },
+                  { namespace: "custom", key: "category" }
+                ]) {
+                  key
+                  value
+                }
               }
-            }
-            metafields(identifiers: [
-              { namespace: "custom", key: "frame_sizes" },
-              { namespace: "custom", key: "category" }
-            ]) {
-              key
-              value
             }
           }
         }
+      `
+
+      const response = await fetch(
+        `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': shopifyConfig.storefrontAccessToken
+          },
+          body: JSON.stringify({ query })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`Shopify API error: ${response.status}`)
       }
-    }
-  `
 
-  try {
-    const response = await fetch(
-      `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': shopifyConfig.storefrontAccessToken
-        },
-        body: JSON.stringify({ query })
+      const data = await response.json()
+      
+      if (data.errors) {
+        console.error('GraphQL errors:', data.errors)
+        throw new Error('Failed to fetch products from Shopify')
       }
-    )
 
-    if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.status}`)
+      const products = data.data.products.edges
+      allProducts = allProducts.concat(products)
+      
+      hasNextPage = data.data.products.pageInfo.hasNextPage
+      cursor = data.data.products.pageInfo.endCursor
+      
+      console.log(`Fetched ${allProducts.length} products so far...`)
     }
-
-    const data = await response.json()
     
-    if (data.errors) {
-      console.error('GraphQL errors:', data.errors)
-      throw new Error('Failed to fetch products from Shopify')
-    }
-
-    return transformShopifyProducts(data.data.products.edges)
+    console.log(`Total products fetched: ${allProducts.length}`)
+    const transformedProducts = transformShopifyProducts(allProducts)
+    console.log('Transformed products:', transformedProducts)
+    
+    return transformedProducts
   } catch (error) {
     console.error('Error fetching Shopify products:', error)
     throw error
@@ -124,12 +151,16 @@ function transformShopifyProducts(shopifyProducts) {
       if (categoryTag) category = categoryTag
     }
     
+    // Get image - try featuredImage first, then fall back to images array
+    const imageUrl = node.featuredImage?.url || node.images.edges[0]?.node.url || ''
+    
     return {
       id: node.id,
       title: node.title,
       category: category,
       sizes: sizes,
-      image: node.images.edges[0]?.node.url || '',
+      tags: node.tags || [], // Include tags for filtering
+      image: imageUrl,
       price: parseFloat(node.priceRange.minVariantPrice.amount).toFixed(2),
       currency: node.priceRange.minVariantPrice.currencyCode,
       shopifyProductId: node.id,
@@ -204,29 +235,35 @@ export async function fetchProductByHandle(handle) {
 }
 
 /**
- * Create a checkout with selected items
+ * Create a cart and get checkout URL (using new Cart API)
  * @param {Array} lineItems - Array of {variantId, quantity}
- * @returns {Promise<Object>} Checkout object with webUrl
+ * @returns {Promise<Object>} Cart object with checkoutUrl
  */
 export async function createCheckout(lineItems) {
   const mutation = `
-    mutation checkoutCreate($input: CheckoutCreateInput!) {
-      checkoutCreate(input: $input) {
-        checkout {
+    mutation cartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
+        cart {
           id
-          webUrl
-          lineItems(first: 5) {
+          checkoutUrl
+          lines(first: 10) {
             edges {
               node {
-                title
+                id
                 quantity
+                merchandise {
+                  ... on ProductVariant {
+                    id
+                    title
+                  }
+                }
               }
             }
           }
         }
-        checkoutUserErrors {
-          message
+        userErrors {
           field
+          message
         }
       }
     }
@@ -234,14 +271,17 @@ export async function createCheckout(lineItems) {
 
   const variables = {
     input: {
-      lineItems: lineItems.map(item => ({
-        variantId: item.variantId,
+      lines: lineItems.map(item => ({
+        merchandiseId: item.variantId,
         quantity: item.quantity
       }))
     }
   }
 
   try {
+    console.log('Creating checkout with config:', shopifyConfig)
+    console.log('Line items:', lineItems)
+    
     const response = await fetch(
       `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
       {
@@ -254,16 +294,117 @@ export async function createCheckout(lineItems) {
       }
     )
 
-    const data = await response.json()
-    
-    if (data.data.checkoutCreate.checkoutUserErrors.length > 0) {
-      throw new Error(data.data.checkoutCreate.checkoutUserErrors[0].message)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('HTTP error response:', errorText)
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
     }
 
-    return data.data.checkoutCreate.checkout
+    const data = await response.json()
+    console.log('Full Checkout API response:', JSON.stringify(data, null, 2))
+    
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors)
+      throw new Error(`GraphQL Error: ${data.errors[0].message}`)
+    }
+    
+    if (!data.data) {
+      console.error('No data in response:', data)
+      throw new Error('Invalid response from Shopify API - no data field')
+    }
+    
+    if (!data.data.cartCreate) {
+      console.error('No cartCreate in response:', data)
+      throw new Error('Invalid response from Shopify API - no cartCreate field')
+    }
+    
+    if (data.data.cartCreate.userErrors && data.data.cartCreate.userErrors.length > 0) {
+      console.error('Cart user errors:', data.data.cartCreate.userErrors)
+      throw new Error(`Cart Error: ${data.data.cartCreate.userErrors[0].message}`)
+    }
+
+    if (!data.data.cartCreate.cart) {
+      console.error('No cart object in response:', data.data.cartCreate)
+      throw new Error('Cart creation failed - no cart object returned')
+    }
+
+    // Return cart with checkoutUrl (matches the old checkout.webUrl structure)
+    return {
+      ...data.data.cartCreate.cart,
+      webUrl: data.data.cartCreate.cart.checkoutUrl
+    }
   } catch (error) {
     console.error('Error creating checkout:', error)
     throw error
+  }
+}
+
+/**
+ * Fetch frame products from Shopify
+ * @returns {Promise<Array>} Array of frame products with variants
+ */
+export async function fetchFrameProducts() {
+  const query = `
+    {
+      products(first: 10, query: "tag:frame") {
+        edges {
+          node {
+            id
+            title
+            handle
+            variants(first: 20) {
+              edges {
+                node {
+                  id
+                  title
+                  priceV2 {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `
+
+  try {
+    const response = await fetch(
+      `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': shopifyConfig.storefrontAccessToken
+        },
+        body: JSON.stringify({ query })
+      }
+    )
+
+    const data = await response.json()
+    
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors)
+      return []
+    }
+
+    return data.data.products.edges.map(({ node }) => ({
+      id: node.id,
+      title: node.title,
+      handle: node.handle,
+      variants: node.variants.edges.map(v => ({
+        id: v.node.id,
+        title: v.node.title,
+        price: parseFloat(v.node.priceV2.amount).toFixed(2),
+        available: v.node.availableForSale
+      }))
+    }))
+  } catch (error) {
+    console.error('Error fetching frame products:', error)
+    return []
   }
 }
 

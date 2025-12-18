@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 
 export default function LandingPage() {
   const [currentStep, setCurrentStep] = useState("intro")
@@ -11,89 +12,235 @@ export default function LandingPage() {
   const [expandedSection, setExpandedSection] = useState(null)
   const [selectedArtworks, setSelectedArtworks] = useState({}) // frameIndex: artworkObject
   const [activeFrameIndex, setActiveFrameIndex] = useState(null) // which frame is being edited
+  const [artworkProducts, setArtworkProducts] = useState([])
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true)
+  const [showFilter, setShowFilter] = useState(false)
+  const [selectedColorFilter, setSelectedColorFilter] = useState(null)
+  const [selectedFrames, setSelectedFrames] = useState({}) // frameIndex: frameStyleObject
+  const [activeFrameForStyle, setActiveFrameForStyle] = useState(null) // which artwork is being styled (null = "All")
+  const [showCart, setShowCart] = useState(false)
+  const [cartItems, setCartItems] = useState({ artworks: {}, frames: {} }) // Items added to cart
+  const [quantities, setQuantities] = useState({ artworks: {}, frames: {} }) // Quantities for each item
+  const [displayedArtworkCount, setDisplayedArtworkCount] = useState(20) // Number of artworks to display
+  const [isLoadingMore, setIsLoadingMore] = useState(false) // Loading more artworks
+  const artworkScrollRef = useRef(null) // Ref for artwork scroll container
 
-  // Shopify Products - This will be replaced with actual Shopify API data
-  // Structure matches Shopify product response for easy integration
-  const artworkProducts = [
-    {
-      id: "artwork-1",
-      title: "Abstract Mountains",
-      category: "Abstract",
-      sizes: ["30x40", "50x70", "70x100"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_1",
-      price: "29.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_1" // For Shopify integration
-    },
-    {
-      id: "artwork-2",
-      title: "Botanical Leaves",
-      category: "Botanical",
-      sizes: ["30x40", "50x70", "21x30"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_2",
-      price: "24.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_2"
-    },
-    {
-      id: "artwork-3",
-      title: "Minimalist Line Art",
-      category: "Line Art",
-      sizes: ["50x70", "70x100"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_3",
-      price: "34.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_3"
-    },
-    {
-      id: "artwork-4",
-      title: "Geometric Shapes",
-      category: "Geometric",
-      sizes: ["30x40", "50x70", "70x100"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_4",
-      price: "27.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_4"
-    },
-    {
-      id: "artwork-5",
-      title: "Vintage Typography",
-      category: "Typography",
-      sizes: ["21x30", "30x40", "50x70"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_5",
-      price: "22.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_5"
-    },
-    {
-      id: "artwork-6",
-      title: "Ocean Waves",
-      category: "Nature",
-      sizes: ["50x70", "70x100"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_6",
-      price: "31.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_6"
-    },
-    {
-      id: "artwork-7",
-      title: "City Skyline",
-      category: "Urban",
-      sizes: ["30x40", "50x70", "70x100"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_7",
-      price: "29.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_7"
-    },
-    {
-      id: "artwork-8",
-      title: "Floral Bouquet",
-      category: "Botanical",
-      sizes: ["30x40", "50x70"],
-      image: "PLACEHOLDER_ARTWORK_IMAGE_8",
-      price: "26.99",
-      shopifyProductId: "SHOPIFY_PRODUCT_ID_8"
+  // Fetch artwork products from Shopify on mount
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setIsLoadingProducts(true)
+        const products = await fetchArtworkProducts()
+        setArtworkProducts(products)
+      } catch (error) {
+        console.error('Failed to fetch artwork products:', error)
+        // Keep empty array on error
+      } finally {
+        setIsLoadingProducts(false)
+      }
     }
+
+    loadProducts()
+  }, [])
+
+  // Reset displayed count when active frame or filter changes
+  useEffect(() => {
+    setDisplayedArtworkCount(20)
+  }, [activeFrameIndex, selectedColorFilter])
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    if (!artworkScrollRef.current || isLoadingMore) return
+
+    const container = artworkScrollRef.current
+    const scrollTop = container.scrollTop
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+
+    // Load more when user scrolls to 80% of the content
+    if (scrollTop + clientHeight >= scrollHeight * 0.8) {
+      const availableArtworks = activeFrameIndex !== null ? getArtworksForFrameSize(selectedLayout?.frames[activeFrameIndex]?.size) : []
+      
+      if (displayedArtworkCount < availableArtworks.length) {
+        setIsLoadingMore(true)
+        setTimeout(() => {
+          setDisplayedArtworkCount(prev => Math.min(prev + 20, availableArtworks.length))
+          setIsLoadingMore(false)
+        }, 500)
+      }
+    }
+  }, [isLoadingMore, displayedArtworkCount, activeFrameIndex, selectedLayout])
+
+  // Add scroll listener
+  useEffect(() => {
+    const container = artworkScrollRef.current
+    if (!container) return
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
+
+  // Function to filter artworks by frame size and color
+  const getArtworksForFrameSize = (frameSize) => {
+    // Start with all products (show all products regardless of size)
+    let filtered = [...artworkProducts]
+
+    // Apply color filter if selected
+    if (selectedColorFilter) {
+      filtered = filtered.filter(artwork => {
+        // Search in existing tags (case-insensitive)
+        const hasColorTag = artwork.tags?.some(tag => 
+          tag.toLowerCase().includes(selectedColorFilter.toLowerCase())
+        )
+        
+        // Also search in category and title as fallback
+        const searchText = `${artwork.category} ${artwork.title}`.toLowerCase()
+        const hasColorInText = searchText.includes(selectedColorFilter.toLowerCase())
+        
+        return hasColorTag || hasColorInText
+      })
+    }
+
+    return filtered
+  }
+
+  // Color options for filter
+  const colorOptions = [
+    { name: 'Multi', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', value: 'multi' },
+    { name: 'Red', color: '#DC2626', value: 'red' },
+    { name: 'Orange', color: '#F97316', value: 'orange' },
+    { name: 'Blue', color: '#2563EB', value: 'blue' },
+    { name: 'Green', color: '#16A34A', value: 'green' },
+    { name: 'Brown', color: '#92400E', value: 'brown' },
+    { name: 'Yellow', color: '#EAB308', value: 'yellow' },
+    { name: 'Beige', color: '#D4B896', value: 'beige' },
+    { name: 'Grey', color: '#6B7280', value: 'grey' },
+    { name: 'Black', color: '#000000', value: 'black' },
+    { name: 'White', color: '#FFFFFF', value: 'white' },
+    { name: 'Black and White', color: 'linear-gradient(90deg, #000 50%, #FFF 50%)', value: 'black and white' },
+    { name: 'Silver', color: '#C0C0C0', value: 'silver' },
+    { name: 'Gold', color: '#FFD700', value: 'gold' },
+    { name: 'Copper', color: '#B87333', value: 'copper' },
+    { name: 'Purple', color: '#9333EA', value: 'purple' },
+    { name: 'Pink', color: '#EC4899', value: 'pink' },
+    { name: 'Turquoise', color: '#14B8A6', value: 'turquoise' }
   ]
 
-  // Function to filter artworks by frame size
-  const getArtworksForFrameSize = (frameSize) => {
-    return artworkProducts.filter(artwork => 
-      artwork.sizes.includes(frameSize.toUpperCase())
-    )
+  // Frame style options
+  const frameStyles = [
+    { id: 'black', name: 'Black', color: '#000000', borderWidth: '8px', price: 15.00 },
+    { id: 'white', name: 'White', color: '#FFFFFF', borderWidth: '8px', borderColor: '#E5E5E5', price: 15.00 },
+    { id: 'oak', name: 'Oak', color: '#D4A574', borderWidth: '8px', price: 18.00 },
+    { id: 'walnut', name: 'Walnut', color: '#5C4033', borderWidth: '8px', price: 18.00 },
+    { id: 'silver', name: 'Silver', color: '#C0C0C0', borderWidth: '8px', price: 20.00 },
+    { id: 'gold', name: 'Gold', color: '#D4AF37', borderWidth: '8px', price: 20.00 }
+  ]
+
+  // Calculate total price
+  const calculateTotalPrice = () => {
+    let total = 0
+    
+    // Add artwork prices with quantities
+    Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
+      const quantity = quantities.artworks[frameIdx] || 1
+      total += (parseFloat(artwork.price) || 0) * quantity
+    })
+    
+    // Add frame prices with quantities
+    Object.entries(selectedFrames).forEach(([frameIdx, frame]) => {
+      const quantity = quantities.frames[frameIdx] || 1
+      total += (parseFloat(frame.price) || 0) * quantity
+    })
+    
+    return total.toFixed(2)
+  }
+
+  // Handle quantity change
+  const handleQuantityChange = (type, frameIdx, newQuantity) => {
+    setQuantities(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [frameIdx]: parseInt(newQuantity)
+      }
+    }))
+  }
+
+  // Handle Add to Cart
+  const handleAddToCart = () => {
+    setCartItems({
+      artworks: { ...selectedArtworks },
+      frames: { ...selectedFrames }
+    })
+    setShowCart(true)
+  }
+
+  // Calculate cart total price
+  const calculateCartTotal = () => {
+    let total = 0
+    
+    // Add artwork prices from cart
+    Object.values(cartItems.artworks).forEach(artwork => {
+      total += parseFloat(artwork.price) || 0
+    })
+    
+    // Add frame prices from cart
+    Object.values(cartItems.frames).forEach(frame => {
+      total += parseFloat(frame.price) || 0
+    })
+    
+    return total.toFixed(2)
+  }
+
+  // Handle Checkout - Redirect to Shopify Checkout
+  const handleCheckout = async () => {
+    try {
+      // Prepare line items from cart
+      const lineItems = []
+      
+      // Add artworks to line items
+      Object.values(cartItems.artworks).forEach(artwork => {
+        console.log('Processing artwork for checkout:', artwork)
+        // Use the first available variant ID from the artwork
+        const variantId = artwork.variants?.[0]?.id || artwork.shopifyProductId
+        console.log('Variant ID:', variantId)
+        if (variantId) {
+          lineItems.push({
+            variantId: variantId,
+            quantity: 1
+          })
+        }
+      })
+      
+      console.log('Line items prepared:', lineItems)
+      
+      // Note: Frames need to be actual Shopify products to be added to checkout
+      // If frames are separate products in your Shopify store, you need to:
+      // 1. Fetch frame products and match them by name/style
+      // 2. Add frame variant IDs to the lineItems array
+      // For now, frames are handled as custom data and won't be in Shopify checkout
+      // You'll need to create frame products in Shopify with variants for each style
+      
+      if (lineItems.length === 0) {
+        alert('Please add items to cart before checkout')
+        return
+      }
+      
+      // Create checkout in Shopify
+      console.log('Creating checkout with line items:', lineItems)
+      const checkout = await createCheckout(lineItems)
+      console.log('Checkout response:', checkout)
+      
+      // Redirect to Shopify checkout page
+      if (checkout?.webUrl) {
+        window.location.href = checkout.webUrl
+      } else {
+        throw new Error('Could not get checkout URL')
+      }
+    } catch (error) {
+      console.error('Checkout error details:', error)
+      alert(`Failed to create checkout: ${error.message}`)
+    }
   }
 
   // Room/Place Categories
@@ -143,8 +290,8 @@ export default function LandingPage() {
       name: "Two 50x70",
       image: "https://gwt.desenio.co.uk/walls/2-50x70.png",
       frames: [
-        { width: "200px", height: "280px", size: "50X70", top: "20%", left: "36%" },
-         { width: "200px", height: "280px", size: "50X70", top: "20%", right: "36%" }
+        { width: "14%", height: "35%", size: "50X70", top: "20%", left: "36%" },
+         { width: "14%", height: "35%", size: "50X70", top: "20%", right: "36%" }
       ]
     },
     {
@@ -152,8 +299,8 @@ export default function LandingPage() {
       name: "Two 70x100",
       image: "https://gwt.desenio.co.uk/walls/2-70x100.png",
       frames: [
-        { width: "175px", height: "250px", size: "70x100", top: "20%", left: "36%" },
-        { width: "175px", height: "250px", size: "70x100", top: "20%", right: "36%" }
+        { width: "12%", height: "31%", size: "70x100", top: "20%", left: "36%" },
+        { width: "12%", height: "31%", size: "70x100", top: "20%", right: "36%" }
       ]
     },
     {
@@ -161,9 +308,9 @@ export default function LandingPage() {
       name: "Three 50x70",
       image: "https://gwt.desenio.co.uk/walls/3-50x70.png",
       frames: [
-        { width: "180px", height: "252px", size: "50x70", top: "25%", left: "30%" },
-        { width: "180px", height: "252px", size: "50x70", top: "25%", left: "50%", transform: "translateX(-50%)" },
-        { width: "180px", height: "252px", size: "50x70", top: "25%", right: "30%" }
+        { width: "13%", height: "31.5%", size: "50x70", top: "25%", left: "30%" },
+        { width: "13%", height: "31.5%", size: "50x70", top: "25%", left: "50%", transform: "translateX(-50%)" },
+        { width: "13%", height: "31.5%", size: "50x70", top: "25%", right: "30%" }
       ]
     },
     {
@@ -171,9 +318,9 @@ export default function LandingPage() {
       name: "Center 70x100 + Sides",
       image: "https://gwt.desenio.co.uk/walls/3-mixed.png",
       frames: [
-        { width: "150px", height: "210px", size: "50x75", top: "25%", left: "33%" },
-        { width: "200px", height: "285px", size: "70x100", top: "20%", left: "50%", transform: "translateX(-50%)" },
-        { width: "150px", height: "210px", size: "50x75", top: "25%", right: "33%", }
+        { width: "10.5%", height: "26.25%", size: "50x75", top: "25%", left: "33%" },
+        { width: "14%", height: "35.625%", size: "70x100", top: "20%", left: "50%", transform: "translateX(-50%)" },
+        { width: "10.5%", height: "26.25%", size: "50x75", top: "25%", right: "33%", }
       ]
     },
     {
@@ -181,10 +328,10 @@ export default function LandingPage() {
       name: "Four 30x40 Grid",
       image: "https://gwt.desenio.co.uk/walls/4-30x40.png",
       frames: [
-        { width: "150px", height: "200px", size: "30x40", top: "15%", left: "40%" },
-        { width: "150px", height: "200px", size: "30x40", top: "15%", right: "40%" },
-        { width: "150px", height: "200px", size: "30x40", bottom: "30%", left: "40%" },
-        { width: "150px", height: "200px", size: "30x40", bottom: "30%", right: "40%" }
+        { width: "10.5%", height: "25%", size: "30x40", top: "15%", left: "40%" },
+        { width: "10.5%", height: "25%", size: "30x40", top: "15%", right: "40%" },
+        { width: "10.5%", height: "25%", size: "30x40", bottom: "30%", left: "40%" },
+        { width: "10.5%", height: "25%", size: "30x40", bottom: "30%", right: "40%" }
       ]
     },
     {
@@ -192,10 +339,10 @@ export default function LandingPage() {
       name: "Four Row Mix",
       image: "https://gwt.desenio.co.uk/walls/4-mixed.png",
       frames: [
-        { width: "120px", height: "160px", size: "30x40", top: "26%", left: "31%" },
-        { width: "150px", height: "210px", size: "50x75", top: "23%", left: "40%" },
-        { width: "150px", height: "210px", size: "50x75", top: "23%", right: "40%" },
-        { width: "120px", height: "160px", size: "30x40", top: "26%", right: "31%" }
+        { width: "8.4%", height: "20%", size: "30x40", top: "26%", left: "31%" },
+        { width: "10.5%", height: "26.25%", size: "50x75", top: "23%", left: "40%" },
+        { width: "10.5%", height: "26.25%", size: "50x75", top: "23%", right: "40%" },
+        { width: "8.4%", height: "20%", size: "30x40", top: "26%", right: "31%" }
       ]
     },
     {
@@ -205,8 +352,8 @@ export default function LandingPage() {
       frames: [
        // TOP LEFT — 50x70 (HORIZONTAL)
   {
-    width: "220px",
-    height: "160px",
+    width: "15.4%",
+    height: "12%",
     size: "50x70",
     top: "8%",
     left: "35%"
@@ -214,8 +361,8 @@ export default function LandingPage() {
 
   // RIGHT — 70x100 (VERTICAL)
   {
-    width: "240px",
-    height: "340px",
+    width: "16.8%",
+    height: "42.5%",
     size: "70x100",
     top: "12%",
     left: "50%"
@@ -223,8 +370,8 @@ export default function LandingPage() {
 
   // BOTTOM LEFT — 30x40 (VERTICAL)
   {
-    width: "120px",
-    height: "160px",
+    width: "8.4%",
+    height: "20%",
     size: "30x40",
     top: "30%",
     left: "30%"
@@ -232,8 +379,8 @@ export default function LandingPage() {
 
   // BOTTOM CENTER — 50x70 (VERTICAL)
   {
-    width: "160px",
-    height: "225px",
+    width: "11.2%",
+    height: "28.125%",
     size: "50x70",
     top: "30%",
     left: "38.7%"
@@ -247,8 +394,8 @@ export default function LandingPage() {
       frames: [
         // LEFT — 50x70 (vertical big)
   {
-    width: "180px",
-    height: "252px",
+    width: "12.6%",
+    height: "31.5%",
     size: "50x70",
     top: "12%",
     left: "37%"
@@ -256,8 +403,8 @@ export default function LandingPage() {
 
   // RIGHT — 50x50 (square, top right)
   {
-    width: "160px",
-    height: "160px",
+    width: "11.2%",
+    height: "20%",
     size: "50x50",
     top: "12%",
     left: "49%"
@@ -265,8 +412,8 @@ export default function LandingPage() {
 
   // RIGHT — 30x40 (vertical, below the square)
   {
-    width: "120px",
-    height: "160px",
+    width: "8.4%",
+    height: "20%",
     size: "30x40",
     top: "34%",
     left: "49%"
@@ -274,8 +421,8 @@ export default function LandingPage() {
 
   // RIGHT — 13x18 (small vertical, to the right of 30x40)
   {
-    width: "80px",
-    height: "112px",
+    width: "5.6%",
+    height: "14%",
     size: "13x18",
     top: "34%",
     left: "57%"
@@ -289,17 +436,17 @@ export default function LandingPage() {
       frames: [
         // LEFT — small 21x30 (slightly left of the two 30x40s)
   {
-    width: "90px",            // 21x30 scaled
-    height: "126px",
+    width: "6.3%",
+    height: "15.75%",
     size: "21x30",
-    top: "25%",              // vertically between the two 30x40 elements
+    top: "25%",
     left: "27.2%"
   },
 
   // LEFT TOP — 30x40 (top of the left stack)
   {
-    width: "120px",
-    height: "160px",
+    width: "8.4%",
+    height: "20%",
     size: "30x40",
     top: "11%",
     left: "33.5%"
@@ -307,8 +454,8 @@ export default function LandingPage() {
 
   // LEFT BOTTOM — 30x40 (below the first 30x40)
   {
-    width: "120px",
-    height: "160px",
+    width: "8.4%",
+    height: "20%",
     size: "30x40",
     top: "33%",
     left: "33.5%"
@@ -316,8 +463,8 @@ export default function LandingPage() {
 
   // CENTER — 70x100 (big center piece)
   {
-    width: "260px",
-    height: "370px",
+    width: "18.2%",
+    height: "46.25%",
     size: "70x100",
     top: "8%",
     left: "50%",
@@ -326,8 +473,8 @@ export default function LandingPage() {
 
   // RIGHT — 50x70 (single piece on the right)
   {
-    width: "180px",
-    height: "252px",
+    width: "12.6%",
+    height: "31.5%",
     size: "50x70",
     top: "16%",
     right: "29.8%"
@@ -341,8 +488,8 @@ export default function LandingPage() {
       frames: [
      // LEFT — 40x50 (top left)
 {
-  width: "140px",
-  height: "175px",
+  width: "9.8%",
+  height: "21.875%",
   size: "40x50",
   top: "8%",
   left: "31.5%"
@@ -350,8 +497,8 @@ export default function LandingPage() {
 
 // LEFT — 50x70 (under the 40x50)
 {
-  width: "160px",
-  height: "225px",
+  width: "11.2%",
+  height: "28.125%",
   size: "50x70",
   top: "32%",
   left: "30.22%"
@@ -359,8 +506,8 @@ export default function LandingPage() {
 
 // CENTER — 70x100 (big)
 {
-  width: "280px",
-  height: "360px",
+  width: "19.6%",
+  height: "45%",
   size: "70x100",
   top: "6%",
   left: "50%",
@@ -369,8 +516,8 @@ export default function LandingPage() {
 
 // RIGHT TOP — 50x70 (top right)
 {
-  width: "180px",
-  height: "252px",
+  width: "12.6%",
+  height: "31.5%",
   size: "50x70",
   top: "6%",
   right: "29%"
@@ -378,8 +525,8 @@ export default function LandingPage() {
 
 // RIGHT MID — 40x50
 {
-  width: "140px",
-  height: "175px",
+  width: "9.8%",
+  height: "21.875%",
   size: "40x50",
   top: "39.5%",
   right: "31.5%"
@@ -387,8 +534,8 @@ export default function LandingPage() {
 
 // RIGHT MID — 30x40 **horizontal**
 {
-  width: "160px",
-  height: "120px",
+  width: "11.2%",
+  height: "15%",
   size: "30x40",
   top: "39.5%",
   right: "21%"
@@ -396,8 +543,8 @@ export default function LandingPage() {
 
 // BOTTOM LEFT OF CENTER — 30x40 **horizontal**
 {
-  width: "180px",
-  height: "120px",
+  width: "12.6%",
+  height: "15%",
   size: "30x40",
   top: "54%",
   left: "42%"
@@ -405,8 +552,8 @@ export default function LandingPage() {
 
 // BOTTOM CENTER — 21x30 **horizontal**
 {
-  width: "75px",
-  height: "120px",
+  width: "5.25%",
+  height: "15%",
   size: "21x30",
   top: "54%",
   left: "56%",
@@ -551,16 +698,6 @@ export default function LandingPage() {
               <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">4</p>
               <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">SELECT DESIGN</p>
             </div>
-
-            {/* Step 5 - Frame */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-3 group">
-              {/* Empty tall rectangle icon */}
-              <div className="flex justify-center mb-4">
-                <div className="w-6 h-9 border-2 border-black group-hover:border-gray-400 transition-colors"></div>
-              </div>
-              <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">5</p>
-              <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">FRAME YOUR DESIGNS</p>
-            </div>
           </div>
 
           {/* Bottom Section */}
@@ -597,11 +734,110 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">0</span>
-                <span className="text-lg">🛍️</span>
+              {/* Cart Icon with Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowCart(!showCart)}
+                  className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                  <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                  </span>
+                </button>
+
+                {/* Cart Dropdown - shown when items exist */}
+                {showCart && (Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) && (
+                  <div className="absolute top-full right-0 mt-2 w-96 bg-white border border-gray-200 shadow-2xl z-50 max-h-[600px] flex flex-col">
+                    {/* Cart Items */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {/* Artwork Items */}
+                      {Object.entries(selectedArtworks).map(([frameIdx, artwork]) => (
+                        <div key={`artwork-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
+                          <div className="w-20 h-28 flex-shrink-0 border border-gray-200">
+                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-red-600 font-bold text-base">£ {artwork.price}</span>
+                            </div>
+                            <select 
+                              value={quantities.artworks[frameIdx] || 1}
+                              onChange={(e) => handleQuantityChange('artworks', frameIdx, e.target.value)}
+                              className="w-16 px-2 py-1 border border-gray-300 text-sm text-center cursor-pointer"
+                            >
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                              <option value="3">3</option>
+                              <option value="4">4</option>
+                              <option value="5">5</option>
+                              <option value="6">6</option>
+                              <option value="7">7</option>
+                              <option value="8">8</option>
+                              <option value="9">9</option>
+                              <option value="10">10</option>
+                            </select>
+                          </div>
+                          <button onClick={() => { const newArtworks = { ...selectedArtworks }; delete newArtworks[frameIdx]; setSelectedArtworks(newArtworks); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                      {/* Frame Items */}
+                      {Object.entries(selectedFrames).map(([frameIdx, frame]) => {
+                        const artwork = selectedArtworks[frameIdx];
+                        if (!artwork) return null;
+                        return (
+                          <div key={`frame-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
+                            <div className="w-20 h-28 flex-shrink-0" style={{ padding: '3px', backgroundColor: frame.color, border: frame.borderColor ? `1px solid ${frame.borderColor}` : 'none' }}>
+                              <div className="w-full h-full bg-white"><img src={artwork.image} alt={`${frame.name} frame`} className="w-full h-full object-cover" /></div>
+                            </div>
+                            <div className="flex-1 flex flex-col">
+                              <h3 className="font-medium text-sm mb-1">{frame.name} picture frame</h3>
+                              <div className="flex items-center gap-2 mb-2"><span className="text-red-600 font-bold text-base">£ {frame.price.toFixed(2)}</span></div>
+                              <select 
+                                value={quantities.frames[frameIdx] || 1}
+                                onChange={(e) => handleQuantityChange('frames', frameIdx, e.target.value)}
+                                className="w-16 px-2 py-1 border border-gray-300 text-sm text-center cursor-pointer"
+                              >
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                              </select>
+                            </div>
+                            <button onClick={() => { const newFrames = { ...selectedFrames }; delete newFrames[frameIdx]; setSelectedFrames(newFrames); }} className="text-gray-400 hover:text-black transition-colors cursor-pointer">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Total and Checkout */}
+                    <div className="border-t border-gray-200 p-4 bg-gray-50">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-lg font-bold">TOTAL AMOUNT</span>
+                        <span className="text-lg font-bold">£{calculateTotalPrice()}</span>
+                      </div>
+                      <button className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105">
+              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
                 CHECKOUT £0
               </button>
             </div>
@@ -1056,15 +1292,16 @@ export default function LandingPage() {
 
           {/* Main Canvas with Background and Frames */}
           <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500"
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            {/* Frame Placeholders - Only show when layout is selected */}
-            {selectedLayout && selectedLayout.frames.map((frame, idx) => (
+            <div className="absolute inset-0">
+              {/* Frame Placeholders - Only show when layout is selected */}
+              {selectedLayout && selectedLayout.frames.map((frame, idx) => (
               <div
                 key={idx}
                 className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
@@ -1083,6 +1320,7 @@ export default function LandingPage() {
                 </span>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1116,7 +1354,7 @@ export default function LandingPage() {
           </div>
 
           {/* Instructions or Artwork List */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-6 py-6">
             {activeFrameIndex === null ? (
               /* Show instructions when no frame is selected */
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -1134,58 +1372,142 @@ export default function LandingPage() {
               </div>
             ) : (
               /* Show artwork options for selected frame */
-              <div>
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-600 mb-1">Selecting design for:</p>
-                  <p className="text-lg font-bold text-black">Frame {activeFrameIndex + 1}</p>
-                  <p className="text-sm text-gray-600">Size: {activeFrame.size}</p>
+              <div className="relative">
+                {/* Filter Bar */}
+                <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-4">
+                  <button 
+                    onClick={() => setSelectedColorFilter(null)}
+                    className="text-sm font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer"
+                  >
+                    ALL PRODUCTS
+                  </button>
+                  <button 
+                    onClick={() => setShowFilter(!showFilter)}
+                    className="flex items-center gap-2 text-sm font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer"
+                  >
+                    {showFilter ? 'HIDE FILTER ✕' : 'SHOW FILTER'}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+
+                {/* Color Filter Panel - Flyout to the right of sidebar */}
+                {showFilter && (
+                  <div className="fixed left-80 top-[132px] h-[calc(100%-132px)] w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
+                    {/* Header with Clear Filter and Search - aligned with ALL PRODUCTS / HIDE FILTER */}
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex items-center justify-end mb-4">
+                        <button 
+                          onClick={() => setSelectedColorFilter(null)}
+                          className="text-xs font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer border border-gray-300 px-3 py-1.5"
+                        >
+                          CLEAR FILTER
+                        </button>
+                      </div>
+
+                      {/* Search Box */}
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="Search..."
+                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:border-black"
+                        />
+                        <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Color Section */}
+                    <div className="p-6">
+                      <h3 className="text-sm font-bold text-black mb-4">Color</h3>
+                      
+                      {/* Color Grid */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {colorOptions.map((color) => (
+                          <button
+                            key={color.value}
+                            onClick={() => setSelectedColorFilter(color.value)}
+                            className={`flex flex-col items-center gap-1.5 px-2 py-2.5 border-2 transition-all cursor-pointer ${
+                              selectedColorFilter === color.value
+                                ? 'border-black bg-gray-50'
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          >
+                            <div 
+                              className="w-7 h-7 border border-gray-300"
+                              style={{ background: color.color }}
+                            />
+                            <span className="text-xs font-medium text-center leading-tight">{color.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {availableArtworks.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">No artworks available for this size</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {availableArtworks.map((artwork) => (
-                      <div
-                        key={artwork.id}
-                        onClick={() => {
-                          setSelectedArtworks({
-                            ...selectedArtworks,
-                            [activeFrameIndex]: artwork
-                          })
-                        }}
-                        className={`relative cursor-pointer transition-all duration-200 group ${
-                          selectedArtworks[activeFrameIndex]?.id === artwork.id
-                            ? 'ring-2 ring-black ring-offset-2'
-                            : 'hover:shadow-lg'
-                        }`}
-                      >
-                        {/* Artwork Image */}
-                        <div className="relative h-48 bg-gray-200 overflow-hidden">
-                          <img 
-                            src={artwork.image}
-                            alt={artwork.title}
-                            className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-                          />
-                          {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
-                            <div className="absolute top-3 left-3 bg-black text-white rounded w-8 h-8 flex items-center justify-center">
-                              <span className="text-lg font-bold">✓</span>
-                            </div>
-                          )}
-                        </div>
+                  <div>
+                    {/* 2-Column Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {availableArtworks.slice(0, displayedArtworkCount).map((artwork) => (
+                        <div
+                          key={artwork.id}
+                          onClick={() => {
+                            setSelectedArtworks({
+                              ...selectedArtworks,
+                              [activeFrameIndex]: artwork
+                            })
+                          }}
+                          className={`relative cursor-pointer transition-all duration-200 group ${
+                            selectedArtworks[activeFrameIndex]?.id === artwork.id
+                              ? 'ring-2 ring-black ring-offset-2'
+                              : 'hover:shadow-lg'
+                          }`}
+                        >
+                          {/* Artwork Image */}
+                          <div className="relative aspect-[3/4] bg-gray-200 overflow-hidden">
+                            <img 
+                              src={artwork.image}
+                              alt={artwork.title}
+                              className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                            />
+                            {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
+                              <div className="absolute top-2 left-2 bg-black text-white rounded w-6 h-6 flex items-center justify-center">
+                                <span className="text-sm font-bold">✓</span>
+                              </div>
+                            )}
+                          </div>
 
-                        {/* Artwork Info */}
-                        <div className="p-3 bg-white border border-t-0 border-gray-200">
-                          <h3 className="text-sm font-bold text-black mb-1">{artwork.title}</h3>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600">{artwork.category}</span>
-                            <span className="text-sm font-semibold text-black">£{artwork.price}</span>
+                          {/* Artwork Info */}
+                          <div className="p-2 bg-white border border-t-0 border-gray-200">
+                            <h3 className="text-xs font-bold text-black mb-1 line-clamp-1">{artwork.title}</h3>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-600 line-clamp-1">{artwork.category}</span>
+                              <span className="text-xs font-semibold text-black">£{artwork.price}</span>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Loading Indicator - Shown when loading more */}
+                    {isLoadingMore && (
+                      <div className="mt-6 flex justify-center py-4">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm font-medium">Loading more...</span>
+                        </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
@@ -1194,22 +1516,18 @@ export default function LandingPage() {
 
           {/* Navigation Buttons - Fixed at bottom */}
           <div className="px-6 py-4 border-t border-gray-200 space-y-3">
-            {activeFrameIndex !== null && (
-              <button 
-                onClick={() => setActiveFrameIndex(null)}
-                className="w-full bg-gray-100 text-black py-3 font-bold text-sm tracking-wide border border-gray-300 hover:bg-gray-200 transition-all duration-200 cursor-pointer"
-              >
-                ← BACK TO FRAMES
-              </button>
-            )}
             <button 
-              onClick={() => setCurrentStep("step5")}
+              onClick={() => setCurrentStep("checkout")}
               className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
             >
               NEXT
             </button>
             <button 
-              onClick={() => setCurrentStep("step3")}
+              onClick={() => {
+                setSelectedArtworks({})
+                setActiveFrameIndex(null)
+                setCurrentStep("step3")
+              }}
               className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
             >
               PREVIOUS
@@ -1254,63 +1572,768 @@ export default function LandingPage() {
 
           {/* Main Canvas with Background and Clickable Frames */}
           <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500"
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            {/* Clickable Frame Placeholders with Selected Artworks */}
-            {selectedLayout && selectedLayout.frames.map((frame, idx) => (
-              <div
-                key={idx}
-                onClick={() => setActiveFrameIndex(idx)}
-                className={`absolute flex items-center justify-center transition-all duration-300 cursor-pointer group ${
-                  activeFrameIndex === idx 
-                    ? 'bg-white border-2 border-gray-400 z-10' 
-                    : ''
-                } ${
-                  selectedArtworks[idx] && activeFrameIndex !== idx
-                    ? 'bg-white border-2 border-gray-400'
-                    : activeFrameIndex !== idx
-                    ? 'bg-gray-300 border-2 border-gray-400'
-                    : ''
-                }`}
-                style={{
-                  width: frame.width,
-                  height: frame.height,
-                  top: frame.top,
-                  bottom: frame.bottom,
-                  left: frame.left,
-                  right: frame.right,
-                  transform: frame.transform
-                }}
+            {/* Frame Container - Fixed aspect ratio wrapper */}
+            <div className="absolute inset-0">
+              {/* Clickable Frame Placeholders with Selected Artworks */}
+              {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+              const artwork = selectedArtworks[idx]
+              const frameStyle = selectedFrames[idx]
+              
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setActiveFrameIndex(idx)}
+                  className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
+                    activeFrameIndex === idx 
+                      ? 'z-10' 
+                      : ''
+                  }`}
+                  style={{
+                    width: frame.width,
+                    height: frame.height,
+                    top: frame.top,
+                    bottom: frame.bottom,
+                    left: frame.left,
+                    right: frame.right,
+                    transform: frame.transform
+                  }}
+                >
+                  {artwork ? (
+                    /* Show selected artwork - fills entire box */
+                    <>
+                      <img 
+                        src={artwork.image}
+                        alt={artwork.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                      <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        CHANGE
+                      </div>
+                    </>
+                  ) : (
+                    /* Show placeholder */
+                    <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors">
+                      <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                        {frame.size}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // STEP 5: Frame Selection
+  // STEP 5 - FRAME SELECTION - COMMENTED OUT
+  if (false && currentStep === "step5") {
+    // Get list of frame indices that have artworks
+    const framesWithArtworks = Object.keys(selectedArtworks).map(Number).sort((a, b) => a - b)
+    const currentIndex = activeFrameForStyle !== null ? framesWithArtworks.indexOf(activeFrameForStyle) : -1
+
+    const goToPreviousFrame = () => {
+      if (currentIndex > 0) {
+        setActiveFrameForStyle(framesWithArtworks[currentIndex - 1])
+      }
+    }
+
+    const goToNextFrame = () => {
+      if (currentIndex < framesWithArtworks.length - 1) {
+        setActiveFrameForStyle(framesWithArtworks[currentIndex + 1])
+      }
+    }
+
+    const handleFrameSelect = (frame) => {
+      if (activeFrameForStyle === null) {
+        // Apply to all
+        const newFrames = {}
+        framesWithArtworks.forEach(idx => {
+          newFrames[idx] = frame
+        })
+        setSelectedFrames(newFrames)
+      } else {
+        // Apply to specific frame
+        setSelectedFrames({
+          ...selectedFrames,
+          [activeFrameForStyle]: frame
+        })
+      }
+    }
+
+    const handleDeleteFrame = () => {
+      if (activeFrameForStyle !== null) {
+        const newFrames = { ...selectedFrames }
+        delete newFrames[activeFrameForStyle]
+        setSelectedFrames(newFrames)
+      }
+    }
+
+    return (
+      <div className="flex h-screen bg-white">
+        {/* Left Sidebar */}
+        <div className="w-80 border-r border-gray-200 flex flex-col">
+          {/* Logo */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          </div>
+
+          {/* Step Header with Close Button */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <p className="text-sm font-semibold tracking-wide">5. FRAME YOUR DESIGNS</p>
+            <button
+              onClick={() => setCurrentStep("intro")}
+              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Frame Navigation with Preview */}
+          <div className="px-6 py-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={goToPreviousFrame}
+                disabled={currentIndex <= 0 && activeFrameForStyle !== null}
+                className="text-3xl font-light text-gray-600 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
-                {selectedArtworks[idx] ? (
-                  /* Show selected artwork */
-                  <div className="relative w-full h-full overflow-hidden">
+                ‹
+              </button>
+              
+              <div className="text-base font-semibold tracking-wide">
+                {activeFrameForStyle === null 
+                  ? 'All' 
+                  : `${currentIndex + 1} / ${framesWithArtworks.length}`
+                }
+              </div>
+              
+              <button
+                onClick={goToNextFrame}
+                disabled={currentIndex >= framesWithArtworks.length - 1 || activeFrameForStyle === null}
+                className="text-3xl font-light text-gray-600 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* Preview of current selection */}
+            <div className="flex justify-center">
+              {activeFrameForStyle === null ? (
+                /* Show all artworks in a scrollable row */
+                <div className="flex gap-2 overflow-x-auto max-w-full pb-2" style={{ scrollbarWidth: 'thin' }}>
+                  {framesWithArtworks.map((frameIdx) => {
+                    const artwork = selectedArtworks[frameIdx]
+                    const frameStyle = selectedFrames[frameIdx]
+                    return (
+                      <div
+                        key={frameIdx}
+                        onClick={() => setActiveFrameForStyle(frameIdx)}
+                        className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{
+                          width: '80px',
+                          height: '100px',
+                          padding: frameStyle ? frameStyle.borderWidth : '2px',
+                          backgroundColor: frameStyle ? frameStyle.color : '#E5E5E5',
+                          border: frameStyle?.borderColor ? `1px solid ${frameStyle.borderColor}` : 'none'
+                        }}
+                      >
+                        <div className="w-full h-full bg-white">
+                          <img 
+                            src={artwork.image}
+                            alt={artwork.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                /* Show single selected artwork */
+                <div
+                  className="cursor-pointer"
+                  onClick={() => setActiveFrameForStyle(null)}
+                  style={{
+                    width: '120px',
+                    height: '150px',
+                    padding: selectedFrames[activeFrameForStyle] ? selectedFrames[activeFrameForStyle].borderWidth : '2px',
+                    backgroundColor: selectedFrames[activeFrameForStyle] ? selectedFrames[activeFrameForStyle].color : '#E5E5E5',
+                    border: selectedFrames[activeFrameForStyle]?.borderColor ? `1px solid ${selectedFrames[activeFrameForStyle].borderColor}` : 'none'
+                  }}
+                >
+                  <div className="w-full h-full bg-white">
                     <img 
-                      src={selectedArtworks[idx].image}
-                      alt={selectedArtworks[idx].title}
+                      src={selectedArtworks[activeFrameForStyle].image}
+                      alt={selectedArtworks[activeFrameForStyle].title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                    <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                      CHANGE
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Frame Options Grid */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="grid grid-cols-2 gap-4">
+              {frameStyles.map((frame) => {
+                const isSelected = activeFrameForStyle === null
+                  ? Object.values(selectedFrames).every(f => f?.id === frame.id)
+                  : selectedFrames[activeFrameForStyle]?.id === frame.id
+
+                // Get artwork to show in preview
+                const previewArtwork = activeFrameForStyle !== null 
+                  ? selectedArtworks[activeFrameForStyle]
+                  : selectedArtworks[framesWithArtworks[0]] // Show first artwork for "All" mode
+
+                return (
+                  <button
+                    key={frame.id}
+                    onClick={() => handleFrameSelect(frame)}
+                    className={`relative aspect-[3/4] border-2 transition-all duration-200 cursor-pointer overflow-hidden ${
+                      isSelected
+                        ? 'border-black ring-2 ring-black ring-offset-2'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {/* Frame Preview with Artwork */}
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <div 
+                        className="w-full h-full relative"
+                        style={{
+                          padding: frame.borderWidth,
+                          backgroundColor: frame.color,
+                          border: frame.borderColor ? `1px solid ${frame.borderColor}` : 'none'
+                        }}
+                      >
+                        {/* Inner area with artwork */}
+                        <div className="w-full h-full bg-white overflow-hidden">
+                          {previewArtwork && (
+                            <img 
+                              src={previewArtwork.image}
+                              alt={previewArtwork.title}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Frame Name */}
+                    <div className="absolute bottom-1 left-0 right-0 text-center pointer-events-none">
+                      <span className="text-xs font-semibold bg-white bg-opacity-90 px-2 py-0.5 inline-block">{frame.name}</span>
+                    </div>
+
+                    {/* Selected Indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 left-2 bg-black text-white rounded w-5 h-5 flex items-center justify-center z-10">
+                        <span className="text-xs font-bold">✓</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Delete Frame Button (only visible when specific frame is selected) */}
+          {activeFrameForStyle !== null && (
+            <div className="px-6 py-3 border-t border-gray-200">
+              <button
+                onClick={handleDeleteFrame}
+                className="w-full py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                DELETE FRAME
+              </button>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+            <button
+              onClick={() => setCurrentStep("checkout")}
+              className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+            >
+              DONE
+            </button>
+            <button
+              onClick={() => setCurrentStep("step4")}
+              className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+            >
+              PREVIOUS
+            </button>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Top Navigation */}
+          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ▼ SAVED GALLERY WALLS
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                📋 SAVE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                🔗 SHARE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ■ CREATE NEW
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-semibold">0</span>
+                <span className="text-lg">🛍️</span>
+              </div>
+              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT £0
+              </button>
+            </div>
+          </div>
+
+          {/* Breadcrumb */}
+          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+          </div>
+
+          {/* Main Canvas with Background, Artworks, and Frames */}
+          <div
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
+            style={{
+              backgroundImage: selectedBackground 
+                ? `url(${selectedBackground.image})` 
+                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+            }}
+          >
+            <div className="absolute inset-0">
+              {/* Artworks with Frames */}
+              {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+              const artwork = selectedArtworks[idx]
+              const frameStyle = selectedFrames[idx]
+              const isActive = activeFrameForStyle === idx
+
+              if (!artwork) return null
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setActiveFrameForStyle(idx)}
+                  className={`absolute transition-all duration-300 cursor-pointer group ${
+                    isActive ? 'z-10' : ''
+                  }`}
+                  style={{
+                    width: frame.width,
+                    height: frame.height,
+                    top: frame.top,
+                    bottom: frame.bottom,
+                    left: frame.left,
+                    right: frame.right,
+                    transform: frame.transform,
+                    padding: frameStyle ? frameStyle.borderWidth : '0px',
+                    backgroundColor: frameStyle ? frameStyle.color : 'transparent',
+                    border: frameStyle?.borderColor ? `1px solid ${frameStyle.borderColor}` : 'none'
+                  }}
+                >
+                  {/* Artwork Image */}
+                  <div className="relative w-full h-full bg-white">
+                    <img 
+                      src={artwork.image}
+                      alt={artwork.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                  </div>
+                </div>
+              )
+            })}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }  // END OF STEP 5 - FRAME SELECTION - COMMENTED OUT
+
+  // CHECKOUT/SUMMARY STEP
+  if (currentStep === "checkout") {
+    const totalPrice = calculateTotalPrice()
+    const currency = selectedArtworks[Object.keys(selectedArtworks)[0]]?.currency || '£'
+
+    return (
+      <div className="flex h-screen bg-white">
+        {/* Left Sidebar - Summary */}
+        <div className="w-80 border-r border-gray-200 flex flex-col">
+          {/* Logo */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+          </div>
+
+          {/* Completed Steps */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-8">
+              {/* Step 1 - Background */}
+              <button
+                onClick={() => setCurrentStep("step1")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+              >
+                {/* Checkmark - positioned top-left */}
+                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                  ✓
+                </div>
+                
+                {/* Overlapping frames icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="relative w-10 h-10">
+                    {/* Back frame */}
+                    <div className="absolute top-0 right-0 w-7 h-9 border-2 border-gray-400 group-hover:border-black bg-white transition-colors transform rotate-6"></div>
+                    {/* Front frame */}
+                    <div className="absolute top-1 left-0 w-7 h-9 border-2 border-gray-400 group-hover:border-black bg-white transition-colors">
+                      {/* Small image representation inside frame */}
+                      <div className="absolute inset-2 bg-gray-400 group-hover:bg-black transition-colors"></div>
                     </div>
                   </div>
-                ) : (
-                  /* Show placeholder */
-                  <>
-                    <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
-                      {frame.size}
-                    </span>
-                    <div className="absolute inset-0 border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors"></div>
-                  </>
+                </div>
+                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
+                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT BACKGROUND</p>
+              </button>
+
+              {/* Step 2 - Picture Wall */}
+              <button
+                onClick={() => setCurrentStep("step3")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+              >
+                {/* Checkmark - positioned top-left */}
+                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                  ✓
+                </div>
+                
+                {/* Picture wall layout icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="flex gap-1 items-start">
+                    {/* Large rectangle on left */}
+                    <div className="w-5 h-8 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                    {/* Two smaller rectangles stacked on right */}
+                    <div className="flex flex-col gap-1">
+                      <div className="w-2 h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                      <div className="w-2 h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
+                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT PICTURE WALL</p>
+              </button>
+
+              {/* Step 3 - Design */}
+              <button
+                onClick={() => setCurrentStep("step4")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+              >
+                {/* Checkmark - positioned top-left */}
+                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                  ✓
+                </div>
+                
+                {/* Tall rectangle with circle icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="relative w-6 h-9 border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
+                    <div className="w-2 h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
+                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT DESIGN</p>
+              </button>
+
+              {/* Step 4 - Select Design */}
+              <button
+                onClick={() => setCurrentStep("step4")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+              >
+                {/* Checkmark - positioned top-left */}
+                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                  ✓
+                </div>
+                
+                {/* Tall rectangle with circle icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="relative w-6 h-9 border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
+                    <div className="w-2 h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">4</p>
+                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT DESIGN</p>
+              </button>
+            </div>
+          </div>
+
+          {/* Price and Add to Cart */}
+          <div className="px-6 py-6 border-t border-gray-200">
+            <div className="text-center mb-4">
+              <div className="text-3xl font-bold text-black">{currency} {totalPrice}</div>
+            </div>
+            <button
+              onClick={handleAddToCart}
+              className="w-full bg-black text-white py-4 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              ADD TO 
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Top Navigation */}
+          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ▼ SAVED GALLERY WALLS
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                📋 SAVE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                🔗 SHARE
+              </button>
+              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                ■ CREATE NEW
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Cart Icon with Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowCart(!showCart)}
+                  className="relative flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                  <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                  </span>
+                </button>
+
+                {/* Cart Dropdown */}
+                {showCart && (
+                  <div className="fixed top-20 right-0 w-[600px] bg-white border border-gray-200 shadow-2xl z-50 max-h-[600px] flex flex-col">
+                    {/* Cart Items */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {/* Artwork Items */}
+                      {Object.entries(cartItems.artworks).map(([frameIdx, artwork]) => (
+                        <div key={`artwork-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
+                          {/* Thumbnail */}
+                          <div className="w-20 h-28 flex-shrink-0 border border-gray-200">
+                            <img 
+                              src={artwork.image}
+                              alt={artwork.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* Details */}
+                          <div className="flex-1 flex flex-col">
+                            <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-red-600 font-bold text-base">£ {artwork.price}</span>
+                            </div>
+                            
+                            {/* Quantity */}
+                            <div className="flex items-center gap-2">
+                              <select 
+                                value={quantities.artworks[frameIdx] || 1}
+                                onChange={(e) => handleQuantityChange('artworks', frameIdx, e.target.value)}
+                                className="w-16 px-2 py-1 border border-gray-300 text-sm text-center cursor-pointer"
+                              >
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Delete Button */}
+                          <button 
+                            onClick={() => {
+                              const newArtworks = { ...cartItems.artworks }
+                              delete newArtworks[frameIdx]
+                              setCartItems({ ...cartItems, artworks: newArtworks })
+                            }}
+                            className="text-gray-400 hover:text-black transition-colors cursor-pointer"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Frame Items */}
+                      {Object.entries(cartItems.frames).map(([frameIdx, frame]) => {
+                        const artwork = cartItems.artworks[frameIdx]
+                        if (!artwork) return null
+                        
+                        return (
+                          <div key={`frame-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
+                            {/* Thumbnail with frame */}
+                            <div 
+                              className="w-20 h-28 flex-shrink-0 border border-gray-200"
+                              style={{
+                                padding: '3px',
+                                backgroundColor: frame.color,
+                                border: frame.borderColor ? `1px solid ${frame.borderColor}` : 'none'
+                              }}
+                            >
+                              <div className="w-full h-full bg-white">
+                                <img 
+                                  src={artwork.image}
+                                  alt={`${frame.name} frame`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Details */}
+                            <div className="flex-1 flex flex-col">
+                              <h3 className="font-medium text-sm mb-1">{frame.name} picture frame</h3>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-red-600 font-bold text-base">£ {frame.price.toFixed(2)}</span>
+                              </div>
+                              
+                              {/* Quantity */}
+                              <div className="flex items-center gap-2">
+                                <select 
+                                  value={quantities.frames[frameIdx] || 1}
+                                  onChange={(e) => handleQuantityChange('frames', frameIdx, e.target.value)}
+                                  className="w-16 px-2 py-1 border border-gray-300 text-sm text-center cursor-pointer"
+                                >
+                                  <option value="1">1</option>
+                                  <option value="2">2</option>
+                                  <option value="3">3</option>
+                                  <option value="4">4</option>
+                                  <option value="5">5</option>
+                                  <option value="6">6</option>
+                                  <option value="7">7</option>
+                                  <option value="8">8</option>
+                                  <option value="9">9</option>
+                                  <option value="10">10</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Delete Button */}
+                            <button 
+                              onClick={() => {
+                                const newFrames = { ...cartItems.frames }
+                                delete newFrames[frameIdx]
+                                setCartItems({ ...cartItems, frames: newFrames })
+                              }}
+                              className="text-gray-400 hover:text-black transition-colors cursor-pointer"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Total and Checkout */}
+                    <div className="border-t border-gray-200 p-4 bg-gray-50">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-lg font-bold">TOTAL AMOUNT</span>
+                        <span className="text-lg font-bold">{currency}{calculateCartTotal()}</span>
+                      </div>
+                      <button 
+                        onClick={handleCheckout}
+                        className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                      >
+                        CHECKOUT
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-            ))}
+              
+              <button className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+                CHECKOUT {currency}{totalPrice}
+              </button>
+            </div>
+          </div>
+
+          {/* Breadcrumb */}
+          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+          </div>
+
+          {/* Main Canvas - Final Preview */}
+          <div
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
+            style={{
+              backgroundImage: selectedBackground 
+                ? `url(${selectedBackground.image})` 
+                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+            }}
+          >
+            <div className="absolute inset-0">
+              {/* Final Gallery Wall Preview */}
+              {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                const artwork = selectedArtworks[idx]
+                const frameStyle = selectedFrames[idx]
+
+                if (!artwork) return null
+
+                return (
+                  <div
+                    key={idx}
+                    className="absolute transition-all duration-300 overflow-hidden"
+                    style={{
+                      width: frame.width,
+                      height: frame.height,
+                      top: frame.top,
+                      bottom: frame.bottom,
+                      left: frame.left,
+                      right: frame.right,
+                      transform: frame.transform
+                    }}
+                  >
+                    {/* Artwork Image - fills entire box */}
+                    <img 
+                      src={artwork.image}
+                      alt={artwork.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
