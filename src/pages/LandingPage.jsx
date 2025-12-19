@@ -66,6 +66,9 @@ export default function LandingPage() {
   const [pendingLayout, setPendingLayout] = useState(null) // Store the layout user wants to switch to
   const [showEmptyArtworkModal, setShowEmptyArtworkModal] = useState(false) // Validation modal for no artworks selected
   const [showResetModal, setShowResetModal] = useState(false) // Confirmation modal for starting over
+  const [savedGalleryWalls, setSavedGalleryWalls] = useState([]) // Saved gallery configurations
+  const [showCartDropdown, setShowCartDropdown] = useState(false) // Cart dropdown state
+  const [showMobileMenu, setShowMobileMenu] = useState(false) // Mobile menu state
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -1021,10 +1024,10 @@ export default function LandingPage() {
       name: "Four Row Mix",
       image: "https://gwt.desenio.co.uk/walls/4-mixed.png",
       frames: [
-        { width: "8.4%", height: "20%", size: "30x40", top: "26%", left: "31%" },
-        { width: "10.5%", height: "26.25%", size: "50x75", top: "23%", left: "40%" },
-        { width: "10.5%", height: "26.25%", size: "50x75", top: "23%", right: "40%" },
-        { width: "8.4%", height: "20%", size: "30x40", top: "26%", right: "31%" }
+        { width: "9%", height: "27%", size: "30x40", top: "27%", left: "27.7%" },
+        { width: "12%", height: "35%", size: "50x70", top: "23%", left: "37.5%" },
+        { width: "12%", height: "35%", size: "50x70", top: "23%", right: "37.5%" },
+        { width: "9%", height: "27%", size: "30x40", top: "27%", right: "27.7%" }
       ]
     },
     {
@@ -1034,38 +1037,38 @@ export default function LandingPage() {
       frames: [
        // TOP LEFT — 50x70 (HORIZONTAL)
   {
-    width: "15.4%",
-    height: "12%",
+    width: "16%",
+    height: "21%",
     size: "50x70",
-    top: "8%",
-    left: "35%"
+    top: "10%",
+    left: "35.5%"
   },
 
   // RIGHT — 70x100 (VERTICAL)
   {
-    width: "16.8%",
-    height: "42.5%",
+    width: "16%",
+    height: "48%",
     size: "70x100",
-    top: "12%",
-    left: "50%"
+    top: "10%",
+    left: "52%"
   },
 
   // BOTTOM LEFT — 30x40 (VERTICAL)
   {
-    width: "8.4%",
-    height: "20%",
+    width: "9%",
+    height: "27%",
     size: "30x40",
-    top: "30%",
+    top: "32%",
     left: "30%"
   },
 
   // BOTTOM CENTER — 50x70 (VERTICAL)
   {
-    width: "11.2%",
-    height: "28.125%",
+    width: "12%",
+    height: "35%",
     size: "50x70",
-    top: "30%",
-    left: "38.7%"
+    top: "32%",
+    left: "39.5%"
   }
       ]
     },
@@ -1076,37 +1079,37 @@ export default function LandingPage() {
       frames: [
         // LEFT — 50x70 (vertical big)
   {
-    width: "12.6%",
-    height: "31.5%",
+    width: "12%",
+    height: "35%",
     size: "50x70",
     top: "12%",
-    left: "37%"
+    left: "36%"
   },
 
   // RIGHT — 50x50 (square, top right)
   {
-    width: "11.2%",
-    height: "20%",
+    width: "12%",
+    height: "23%",
     size: "50x50",
     top: "12%",
-    left: "49%"
+    left: "48.5%"
   },
 
   // RIGHT — 30x40 (vertical, below the square)
   {
     width: "8.4%",
-    height: "20%",
+    height: "22%",
     size: "30x40",
-    top: "34%",
-    left: "49%"
+    top: "36%",
+    left: "48.5%"
   },
 
   // RIGHT — 13x18 (small vertical, to the right of 30x40)
   {
-    width: "5.6%",
-    height: "14%",
+    width: "3.6%",
+    height: "11%",
     size: "13x18",
-    top: "34%",
+    top: "36%",
     left: "57%"
   }
       ]
@@ -1121,23 +1124,23 @@ export default function LandingPage() {
     width: "6.3%",
     height: "15.75%",
     size: "21x30",
-    top: "25%",
-    left: "27.2%"
+    top: "24%",
+    left: "26.7%"
   },
 
   // LEFT TOP — 30x40 (top of the left stack)
   {
     width: "8.4%",
-    height: "20%",
+    height: "22%",
     size: "30x40",
-    top: "11%",
+    top: "10%",
     left: "33.5%"
   },
 
   // LEFT BOTTOM — 30x40 (below the first 30x40)
   {
     width: "8.4%",
-    height: "20%",
+    height: "22%",
     size: "30x40",
     top: "33%",
     left: "33.5%"
@@ -1145,21 +1148,21 @@ export default function LandingPage() {
 
   // CENTER — 70x100 (big center piece)
   {
-    width: "18.2%",
-    height: "46.25%",
+    width: "16%",
+    height: "48%",
     size: "70x100",
     top: "8%",
-    left: "50%",
+    left: "50.5%",
     transform: "translateX(-50%)"
   },
 
   // RIGHT — 50x70 (single piece on the right)
   {
-    width: "12.6%",
-    height: "31.5%",
+    width: "12%",
+    height: "35%",
     size: "50x70",
-    top: "16%",
-    right: "29.8%"
+    top: "15%",
+    right: "28.8%"
   }
       ]
     },
@@ -1171,7 +1174,7 @@ export default function LandingPage() {
      // LEFT — 40x50 (top left)
 {
   width: "9.8%",
-  height: "21.875%",
+  height: "25%",
   size: "40x50",
   top: "8%",
   left: "31.5%"
@@ -1179,17 +1182,17 @@ export default function LandingPage() {
 
 // LEFT — 50x70 (under the 40x50)
 {
-  width: "11.2%",
-  height: "28.125%",
+  width: "12%",
+  height: "35%",
   size: "50x70",
-  top: "32%",
-  left: "30.22%"
+  top: "34.5%",
+  left: "29.3%"
 },
 
 // CENTER — 70x100 (big)
 {
-  width: "19.6%",
-  height: "45%",
+  width: "16%",
+  height: "48%",
   size: "70x100",
   top: "6%",
   left: "50%",
@@ -1198,47 +1201,47 @@ export default function LandingPage() {
 
 // RIGHT TOP — 50x70 (top right)
 {
-  width: "12.6%",
-  height: "31.5%",
+  width: "12%",
+  height: "35%",
   size: "50x70",
   top: "6%",
-  right: "29%"
+  right: "29.2%"
 },
 
 // RIGHT MID — 40x50
 {
   width: "9.8%",
-  height: "21.875%",
+  height: "25%",
   size: "40x50",
-  top: "39.5%",
+  top: "42%",
   right: "31.5%"
 },
 
 // RIGHT MID — 30x40 **horizontal**
 {
-  width: "11.2%",
+  width: "10%",
   height: "15%",
   size: "30x40",
-  top: "39.5%",
+  top: "42%",
   right: "21%"
 },
 
 // BOTTOM LEFT OF CENTER — 30x40 **horizontal**
 {
-  width: "12.6%",
+  width: "10%",
   height: "15%",
   size: "30x40",
-  top: "54%",
+  top: "54.5%",
   left: "42%"
 },
 
 // BOTTOM CENTER — 21x30 **horizontal**
 {
-  width: "5.25%",
+  width: "5.7%",
   height: "15%",
   size: "21x30",
-  top: "54%",
-  left: "56%",
+  top: "54.5%",
+  left: "55.2%",
   transform: "translateX(-50%)"
 }
       ]
@@ -1351,144 +1354,176 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-        <div className="h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 px-4 sm:px-6 py-3 sm:py-4 flex flex-col h-auto lg:h-screen overflow-hidden">
-          {/* Logo */}
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">DESENIO</h1>
+        
+        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+          {/* Mobile/Desktop Layout Container */}
+          <div className="flex flex-row flex-1 overflow-hidden">
+            {/* Left Sidebar - Visible on all screen sizes, narrower on mobile */}
+            <div className="flex w-28 sm:w-32 lg:w-80 bg-white border-r border-gray-300 px-2 sm:px-4 lg:px-6 py-4 flex-col h-screen overflow-hidden">
+              {/* Logo */}
+              <h1 className="text-xs sm:text-lg lg:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">DESENIO</h1>
 
-          {/* Steps Container */}
-          <div className="flex-1 flex flex-col justify-start space-y-3 sm:space-y-4 overflow-y-auto min-h-0">
-            {/* Step 1 - NEW: Select Place */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
-              {/* House/Room icon */}
-              <div className="flex justify-center mb-2 sm:mb-3">
-                <div className="relative w-10 h-10">
-                  <div className="w-8 h-6 border-2 border-b-0 border-black group-hover:border-gray-400 transition-colors"></div>
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[12px] border-b-black group-hover:border-b-gray-400 transition-colors"></div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-black group-hover:bg-gray-400 transition-colors"></div>
-                </div>
-              </div>
-              <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">1</p>
-              <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">SELECT PLACE</p>
-            </div>
-
-            {/* Step 2 - Background */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
-              {/* Overlapping frames icon */}
-              <div className="flex justify-center mb-2 sm:mb-3">
-                <div className="relative w-10 h-10">
-                  {/* Back frame */}
-                  <div className="absolute top-0 right-0 w-7 h-9 border-2 border-black group-hover:border-gray-400 bg-white transition-colors transform rotate-6"></div>
-                  {/* Front frame */}
-                  <div className="absolute top-1 left-0 w-7 h-9 border-2 border-black group-hover:border-gray-400 bg-white transition-colors">
-                    {/* Small image representation inside frame */}
-                    <div className="absolute inset-2 bg-black group-hover:bg-gray-400 transition-colors"></div>
+              {/* Steps Container */}
+              <div className="flex-1 flex flex-col justify-start space-y-4 sm:space-y-5 lg:space-y-4 overflow-y-auto min-h-0">
+                {/* Step 1 - Select Place */}
+                <div className="text-center cursor-pointer transition-all duration-200 py-2 group flex-shrink-0">
+                  {/* House/Room icon */}
+                  <div className="flex justify-center mb-2 sm:mb-3 lg:mb-3">
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-10 lg:h-10">
+                      <div className="w-8 h-6 sm:w-10 sm:h-8 lg:w-8 lg:h-6 border-2 border-b-0 border-black group-hover:border-gray-400 transition-colors"></div>
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] sm:border-l-[20px] lg:border-l-[16px] border-l-transparent border-r-[16px] sm:border-r-[20px] lg:border-r-[16px] border-r-transparent border-b-[12px] sm:border-b-[16px] lg:border-b-[12px] border-b-black group-hover:border-b-gray-400 transition-colors"></div>
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 sm:w-4 sm:h-4 lg:w-3 lg:h-3 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                    </div>
                   </div>
+                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-1 sm:mb-2 lg:mb-1 text-black group-hover:text-gray-400 transition-colors">1</p>
+                  <p className="text-[9px] sm:text-xs lg:text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors leading-tight">SELECT<br className="lg:hidden"/>PLACE</p>
                 </div>
-              </div>
-              <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">2</p>
-              <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">SELECT BACKGROUND</p>
-            </div>
 
-            {/* Step 3 - Picture Wall */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
-              {/* Picture wall layout icon */}
-              <div className="flex justify-center mb-2 sm:mb-3">
-                <div className="flex gap-1 items-start">
-                  {/* Large rectangle on left */}
-                  <div className="w-5 h-8 bg-black group-hover:bg-gray-400 transition-colors"></div>
-                  {/* Two smaller rectangles stacked on right */}
-                  <div className="flex flex-col gap-1">
-                    <div className="w-2 h-3.5 bg-black group-hover:bg-gray-400 transition-colors"></div>
-                    <div className="w-2 h-3.5 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                {/* Step 2 - Background */}
+                <div className="text-center cursor-pointer transition-all duration-200 py-2 group flex-shrink-0">
+                  {/* Overlapping frames icon */}
+                  <div className="flex justify-center mb-2 sm:mb-3 lg:mb-3">
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-10 lg:h-10">
+                      {/* Back frame */}
+                      <div className="absolute top-0 right-0 w-7 h-9 sm:w-8 sm:h-11 lg:w-7 lg:h-9 border-2 border-black group-hover:border-gray-400 bg-white transition-colors transform rotate-6"></div>
+                      {/* Front frame */}
+                      <div className="absolute top-1 left-0 w-7 h-9 sm:w-8 sm:h-11 lg:w-7 lg:h-9 border-2 border-black group-hover:border-gray-400 bg-white transition-colors">
+                        {/* Small image representation inside frame */}
+                        <div className="absolute inset-2 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                      </div>
+                    </div>
                   </div>
+                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-1 sm:mb-2 lg:mb-1 text-black group-hover:text-gray-400 transition-colors">2</p>
+                  <p className="text-[9px] sm:text-xs lg:text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors leading-tight">SELECT<br className="lg:hidden"/>BACKGROUND</p>
+                </div>
+
+                {/* Step 3 - Picture Wall */}
+                <div className="text-center cursor-pointer transition-all duration-200 py-2 group flex-shrink-0">
+                  {/* Picture wall layout icon */}
+                  <div className="flex justify-center mb-2 sm:mb-3 lg:mb-3">
+                    <div className="flex gap-1 sm:gap-1.5 lg:gap-1 items-start">
+                      {/* Large rectangle on left */}
+                      <div className="w-5 h-8 sm:w-6 sm:h-10 lg:w-5 lg:h-8 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                      {/* Two smaller rectangles stacked on right */}
+                      <div className="flex flex-col gap-1 sm:gap-1.5 lg:gap-1">
+                        <div className="w-3 h-3.5 sm:w-3.5 sm:h-4.5 lg:w-2 lg:h-3.5 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                        <div className="w-3 h-3.5 sm:w-3.5 sm:h-4.5 lg:w-2 lg:h-3.5 bg-black group-hover:bg-gray-400 transition-colors"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-1 sm:mb-2 lg:mb-1 text-black group-hover:text-gray-400 transition-colors">3</p>
+                  <p className="text-[9px] sm:text-xs lg:text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors leading-tight">SELECT PICTURE<br className="lg:hidden"/>WALL</p>
+                </div>
+
+                {/* Step 4 - Select Design */}
+                <div className="text-center cursor-pointer transition-all duration-200 py-2 group flex-shrink-0">
+                  {/* Tall rectangle with circle icon */}
+                  <div className="flex justify-center mb-2 sm:mb-3 lg:mb-3">
+                    <div className="relative w-7 h-10 sm:w-8 sm:h-12 lg:w-6 lg:h-9 border-2 border-black group-hover:border-gray-400 flex items-center justify-center transition-colors">
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-2 lg:h-2 bg-black group-hover:bg-gray-400 rounded-full transition-colors"></div>
+                    </div>
+                  </div>
+                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-1 sm:mb-2 lg:mb-1 text-black group-hover:text-gray-400 transition-colors">4</p>
+                  <p className="text-[9px] sm:text-xs lg:text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors leading-tight">SELECT<br className="lg:hidden"/>DESIGN</p>
                 </div>
               </div>
-              <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">3</p>
-              <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">SELECT PICTURE WALL</p>
-            </div>
 
-            {/* Step 4 - Design */}
-            <div className="text-center cursor-pointer transition-all duration-200 py-1.5 sm:py-2 group flex-shrink-0">
-              {/* Tall rectangle with circle icon */}
-              <div className="flex justify-center mb-2 sm:mb-3">
-                <div className="relative w-6 h-9 border-2 border-black group-hover:border-gray-400 flex items-center justify-center transition-colors">
-                  <div className="w-2 h-2 bg-black group-hover:bg-gray-400 rounded-full transition-colors"></div>
+              {/* Bottom Section - Desktop Only */}
+              <div className="mt-auto pt-2 sm:pt-3 lg:pt-4 space-y-2 sm:space-y-3 flex-shrink-0 hidden lg:block">
+                {/* Price */}
+                <div>
+                  <p className="text-2xl font-bold text-center">£ 0</p>
                 </div>
-              </div>
-              <p className="text-sm font-semibold mb-1 text-black group-hover:text-gray-400 transition-colors">4</p>
-              <p className="text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors">SELECT DESIGN</p>
-            </div>
-          </div>
 
-          {/* Bottom Section */}
-          <div className="mt-auto pt-3 sm:pt-4 space-y-2 sm:space-y-3 flex-shrink-0">
-            {/* Price */}
-            <div>
-              <p className="text-xl sm:text-2xl font-bold text-center">£ 0</p>
-            </div>
-
-            {/* Add to Basket Button */}
-            <button
-              onClick={handleAddToCart}
-              className="w-full bg-black text-white py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-105 active:scale-95"
-            >
-              ADD TO <span>🛍️</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
-                ▼ SAVED
-              </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
-                📋 SAVE
-              </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap">
-                🔗 SHARE
-              </button>
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
-              >
-                ■ NEW
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 sm:gap-4">
-              {/* Cart Icon with Badge */}
-              <div className="relative">
+                {/* Add to Basket Button */}
                 <button
-                  onClick={() => setShowCart(!showCart)}
-                  className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={handleAddToCart}
+                  className="w-full bg-black text-white py-3 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-105 active:scale-95"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  </svg>
-                  <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
-                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
-                  </span>
+                  ADD TO <span>🛍️</span>
                 </button>
+              </div>
+            </div>
 
-                {/* Cart Dropdown - shown when items exist */}
-                {showCart && (Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) && (
-                  <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl z-50 max-h-[400px] sm:max-h-[600px] flex flex-col">
-                    {/* Cart Items */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {/* Artwork Items */}
-                      {Object.entries(cartItems.artworks).map(([frameIdx, artwork]) => (
-                        <div key={`artwork-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
-                          <div className="w-20 h-28 flex-shrink-0 border border-gray-200">
-                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 flex flex-col">
-                            <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
+            {/* Mobile Sidebar - Compact Horizontal - HIDDEN since sidebar now always shows */}
+            <div className="hidden">
+              {/* Logo */}
+              <h1 className="text-lg font-bold tracking-tight">DESENIO</h1>
+              
+              {/* Steps - Horizontal */}
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-7 h-7 bg-black text-white flex items-center justify-center text-xs font-bold rounded-sm">1</div>
+                  <span className="text-[9px] font-semibold text-gray-600">BACKGROUND</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-7 h-7 border-2 border-gray-300 text-gray-400 flex items-center justify-center text-xs font-bold rounded-sm">2</div>
+                  <span className="text-[9px] font-semibold text-gray-400">PICTURE WALL</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-7 h-7 border-2 border-gray-300 text-gray-400 flex items-center justify-center text-xs font-bold rounded-sm">3</div>
+                  <span className="text-[9px] font-semibold text-gray-400">DESIGN</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-7 h-7 border-2 border-gray-300 text-gray-400 flex items-center justify-center text-xs font-bold rounded-sm">4</div>
+                  <span className="text-[9px] font-semibold text-gray-400">FRAME</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Top Navigation - Hidden on mobile, visible on desktop */}
+              <div className="hidden lg:flex bg-white border-b border-gray-300 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 items-center justify-between">
+                <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 overflow-x-auto">
+                  <button className="px-2 sm:px-3 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 border-2 border-black text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer whitespace-nowrap">
+                    <span className="hidden sm:inline">▼</span> <span className="hidden lg:inline">SAVED</span><span className="lg:hidden">💾</span>
+                  </button>
+                  <button className="px-2 sm:px-3 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 border-2 border-black text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white whitespace-nowrap">
+                    <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span className="hidden lg:inline">SAVE</span>
+                  </button>
+                  <button className="px-2 sm:px-3 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 border-2 border-black text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer whitespace-nowrap">
+                    🔗 <span className="hidden lg:inline">SHARE</span>
+                  </button>
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    className="px-2 sm:px-3 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 border-2 border-black text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer whitespace-nowrap"
+                  >
+                    ■ <span className="hidden lg:inline">NEW</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                  {/* Cart Icon with Badge */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowCart(!showCart)}
+                      className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                      </svg>
+                      <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
+                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                      </span>
+                    </button>
+
+                    {/* Cart Dropdown - shown when items exist */}
+                    {showCart && (Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) && (
+                      <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl z-50 max-h-[400px] sm:max-h-[600px] flex flex-col">
+                        {/* Cart Items */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                          {/* Artwork Items */}
+                          {Object.entries(cartItems.artworks).map(([frameIdx, artwork]) => (
+                            <div key={`artwork-${frameIdx}`} className="flex gap-3 pb-4 border-b border-gray-200">
+                              <div className="w-20 h-28 flex-shrink-0 border border-gray-200">
+                                <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="flex-1 flex flex-col">
+                                <h3 className="font-medium text-sm mb-1">{artwork.title}</h3>
                             {artwork.frameSize && (
                               <p className="text-xs text-gray-500 mb-1">{artwork.frameSize}</p>
                             )}
@@ -1563,53 +1598,138 @@ export default function LandingPage() {
                         <span className="text-lg font-bold">TOTAL AMOUNT</span>
                         <span className="text-lg font-bold">£{calculateCartTotal()}</span>
                       </div>
-                      <button onClick={handleCheckout} className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer">CHECKOUT</button>
+                      <button onClick={handleCheckout} className="w-full bg-black text-white py-3 font-bold text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">CHECKOUT</button>
                     </div>
                   </div>
                 )}
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
+              <button onClick={handleCheckout} className="bg-black text-white px-3 sm:px-5 lg:px-8 py-2 sm:py-2.5 font-bold text-[10px] sm:text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg whitespace-nowrap">
+                <span className="hidden sm:inline">CHECKOUT</span><span className="sm:hidden">🛒</span> {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* Breadcrumb */}
-          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
-            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
-          </div>
+              {/* Breadcrumb */}
+              <div className="hidden lg:block bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
+                WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+              </div>
 
-          {/* Hero Section */}
-          <div
-            className="flex-1 relative bg-cover bg-center"
-            style={{
-              backgroundImage: "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/40"></div>
+              {/* Hero Section */}
+              <div
+                className="flex-1 relative bg-cover bg-center pb-20 lg:pb-0"
+                style={{
+                  backgroundImage: "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40"></div>
 
-            {/* Content */}
-            <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-4 sm:px-8">
-              {/* Dark Box Container */}
-              <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-12 md:px-20 py-8 sm:py-12 md:py-16 max-w-3xl">
-                <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] mb-3 sm:mb-6 text-gray-300 font-light">STEP-BY-STEP</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif italic mb-4 sm:mb-6 md:mb-8 text-white font-light leading-tight">
-                  Create the perfect gallery wall
-                </h2>
-                <p className="text-xs sm:text-sm md:text-base mb-6 sm:mb-8 md:mb-12 text-gray-200 font-light leading-relaxed">
-                  Use our new tool to find designs and frames that match each other
-                </p>
-                <button
-                  onClick={() => setCurrentStep("step1")}
-                  className="bg-white text-black px-6 sm:px-8 md:px-12 py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
-                >
-                  START HERE
-                </button>
+                {/* Content */}
+                <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-4 sm:px-8">
+                  {/* Dark Box Container */}
+                  <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-12 md:px-20 py-8 sm:py-12 md:py-16 max-w-3xl w-full">
+                    <p className="text-[9px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] mb-3 sm:mb-6 text-gray-300 font-light">STEP-BY-STEP</p>
+                    <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-serif italic mb-3 sm:mb-6 md:mb-8 text-white font-light leading-tight">
+                      Create the perfect gallery wall
+                    </h2>
+                    <p className="text-[11px] sm:text-sm md:text-base mb-6 sm:mb-8 md:mb-12 text-gray-200 font-light leading-relaxed">
+                      Use our new tool to find designs and frames that match each other
+                    </p>
+                    <button
+                      onClick={() => setCurrentStep("step1")}
+                      className="bg-white text-black px-8 sm:px-8 md:px-12 py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
+                    >
+                      START HERE
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
+          <div className="flex items-center justify-between px-3 py-2.5">
+            {/* Menu Button */}
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="flex flex-col items-center gap-0.5 text-gray-700 hover:text-gray-900 transition-colors flex-1"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span className="text-[10px] font-semibold">MENU</span>
+            </button>
+
+            {/* Saved Gallery Walls */}
+            <button className="flex flex-col items-center gap-0.5 text-gray-700 hover:text-gray-900 transition-colors flex-1 border-x border-gray-200">
+              <div className="relative">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                {savedGalleryWalls.length > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    {savedGalleryWalls.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-[9px] font-semibold text-center leading-tight">
+                SAVED<br/>GALLERY WALLS
+              </span>
+            </button>
+
+            {/* Add to Cart Button */}
+            <button 
+              onClick={() => setShowCartDropdown(!showCartDropdown)}
+              className="flex flex-col items-center gap-0.5 bg-black text-white px-3 py-1.5 hover:bg-gray-800 transition-colors flex-1"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold">ADD TO</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span className="text-xs font-bold">£0</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Modal */}
+        {showMobileMenu && (
+          <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+            <div 
+              className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 space-y-3">
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  SAVE
+                </button>
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  🔗 SHARE
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowResetModal(true)
+                    setShowMobileMenu(false)
+                  }}
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                >
+                  ■ CREATE NEW
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     )
   }
@@ -1646,133 +1766,225 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
-          {/* Logo - Fixed at top */}
-          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
-          </div>
+        
+        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+          {/* Mobile/Desktop Layout Container */}
+          <div className="flex flex-row flex-1 overflow-hidden">
+            {/* Left Sidebar - Narrow on mobile, standard on desktop */}
+            <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+              {/* Logo - Hidden on mobile, visible on desktop */}
+              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
-          {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <p className="text-xs sm:text-sm font-semibold tracking-wide">1. SELECT PLACE</p>
-            <button
-              onClick={() => setCurrentStep("intro")}
-              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
-            >
-              ✕
-            </button>
-          </div>
+              {/* Mobile: Header "1 SELECT PLACE" */}
+              <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
+                <p className="text-[9px] font-bold tracking-wide">1 SELECT PLACE</p>
+              </div>
 
-          {/* Scrollable Place Options */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
-            <div className="space-y-6">
-              {placeCategories.map((place) => (
-                <div
-                  key={place.id}
-                  onClick={() => setSelectedPlace(place)}
-                  className={`relative cursor-pointer transition-all duration-300 group ${
-                    selectedPlace?.id === place.id 
-                      ? 'ring-2 ring-black ring-offset-2' 
-                      : 'hover:shadow-lg'
-                  }`}
+              {/* Desktop: Step Header with Close Button - Fixed */}
+              <div className="hidden lg:flex items-center justify-between px-0 py-3 sm:py-4 border-b border-gray-200 flex-shrink-0">
+                <p className="text-xs sm:text-sm font-semibold tracking-wide">1. SELECT PLACE</p>
+                <button
+                  onClick={() => setCurrentStep("intro")}
+                  className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
                 >
-                  {/* Place Image */}
-                  <div className="relative h-40 bg-gray-200 overflow-hidden">
-                    <img 
-                      src={place.image} 
-                      alt={place.name}
-                      className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-                    />
-                    {selectedPlace?.id === place.id && (
-                      <div className="absolute top-3 left-3 bg-black text-white rounded w-8 h-8 flex items-center justify-center">
-                        <span className="text-lg font-bold">✓</span>
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable Place Options - On mobile and desktop */}
+              <div className="flex-1 flex flex-col overflow-y-auto min-h-0 py-1 lg:py-6 px-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                {/* Mobile & Desktop: Show place thumbnails */}
+                <div className="space-y-3 lg:space-y-6 py-1 lg:pr-2">
+                  {placeCategories.map((place) => (
+                    <div
+                      key={place.id}
+                      onClick={() => setSelectedPlace(place)}
+                      className="relative cursor-pointer transition-all duration-300 group hover:shadow-lg"
+                    >
+                      {/* Place Image */}
+                      <div className="relative h-16 lg:h-40 bg-gray-200 overflow-hidden">
+                        <img 
+                          src={place.image} 
+                          alt={place.name}
+                          className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                        />
                       </div>
+                      
+                      {/* Place Info - Desktop only */}
+                      <div className="hidden lg:block p-4 bg-white border border-t-0 border-gray-200">
+                        <h3 className="text-base font-bold text-black mb-1">{place.name}</h3>
+                        <p className="text-xs text-gray-600">{place.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile & Desktop: Navigation Buttons - Fixed at bottom */}
+              <div className="px-0 py-2 lg:py-4 border-t border-gray-200 space-y-1.5 lg:space-y-3 flex-shrink-0">
+                <button 
+                  disabled={!selectedPlace}
+                  onClick={() => selectedPlace && setCurrentStep("step2")}
+                  className="w-full bg-black text-white py-2 lg:py-4 font-bold text-[10px] lg:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  NEXT
+                </button>
+                {/* Desktop: PREVIOUS button - goes to intro */}
+                <button 
+                  onClick={() => setCurrentStep("intro")}
+                  className="hidden lg:flex w-full bg-white text-black py-2 lg:py-3 font-bold text-[10px] lg:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer items-center justify-center gap-1"
+                >
+                  PREVIOUS
+                </button>
+                {/* Mobile: CLOSE button - goes to landing page */}
+                <button 
+                  onClick={() => setCurrentStep("intro")}
+                  className="lg:hidden w-full bg-white text-black py-2 font-bold text-[10px] tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <span className="text-xs">✕</span>
+                  CLOSE
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Top Navigation - Hidden on mobile */}
+              <div className="hidden lg:flex bg-white border-b border-gray-300 px-6 py-4 items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                    ▼ SAVED
+                  </button>
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    SAVE
+                  </button>
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                    🔗 SHARE
+                  </button>
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer"
+                  >
+                    ■ NEW
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                    <span className="text-lg">🛍️</span>
+                  </div>
+                  <button onClick={handleCheckout} className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">
+                    CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
+                  </button>
+                </div>
+              </div>
+
+              {/* Breadcrumb - Hidden on mobile */}
+              <div className="hidden lg:block bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
+                WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+              </div>
+
+              {/* Main Display Area */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Mobile & Desktop: Main preview area */}
+                <div
+                  className="flex-1 relative bg-cover bg-center"
+                  style={{
+                    backgroundImage: selectedPlace 
+                      ? `url(${selectedPlace.image})` 
+                      : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                  }}
+                >
+                  {!selectedPlace && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white/90 backdrop-blur-sm px-8 lg:px-12 py-6 lg:py-8 rounded-lg shadow-xl">
+                        <p className="text-sm lg:text-2xl font-light text-gray-700 text-center">
+                          Select a place to continue
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+                <button 
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  MENU
+                </button>
+                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  SAVED GALLERY WALLS
+                </button>
+                <button 
+                  onClick={handleCheckout}
+                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                >
+                  <div className="relative">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
+                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                      </span>
                     )}
                   </div>
-                  
-                  {/* Place Info */}
-                  <div className="p-4 bg-white border border-t-0 border-gray-200">
-                    <h3 className="text-base font-bold text-black mb-1">{place.name}</h3>
-                    <p className="text-xs text-gray-600">{place.description}</p>
-                  </div>
-                </div>
-              ))}
+                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Next Button - Fixed at bottom */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
-            <button 
-              disabled={!selectedPlace}
-              onClick={() => selectedPlace && setCurrentStep("step2")}
-              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+        {/* Mobile Menu Modal */}
+        {showMobileMenu && (
+          <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+            <div 
+              className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              NEXT
-            </button>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                ▼ SAVED
-              </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                📋 SAVE
-              </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                🔗 SHARE
-              </button>
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
-              >
-                ■ NEW
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-1">
-                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-base sm:text-lg">🛍️</span>
+              <div className="p-4 space-y-3">
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  SAVE
+                </button>
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  🔗 SHARE
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowResetModal(true)
+                    setShowMobileMenu(false)
+                  }}
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                >
+                  ■ CREATE NEW
+                </button>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">
-                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
-              </button>
             </div>
           </div>
-
-          {/* Breadcrumb */}
-          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-500 border-b border-gray-300">
-            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
-          </div>
-
-          {/* Main Display - Show selected place or default */}
-          <div
-            className="flex-1 relative bg-cover bg-center"
-            style={{
-              backgroundImage: selectedPlace 
-                ? `url(${selectedPlace.image})` 
-                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
-            }}
-          >
-            {!selectedPlace && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-white/90 backdrop-blur-sm px-12 py-8 rounded-lg shadow-xl">
-                  <p className="text-2xl font-light text-gray-700 text-center">
-                    Select a place to continue
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        )}
       </>
     )
   }
@@ -1809,148 +2021,266 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
-          {/* Logo - Fixed at top */}
-          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
-          </div>
+        
+        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+          {/* Mobile/Desktop Layout Container */}
+          <div className="flex flex-row flex-1 overflow-hidden">
+            {/* Left Sidebar - Narrow on mobile, standard on desktop */}
+            <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+              {/* Logo - Hidden on mobile, visible on desktop */}
+              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
-          {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <p className="text-xs sm:text-sm font-semibold tracking-wide">2. SELECT BACKGROUND</p>
-            <button
-              onClick={() => setCurrentStep("intro")}
-              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
-            >
-              ✕
-            </button>
-          </div>
+              {/* Mobile: Header "2 SELECT BACKGROUND" */}
+              <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
+                <p className="text-[9px] font-bold tracking-wide">2 SELECT BACKGROUND</p>
+              </div>
 
-          {/* Scrollable Background Options */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
-            <div className="space-y-6">
-              {backgroundOptions.map((section, sectionIdx) => {
-                const activeVariant = activeVariants[sectionIdx] || section.variants[0]
-                
-                return (
-                  <div key={sectionIdx}>
-                    {/* Background Image */}
-                    <div
-                      className={`relative w-full aspect-[16/9] bg-cover bg-center transition-all duration-300 cursor-pointer ${
-                        selectedBackground?.id === activeVariant.id 
-                          ? 'ring-2 ring-black ring-offset-2' 
-                          : 'hover:opacity-90'
-                      }`}
-                      style={{
-                        backgroundImage: `url(${activeVariant.image})`
-                      }}
-                      onClick={() => {
-                        setExpandedSection(expandedSection === sectionIdx ? null : sectionIdx)
-                        setSelectedBackground(activeVariant)
-                      }}
-                    >
-                      {selectedBackground?.id === activeVariant.id && (
-                        <div className="absolute top-3 left-3 bg-black text-white rounded w-8 h-8 flex items-center justify-center">
-                          <span className="text-lg font-bold">✓</span>
+              {/* Desktop: Step Header with Close Button - Fixed */}
+              <div className="hidden lg:flex items-center justify-between px-0 py-3 sm:py-4 border-b border-gray-200 flex-shrink-0">
+                <p className="text-xs sm:text-sm font-semibold tracking-wide">2. SELECT BACKGROUND</p>
+                <button
+                  onClick={() => setCurrentStep("intro")}
+                  className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable Background Options */}
+              <div className="flex-1 overflow-y-auto py-1 lg:py-6 px-0 min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                <div className="space-y-3 lg:space-y-6 lg:pr-2">
+                  {backgroundOptions.map((section, sectionIdx) => {
+                    const activeVariant = activeVariants[sectionIdx] || section.variants[0]
+                    const isSelected = selectedBackground?.id === activeVariant.id
+                    
+                    return (
+                      <div key={sectionIdx}>
+                        {/* Background Image */}
+                        <div
+                          className="relative w-full h-16 lg:h-auto lg:aspect-[16/9] bg-cover bg-center transition-all duration-300 cursor-pointer hover:opacity-90"
+                          style={{
+                            backgroundImage: `url(${activeVariant.image})`
+                          }}
+                          onClick={() => {
+                            setExpandedSection(expandedSection === sectionIdx ? null : sectionIdx)
+                            setSelectedBackground(activeVariant)
+                          }}
+                        >
                         </div>
-                      )}
-                    </div>
 
-                    {/* Color Swatches - Show only when section is expanded */}
-                    {expandedSection === sectionIdx && (
-                      <div className="flex gap-2 mt-3 animate-fadeIn">
-                        {section.variants.map((variant) => (
-                          <div
-                            key={variant.id}
-                            className={`w-10 h-10 border-2 cursor-pointer transition-all duration-200 ${
-                              activeVariant.id === variant.id 
-                                ? 'border-black scale-110' 
-                                : 'border-gray-300 hover:border-gray-600'
-                            }`}
-                            style={{ backgroundColor: variant.color }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setActiveVariants({ ...activeVariants, [sectionIdx]: variant })
-                              setSelectedBackground(variant)
-                            }}
-                            title={variant.name}
-                          />
-                        ))}
+                        {/* Color Swatches - Show for selected background on mobile, expandable on large screens */}
+                        {isSelected && (
+                          <div className="lg:hidden mt-1.5 bg-white border border-gray-300 p-1.5 rounded-sm">
+                            <div className="flex gap-1.5 flex-wrap">
+                              {section.variants.map((variant) => (
+                                <div
+                                  key={variant.id}
+                                  className={`relative w-8 h-8 lg:w-10 lg:h-10 border-2 cursor-pointer transition-all duration-200 flex-shrink-0 ${
+                                    activeVariant.id === variant.id 
+                                      ? 'border-black' 
+                                      : 'border-gray-300'
+                                  }`}
+                                  style={{ backgroundColor: variant.color }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveVariants({ ...activeVariants, [sectionIdx]: variant })
+                                    setSelectedBackground(variant)
+                                  }}
+                                  title={variant.name}
+                                >
+                                  {/* Checkmark for selected variant */}
+                                  {activeVariant.id === variant.id && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <svg className="w-4 h-4 lg:w-5 lg:h-5 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Large screen expandable color swatches */}
+                        {expandedSection === sectionIdx && (
+                          <div className="hidden lg:flex gap-2 mt-3 animate-fadeIn flex-wrap px-1">
+                            {section.variants.map((variant) => (
+                              <div
+                                key={variant.id}
+                                className={`w-10 h-10 border-2 cursor-pointer transition-all duration-200 flex-shrink-0 ${
+                                  activeVariant.id === variant.id 
+                                    ? 'border-black scale-110' 
+                                    : 'border-gray-300 hover:border-gray-600'
+                                }`}
+                                style={{ backgroundColor: variant.color }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveVariants({ ...activeVariants, [sectionIdx]: variant })
+                                  setSelectedBackground(variant)
+                                }}
+                                title={variant.name}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile & Desktop: Navigation Buttons - Fixed at bottom */}
+              <div className="px-0 py-2 lg:py-4 border-t border-gray-200 space-y-1.5 lg:space-y-3 flex-shrink-0">
+                <button 
+                  disabled={!selectedBackground}
+                  onClick={() => selectedBackground && setCurrentStep("step3")}
+                  className="w-full bg-black text-white py-2 lg:py-4 font-bold text-[10px] lg:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  NEXT
+                </button>
+                {/* Desktop: PREVIOUS button - goes to previous step */}
+                <button 
+                  onClick={() => setCurrentStep("step1")}
+                  className="hidden lg:flex w-full bg-white text-black py-2 lg:py-3 font-bold text-[10px] lg:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer items-center justify-center gap-1"
+                >
+                  PREVIOUS
+                </button>
+                {/* Mobile: CLOSE button - goes to landing page */}
+                <button 
+                  onClick={() => setCurrentStep("intro")}
+                  className="lg:hidden w-full bg-white text-black py-2 font-bold text-[10px] tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <span className="text-xs">✕</span>
+                  CLOSE
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content Area - Full page on mobile, sidebar on desktop */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Top Navigation - Desktop only */}
+              <div className="hidden lg:flex bg-white border-b border-gray-300 px-6 py-4 items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                    ▼ SAVED
+                  </button>
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    SAVE
+                  </button>
+                  <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                    🔗 SHARE
+                  </button>
+                  <button onClick={() => setShowResetModal(true)} className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                    ■ NEW
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                    <span className="text-lg">🛍️</span>
+                  </div>
+                  <button onClick={handleCheckout} className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">
+                    CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
+                  </button>
+                </div>
+              </div>
+
+              {/* Breadcrumb - Desktop only */}
+              <div className="hidden lg:block bg-white px-6 py-2 text-xs text-gray-500 border-b border-gray-300">
+                WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
+              </div>
+
+              {/* Main Background Display */}
+              <div
+                className="flex-1 relative bg-cover bg-center transition-all duration-500"
+                style={{
+                  backgroundImage: selectedBackground 
+                    ? `url(${selectedBackground.image})` 
+                    : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                }}
+              >
+              </div>
+
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+                <button 
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  MENU
+                </button>
+                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  SAVED GALLERY WALLS
+                </button>
+                <button 
+                  onClick={handleCheckout}
+                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                >
+                  <div className="relative">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
+                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                      </span>
                     )}
                   </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Navigation Buttons - Fixed at bottom */}
-          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
-            <button 
-              disabled={!selectedBackground}
-              onClick={() => selectedBackground && setCurrentStep("step3")}
-              className="w-full bg-black text-white py-4 font-bold text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
-            >
-              NEXT
-            </button>
-            <button 
-              onClick={() => setCurrentStep("step1")}
-              className="w-full bg-white text-black py-3 font-bold text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
-            >
-              PREVIOUS
-            </button>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
-              </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                📋 SAVE
-              </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                🔗 SHARE
-              </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-lg">🛍️</span>
+                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                </button>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
-              </button>
+
             </div>
           </div>
-
-          {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-500 border-b border-gray-300">
-            WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
-          </div>
-
-          {/* Main Background Display */}
-          <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500"
-            style={{
-              backgroundImage: selectedBackground 
-                ? `url(${selectedBackground.image})` 
-                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
-            }}
-          >
-          </div>
         </div>
-      </div>
+
+        {/* Mobile Menu Modal */}
+        {showMobileMenu && (
+          <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+            <div 
+              className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 space-y-3">
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  SAVE
+                </button>
+                <button 
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  🔗 SHARE
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowResetModal(true)
+                    setShowMobileMenu(false)
+                  }}
+                  className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                >
+                  ■ CREATE NEW
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     )
   }
@@ -1987,28 +2317,33 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
-          {/* Logo - Fixed at top */}
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
-          </div>
+      <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+        {/* Mobile/Desktop Layout Container */}
+        <div className="flex flex-row flex-1 overflow-hidden">
+          {/* Left Sidebar - Narrow on mobile, standard on desktop */}
+          <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+            {/* Logo - Hidden on mobile, visible on desktop */}
+            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
-          {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <p className="text-xs sm:text-sm font-semibold tracking-wide">3. SELECT PICTURE WALL</p>
-            <button
-              onClick={() => setCurrentStep("intro")}
-              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
-            >
-              ✕
-            </button>
-          </div>
+            {/* Mobile: Header "3 SELECT PICTURE WALL" */}
+            <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
+              <p className="text-[9px] font-bold tracking-wide">3 SELECT PICTURE WALL</p>
+            </div>
+
+            {/* Desktop: Step Header with Close Button - Fixed */}
+            <div className="hidden lg:flex items-center justify-between px-0 py-3 sm:py-4 border-b border-gray-200 flex-shrink-0">
+              <p className="text-xs sm:text-sm font-semibold tracking-wide">3. SELECT PICTURE WALL</p>
+              <button
+                onClick={() => setCurrentStep("intro")}
+                className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+              >
+                ✕
+              </button>
+            </div>
 
           {/* Scrollable Layout Options */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
-            <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
+          <div className="flex-1 flex flex-col overflow-y-auto min-h-0 py-1 lg:py-6 px-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="space-y-3 lg:space-y-6 py-1 lg:pr-2">
             {layoutOptions.map((layout) => (
               <div
                 key={layout.id}
@@ -2035,7 +2370,7 @@ export default function LandingPage() {
                 className="relative cursor-pointer transition-all duration-200 group hover:shadow-lg"
               >
                 {/* Layout Preview */}
-                <div className="relative h-48 bg-white group-hover:bg-gray-50">
+                <div className="relative h-16 lg:h-48 bg-white group-hover:bg-gray-50">
                   {layout.image ? (
                     /* Image-based preview */
                     <img 
@@ -2080,95 +2415,183 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 space-y-3">
+          {/* Mobile & Desktop: Navigation Buttons - Fixed at bottom */}
+          <div className="px-0 py-2 lg:py-4 border-t border-gray-200 space-y-1.5 lg:space-y-3 flex-shrink-0">
             <button 
               disabled={!selectedLayout}
               onClick={() => selectedLayout && setCurrentStep("step4")}
-              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-black text-white py-2 lg:py-4 font-bold text-[10px] lg:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
             >
               NEXT
             </button>
+            {/* Desktop: PREVIOUS button - goes to previous step */}
             <button 
               onClick={() => setCurrentStep("step2")}
-              className="w-full bg-white text-black py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+              className="hidden lg:flex w-full bg-white text-black py-2 lg:py-3 font-bold text-[10px] lg:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer items-center justify-center gap-1"
             >
               PREVIOUS
+            </button>
+            {/* Mobile: CLOSE button - goes to landing page */}
+            <button 
+              onClick={() => setCurrentStep("intro")}
+              className="lg:hidden w-full bg-white text-black py-2 font-bold text-[10px] tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <span className="text-xs">✕</span>
+              CLOSE
             </button>
           </div>
         </div>
 
-        {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Top Navigation - Hidden on mobile */}
+          <div className="hidden lg:flex bg-white border-b border-gray-300 px-6 py-4 items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 ▼ SAVED
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                💾 SAVE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                ↗ SHARE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                🔗 SHARE
               </button>
               <button
                 onClick={() => setShowResetModal(true)}
-                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+                className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer"
               >
                 ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-base sm:text-lg">🛍️</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                <span className="text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">
+              <button onClick={handleCheckout} className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">
                 CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
           </div>
 
-          {/* Breadcrumb */}
-          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
+          {/* Breadcrumb - Hidden on mobile */}
+          <div className="hidden lg:block bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
           {/* Main Canvas with Background and Frames */}
-          <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
-            style={{
-              backgroundImage: selectedBackground 
-                ? `url(${selectedBackground.image})` 
-                : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
-            }}
-          >
-            <div className="absolute inset-0">
-              {/* Frame Placeholders - Only show when layout is selected */}
-                {selectedLayout && selectedLayout.frames.map((frame, idx) => (
-                <div
-                  key={idx}
-                  className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
-                  style={{
-                    width: frame.width,
-                    height: frame.height,
-                    top: frame.top,
-                    bottom: frame.bottom,
-                    left: frame.left,
-                    right: frame.right,
-                    transform: frame.transform
-                  }}
-                >
-                  <span className="text-gray-600 font-semibold text-sm">
-                    {frame.size}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div
+              className="flex-1 relative bg-cover bg-center transition-all duration-500"
+              style={{
+                backgroundImage: selectedBackground 
+                  ? `url(${selectedBackground.image})` 
+                  : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+              }}
+            >
+              <div className="absolute inset-0">
+                {/* Frame Placeholders - Only show when layout is selected */}
+                  {selectedLayout && selectedLayout.frames.map((frame, idx) => (
+                  <div
+                    key={idx}
+                    className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                    style={{
+                      width: frame.width,
+                      height: frame.height,
+                      top: frame.top,
+                      bottom: frame.bottom,
+                      left: frame.left,
+                      right: frame.right,
+                      transform: frame.transform
+                    }}
+                  >
+                    <span className="text-gray-600 font-semibold text-sm">
+                      {frame.size}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Bottom Menu Bar */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              MENU
+            </button>
+            <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              SAVED GALLERY WALLS
+            </button>
+            <button 
+              onClick={handleCheckout}
+              className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+            >
+              <div className="relative">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
                   </span>
-                </div>
-              ))}
+                )}
+              </div>
+              ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+            </button>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu Modal */}
+      {showMobileMenu && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+          <div 
+            className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 space-y-3">
+              <button 
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
+              </button>
+              <button 
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                🔗 SHARE
+              </button>
+              <button 
+                onClick={() => {
+                  setShowResetModal(true)
+                  setShowMobileMenu(false)
+                }}
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+              >
+                ■ CREATE NEW
+              </button>
             </div>
           </div>
         </div>
+      )}
 
         {/* Confirmation Modal for Layout Change */}
         {showLayoutChangeModal && (
@@ -2233,7 +2656,6 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      </div>
       </>
     )
   }
@@ -2274,27 +2696,32 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-full lg:w-80 bg-white border-b lg:border-r border-gray-300 flex flex-col max-h-screen lg:h-screen">
-          {/* Logo - Fixed at top */}
-          <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
-          </div>
+      <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+        {/* Mobile/Desktop Layout Container */}
+        <div className="flex flex-row flex-1 overflow-hidden">
+          {/* Left Sidebar - Narrow on mobile, standard on desktop */}
+          <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+            {/* Logo - Hidden on mobile, visible on desktop */}
+            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
-          {/* Step Header with Close Button - Fixed */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <p className="text-xs sm:text-sm font-semibold tracking-wide">4. SELECT DESIGNS</p>
-            <button
-              onClick={() => setCurrentStep("intro")}
-              className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
-            >
-              ✕
-            </button>
-          </div>
+            {/* Mobile: Header "4. SELECT DESIGNS" */}
+            <div className="lg:hidden flex-shrink-0 mb-2 border-b border-gray-200 pb-1">
+              <p className="text-[8px] font-bold tracking-wide text-gray-500">4. SELECT DESIGNS</p>
+            </div>
+
+            {/* Desktop: Step Header with Close Button - Fixed */}
+            <div className="hidden lg:flex items-center justify-between px-0 py-3 sm:py-4 border-b border-gray-200 flex-shrink-0">
+              <p className="text-xs sm:text-sm font-semibold tracking-wide">4. SELECT DESIGNS</p>
+              <button
+                onClick={() => setCurrentStep("intro")}
+                className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
+              >
+                ✕
+              </button>
+            </div>
 
           {/* Instructions or Artwork List */}
-          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-1 lg:px-4 py-2 lg:py-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
             {activeFrameIndex === null ? (
               /* Show instructions when no frame is selected */
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -2313,10 +2740,32 @@ export default function LandingPage() {
             ) : (
               /* Show artwork options for selected frame */
               <div className="relative">
-                {/* Selected Filters Chips */}
-                {selectedColorFilters.length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {selectedColorFilters.map(color => (
+                  {/* Mobile: Filter Header - Stacked vertically */}
+                  <div className="lg:hidden mb-2">
+                    <div className="flex flex-col">
+                      <button 
+                        onClick={() => setShowFilter(!showFilter)}
+                        className="flex items-center gap-1 text-[10px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-1 border-b border-gray-200"
+                      >
+                        {showFilter ? 'HIDE FILTER' : 'SHOW FILTER'}
+                        <span className="text-[10px]">×</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setSearchQuery('')
+                          setSelectedColorFilters([])
+                        }}
+                        className="text-[10px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-1 border-b border-gray-200 text-left"
+                      >
+                        ALL PRODUCTS
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop: Selected Filters Chips */}
+                  {selectedColorFilters.length > 0 && (
+                    <div className="hidden lg:flex mb-4 flex-wrap gap-2">
+                      {selectedColorFilters.map(color => (
                       <button
                         key={color}
                         onClick={() => toggleColorFilter(color)}
@@ -2328,8 +2777,8 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                {/* Filter Bar */}
-                <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-4">
+                {/* Desktop: Filter Bar */}
+                <div className="hidden lg:flex mb-4 items-center justify-between border-b border-gray-200 pb-4">
                   <button 
                     onClick={() => {
                       setSearchQuery('')
@@ -2350,9 +2799,9 @@ export default function LandingPage() {
                   </button>
                 </div>
 
-                {/* Color Filter Panel - Flyout to the right of sidebar */}
+                {/* Desktop: Color Filter Panel - Flyout to the right of sidebar */}
                 {showFilter && (
-                  <div className="fixed left-0 lg:left-80 top-0 lg:top-[132px] h-full lg:h-[calc(100%-132px)] w-full lg:w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
+                  <div className="hidden lg:block fixed lg:left-80 top-0 lg:top-[132px] h-full lg:h-[calc(100%-132px)] w-full lg:w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
                     {/* Header with Clear Filter and Search */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex items-center justify-end mb-4">
@@ -2619,74 +3068,75 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                {availableArtworks.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No artworks available for this size</p>
-                  </div>
-                ) : (
-                  <div>
-                    {/* 2-Column Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {availableArtworks.slice(0, displayedArtworkCount).map((artwork) => (
-                        <div
-                          key={artwork.id}
-                          onClick={() => {
-                            setSelectedArtworks({
-                              ...selectedArtworks,
-                              [activeFrameIndex]: artwork
-                            })
-                          }}
-                          className={`relative cursor-pointer transition-all duration-200 group ${
-                            selectedArtworks[activeFrameIndex]?.id === artwork.id
-                              ? 'ring-2 ring-black ring-offset-2'
-                              : 'hover:shadow-lg'
-                          }`}
-                        >
-                          {/* Artwork Image */}
-                          <div className="relative aspect-[3/4] bg-gray-200 overflow-hidden">
-                            <img 
-                              src={artwork.image}
-                              alt={artwork.title}
-                              className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-                            />
-                            {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
-                              <div className="absolute top-2 left-2 bg-black text-white rounded w-6 h-6 flex items-center justify-center">
-                                <span className="text-sm font-bold">✓</span>
-                              </div>
-                            )}
-                          </div>
+                  {/* Artwork Grid */}
+                  {availableArtworks.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 text-xs lg:text-base">No artworks available</p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Single column grid on mobile */}
+                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                        {availableArtworks.slice(0, displayedArtworkCount).map((artwork) => (
+                          <div
+                            key={artwork.id}
+                            onClick={() => {
+                              setSelectedArtworks({
+                                ...selectedArtworks,
+                                [activeFrameIndex]: artwork
+                              })
+                            }}
+                            className={`relative cursor-pointer transition-all duration-200 group ${
+                              selectedArtworks[activeFrameIndex]?.id === artwork.id
+                                ? 'ring-2 ring-black ring-offset-1 lg:ring-offset-2'
+                                : 'hover:shadow-lg'
+                            }`}
+                          >
+                            {/* Artwork Image */}
+                            <div className="relative aspect-[3/4] bg-gray-200 overflow-hidden">
+                              <img 
+                                src={artwork.image}
+                                alt={artwork.title}
+                                className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                              />
+                              {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
+                                <div className="absolute top-1 left-1 lg:top-2 lg:left-2 bg-black text-white rounded w-4 h-4 lg:w-6 lg:h-6 flex items-center justify-center">
+                                  <span className="text-[10px] lg:text-sm font-bold">✓</span>
+                                </div>
+                              )}
+                            </div>
 
-                          {/* Artwork Info */}
-                          <div className="p-2 bg-white border border-t-0 border-gray-200">
-                            <h3 className="text-xs font-bold text-black mb-1 line-clamp-1">{artwork.title}</h3>
-                            <div className="flex items-center justify-center">
-                              <span className="text-xs font-semibold text-black">£{artwork.price}</span>
+                            {/* Artwork Info */}
+                            <div className="p-1 lg:p-2 bg-white border border-t-0 border-gray-200">
+                              <h3 className="text-[8px] lg:text-xs font-bold text-black mb-0.5 lg:mb-1 line-clamp-1">{artwork.title}</h3>
+                              <div className="flex items-center justify-center">
+                                <span className="text-[9px] lg:text-xs font-semibold text-black">£{artwork.price}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Loading Indicator - Shown when loading more */}
-                    {isLoadingMore && (
-                      <div className="mt-6 flex justify-center py-4">
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-sm font-medium">Loading more...</span>
-                        </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      {/* Loading Indicator - Shown when loading more */}
+                      {isLoadingMore && (
+                        <div className="mt-4 lg:mt-6 flex justify-center py-2 lg:py-4">
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <svg className="animate-spin h-4 w-4 lg:h-6 lg:w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="text-xs lg:text-sm font-medium">Loading more...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
               </div>
             )}
           </div>
 
-          {/* Navigation Buttons - Fixed at bottom */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 space-y-3">
+          {/* Mobile & Desktop: Navigation Buttons - Fixed at bottom */}
+          <div className="px-0 py-2 lg:py-4 border-t border-gray-200 space-y-1.5 lg:space-y-3 flex-shrink-0">
             <button 
               onClick={() => {
                 // Check if at least one artwork is selected
@@ -2697,58 +3147,347 @@ export default function LandingPage() {
                   setCurrentStep("checkout")
                 }
               }}
-              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wide hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+              className="w-full bg-black text-white py-2 lg:py-4 font-bold text-[10px] lg:text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer"
             >
               NEXT
             </button>
+            {/* Desktop: PREVIOUS button - goes to previous step */}
             <button 
               onClick={() => {
                 setActiveFrameIndex(null)
                 setCurrentStep("step3")
               }}
-              className="w-full bg-white text-black py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer"
+              className="hidden lg:flex w-full bg-white text-black py-2 lg:py-3 font-bold text-[10px] lg:text-sm tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer items-center justify-center gap-1"
             >
               PREVIOUS
+            </button>
+            {/* Mobile: CLOSE button - goes to landing page */}
+            <button 
+              onClick={() => setCurrentStep("intro")}
+              className="lg:hidden w-full bg-white text-black py-2 font-bold text-[10px] tracking-wide border-2 border-black hover:bg-gray-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <span className="text-xs">✕</span>
+              CLOSE
             </button>
           </div>
         </div>
 
-        {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+        {/* Mobile: Filter Panel - Adjacent column to the right of sidebar */}
+        {showFilter && (
+          <div className="lg:hidden w-40 bg-white border-r border-gray-300 flex flex-col h-screen overflow-hidden">
+            {/* Header with Close and Clear Filter */}
+            <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200">
+              <button 
+                onClick={() => setShowFilter(false)}
+                className="text-xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+              <button 
+                onClick={() => {
+                  setSearchQuery('')
+                  setSelectedColorFilters([])
+                  setSelectedOrientationFilters([])
+                  setSelectedStyleFilters([])
+                  setSelectedCollectionFilters([])
+                  setSelectedArtistFilters([])
+                  setSelectedRoomFilters([])
+                }}
+                className="text-[8px] font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer border border-gray-300 px-2 py-1"
+              >
+                CLEAR FILTER
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="px-2 py-2 border-b border-gray-200">
+              <div className="flex items-center border border-gray-300">
+                <svg className="w-3 h-3 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-2 py-1 text-[10px] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Scrollable Filter Options */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Orientation Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setExpandedFilterSection(expandedFilterSection === 'orientation' ? null : 'orientation')}
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-[10px] font-bold text-black">Orientation</h3>
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${expandedFilterSection === 'orientation' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedFilterSection === 'orientation' && (
+                  <div className="px-3 pb-2">
+                    <div className="space-y-1">
+                      {orientationOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilter('orientation', option.value)}
+                          className={`w-full text-left px-2 py-1.5 border transition-all text-[9px] ${
+                            selectedOrientationFilters.includes(option.value)
+                              ? 'border-black bg-black text-white'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <span className="font-medium">{option.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Color Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setExpandedFilterSection(expandedFilterSection === 'color' ? null : 'color')}
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-[10px] font-bold text-black">Color</h3>
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${expandedFilterSection === 'color' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedFilterSection === 'color' && (
+                  <div className="px-3 pb-2">
+                    <div className="space-y-1">
+                      {colorOptions.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => toggleFilter('color', color.value)}
+                          className={`flex items-center gap-2 w-full px-2 py-1.5 border transition-all ${
+                            selectedColorFilters.includes(color.value)
+                              ? 'border-black bg-gray-100'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div 
+                            className="w-4 h-4 border border-gray-300 flex-shrink-0"
+                            style={{ background: color.color }}
+                          />
+                          <span className="text-[9px] font-medium text-gray-800">{color.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Style Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setExpandedFilterSection(expandedFilterSection === 'style' ? null : 'style')}
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-[10px] font-bold text-black">Style</h3>
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${expandedFilterSection === 'style' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedFilterSection === 'style' && (
+                  <div className="px-3 pb-2">
+                    <div className="space-y-1">
+                      {styleOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilter('style', option.value)}
+                          className={`w-full text-left px-2 py-1.5 border transition-all text-[9px] ${
+                            selectedStyleFilters.includes(option.value)
+                              ? 'border-black bg-black text-white'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <span className="font-medium">{option.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Collection Section */}
+              {collectionOptions.length > 0 && (
+                <div className="border-b border-gray-200">
+                  <button
+                    onClick={() => setExpandedFilterSection(expandedFilterSection === 'collection' ? null : 'collection')}
+                    className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-[10px] font-bold text-black">Collection</h3>
+                    <svg 
+                      className={`w-3 h-3 transition-transform ${expandedFilterSection === 'collection' ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedFilterSection === 'collection' && (
+                    <div className="px-3 pb-2">
+                      <div className="space-y-1">
+                        {collectionOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => toggleFilter('collection', option.value)}
+                            className={`w-full text-left px-2 py-1.5 border transition-all text-[9px] ${
+                              selectedCollectionFilters.includes(option.value)
+                                ? 'border-black bg-black text-white'
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          >
+                            <span className="font-medium">{option.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Artist Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setExpandedFilterSection(expandedFilterSection === 'artist' ? null : 'artist')}
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-[10px] font-bold text-black">Artist</h3>
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${expandedFilterSection === 'artist' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedFilterSection === 'artist' && (
+                  <div className="px-3 pb-2">
+                    <div className="space-y-1">
+                      {artistOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilter('artist', option.value)}
+                          className={`w-full text-left px-2 py-1.5 border transition-all text-[9px] ${
+                            selectedArtistFilters.includes(option.value)
+                              ? 'border-black bg-black text-white'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <span className="font-medium">{option.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Room Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setExpandedFilterSection(expandedFilterSection === 'room' ? null : 'room')}
+                  className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-[10px] font-bold text-black">Room</h3>
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${expandedFilterSection === 'room' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedFilterSection === 'room' && (
+                  <div className="px-3 pb-2">
+                    <div className="space-y-1">
+                      {roomOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilter('room', option.value)}
+                          className={`w-full text-left px-2 py-1.5 border transition-all text-[9px] ${
+                            selectedRoomFilters.includes(option.value)
+                              ? 'border-black bg-black text-white'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <span className="font-medium">{option.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Top Navigation - Hidden on mobile */}
+          <div className="hidden lg:flex bg-white border-b border-gray-300 px-6 py-4 items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 ▼ SAVED
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                💾 SAVE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                ↗ SHARE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                🔗 SHARE
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-xs sm:text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
-                <span className="text-base sm:text-lg">🛍️</span>
+                <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
+                <span className="text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 font-bold text-[10px] sm:text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 whitespace-nowrap cursor-pointer">CHECKOUT</button>
+              <button onClick={handleCheckout} className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">CHECKOUT</button>
             </div>
           </div>
 
-          {/* Breadcrumb */}
-          <div className="bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
+          {/* Breadcrumb - Hidden on mobile */}
+          <div className="hidden lg:block bg-white px-3 sm:px-4 md:px-6 py-2 text-[10px] sm:text-xs text-gray-400 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
           {/* Main Canvas with Background and Clickable Frames */}
-          <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div
+              className="flex-1 relative bg-cover bg-center transition-all duration-500"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
@@ -2822,6 +3561,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+        </div>{/* End of Main Content Area */}
 
         {/* Validation Modal - No Artworks Selected */}
         {showEmptyArtworkModal && (
@@ -2855,7 +3595,79 @@ export default function LandingPage() {
             </div>
           </div>
         )}
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+                <button 
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  MENU
+                </button>
+                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  SAVED GALLERY WALLS
+                </button>
+                <button 
+                  onClick={handleCheckout}
+                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                >
+                  <div className="relative">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
+                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                      </span>
+                    )}
+                  </div>
+                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                </button>
+              </div>
+        </div>{/* End of flex-row container */}
       </div>
+
+      {/* Mobile Menu Modal */}
+      {showMobileMenu && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+          <div 
+            className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 space-y-3">
+              <button 
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
+              </button>
+              <button 
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                🔗 SHARE
+              </button>
+              <button 
+                onClick={() => {
+                  setShowResetModal(true)
+                  setShowMobileMenu(false)
+                }}
+                className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+              >
+                ■ CREATE NEW
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </>
     )
   }
@@ -3108,17 +3920,20 @@ export default function LandingPage() {
           {/* Top Navigation */}
           <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ▼ SAVED GALLERY WALLS
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                ▼ SAVED
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                📋 SAVE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 🔗 SHARE
               </button>
-              <button className="px-4 py-2 border-2 border-black text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
-                ■ CREATE NEW
+              <button onClick={() => setShowResetModal(true)} className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
+                ■ NEW
               </button>
             </div>
 
@@ -3127,7 +3942,7 @@ export default function LandingPage() {
                 <span className="text-sm font-semibold">{Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}</span>
                 <span className="text-lg">🛍️</span>
               </div>
-              <button onClick={handleCheckout} className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <button onClick={handleCheckout} className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg">
                 CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
             </div>
@@ -3355,26 +4170,29 @@ export default function LandingPage() {
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 ▼ SAVED
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
-                📋 SAVE
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer bg-white">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                SAVE
               </button>
-              <button className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer">
+              <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 🔗 SHARE
               </button>
               <button
                 onClick={() => setShowResetModal(true)}
-                className="px-2 sm:px-3 md:px-4 py-2 border-2 border-black text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-2 hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap cursor-pointer"
+                className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer"
               >
                 ■ NEW
               </button>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-4">
               {/* Cart Icon with Dropdown */}
               <div className="relative">
                 <button
@@ -3532,7 +4350,7 @@ export default function LandingPage() {
                       </div>
                       <button 
                         onClick={handleCheckout}
-                        className="w-full bg-black text-white py-3 font-bold text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                        className="w-full bg-black text-white py-3 font-bold text-sm tracking-widest hover:bg-gray-800 transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
                       >
                         CHECKOUT
                       </button>
@@ -3543,7 +4361,7 @@ export default function LandingPage() {
               
               <button 
                 onClick={handleCheckout}
-                className="bg-black text-white px-6 py-2 font-bold text-xs tracking-wider hover:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
+                className="bg-black text-white px-8 py-2.5 font-bold text-xs tracking-widest shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 CHECKOUT {(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? `£${calculateCartTotal()}` : ''}
               </button>
