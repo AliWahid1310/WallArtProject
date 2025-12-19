@@ -36,6 +36,13 @@ export default function LandingPage() {
   const [showFilter, setShowFilter] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedColorFilters, setSelectedColorFilters] = useState([])
+  const [selectedOrientationFilters, setSelectedOrientationFilters] = useState([])
+  const [selectedSizeFilters, setSelectedSizeFilters] = useState([])
+  const [selectedStyleFilters, setSelectedStyleFilters] = useState([])
+  const [selectedCollectionFilters, setSelectedCollectionFilters] = useState([])
+  const [selectedArtistFilters, setSelectedArtistFilters] = useState([])
+  const [selectedRoomFilters, setSelectedRoomFilters] = useState([])
+  const [expandedFilterSection, setExpandedFilterSection] = useState(null)
   const [selectedFrames, setSelectedFrames] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedFrames')
     return saved ? JSON.parse(saved) : {}
@@ -66,6 +73,19 @@ export default function LandingPage() {
       try {
         setIsLoadingProducts(true)
         const products = await fetchArtworkProducts()
+        console.log('=== LOADED PRODUCTS ===', products.length)
+        if (products.length > 0) {
+          console.log('Sample product structure:', {
+            title: products[0].title,
+            colors: products[0].colors,
+            sizes: products[0].sizes,
+            styles: products[0].styles,
+            rooms: products[0].rooms,
+            artists: products[0].artists,
+            tags: products[0].tags,
+            productType: products[0].productType
+          })
+        }
         setArtworkProducts(products)
       } catch (error) {
         console.error('Failed to fetch artwork products:', error)
@@ -125,7 +145,7 @@ export default function LandingPage() {
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
     setDisplayedArtworkCount(20)
-  }, [activeFrameIndex, searchQuery, selectedColorFilters])
+  }, [activeFrameIndex, searchQuery, selectedColorFilters, selectedOrientationFilters, selectedStyleFilters, selectedCollectionFilters, selectedArtistFilters, selectedRoomFilters])
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
@@ -159,127 +179,49 @@ export default function LandingPage() {
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
 
-  // Function to toggle color filter
-  const toggleColorFilter = (color) => {
-    setSelectedColorFilters(prev => {
-      if (prev.includes(color)) {
-        return prev.filter(c => c !== color)
-      } else {
-        return [...prev, color]
-      }
-    })
+  // Function to toggle filters
+  const toggleFilter = (filterType, value) => {
+    const setterMap = {
+      'color': setSelectedColorFilters,
+      'orientation': setSelectedOrientationFilters,
+      'size': setSelectedSizeFilters,
+      'style': setSelectedStyleFilters,
+      'collection': setSelectedCollectionFilters,
+      'artist': setSelectedArtistFilters,
+      'room': setSelectedRoomFilters
+    }
+    
+    const setter = setterMap[filterType]
+    if (setter) {
+      setter(prev => {
+        if (prev.includes(value)) {
+          return prev.filter(item => item !== value)
+        } else {
+          return [...prev, value]
+        }
+      })
+    }
   }
 
   // Function to filter artworks
   const getArtworksForFrameSize = (frameSize) => {
     let filtered = [...artworkProducts]
 
-    console.log('Frame size requested:', frameSize)
-    console.log('Total products:', artworkProducts.length)
+    console.log('=== FILTER DEBUG ===')
+    console.log('Total products BEFORE filtering:', artworkProducts.length)
+    console.log('Active filters:', {
+      search: searchQuery,
+      colors: selectedColorFilters,
+      orientations: selectedOrientationFilters,
+      sizes: selectedSizeFilters,
+      styles: selectedStyleFilters,
+      collections: selectedCollectionFilters,
+      artists: selectedArtistFilters,
+      rooms: selectedRoomFilters
+    })
     
-    // Filter by size
-    if (frameSize) {
-      // Normalize the frame size (e.g., "50X70" -> "50x70")
-      const normalizedFrameSize = frameSize.toLowerCase().replace(/[×\s]/gi, 'x').replace(/cm/gi, '')
-      console.log('Normalized frame size:', normalizedFrameSize)
-      
-      // Extract dimensions
-      const frameParts = normalizedFrameSize.split('x')
-      const frameWidth = parseInt(frameParts[0])
-      const frameHeight = parseInt(frameParts[1])
-      
-      console.log('Frame dimensions:', frameWidth, 'x', frameHeight)
-      
-      filtered = filtered.filter(artwork => {
-        // Check if product has sizes array with actual values
-        if (!artwork.sizes || !Array.isArray(artwork.sizes) || artwork.sizes.length === 0) {
-          console.log(`Product "${artwork.title}" has no sizes array - SHOWING IT`)
-          return true // Include products without size info (show for all frames)
-        }
-        
-        // Check if sizes array has valid data
-        const hasValidSizes = artwork.sizes.some(size => size && size.trim())
-        if (!hasValidSizes) {
-          console.log(`Product "${artwork.title}" has empty sizes - SHOWING IT`)
-          return true // Include if sizes are empty/invalid
-        }
-        
-        // Check each size in the product
-        const hasMatchingSize = artwork.sizes.some(size => {
-          const normalizedSize = size.toLowerCase().replace(/[×\s]/gi, 'x').replace(/cm/gi, '')
-          const sizeParts = normalizedSize.split('x')
-          
-          if (sizeParts.length !== 2) return false
-          
-          const sizeWidth = parseInt(sizeParts[0])
-          const sizeHeight = parseInt(sizeParts[1])
-          
-          if (isNaN(sizeWidth) || isNaN(sizeHeight)) return false
-          
-          // Match in either orientation
-          const matches = (sizeWidth === frameWidth && sizeHeight === frameHeight) ||
-                         (sizeWidth === frameHeight && sizeHeight === frameWidth)
-          
-          if (matches) {
-            console.log(`Product "${artwork.title}" matches with size: ${size}`)
-          }
-          
-          return matches
-        })
-        
-        if (!hasMatchingSize) {
-          console.log(`Product "${artwork.title}" sizes:`, artwork.sizes, `- doesn't match ${frameWidth}x${frameHeight} - SHOWING IT ANYWAY`)
-          return true // Show all products regardless of size match for now
-        }
-        
-        return hasMatchingSize
-      })
-      
-      console.log('Filtered products count:', filtered.length)
-    }
-
-    // Determine frame orientation from activeFrame dimensions
-    if (activeFrameIndex !== null && selectedLayout) {
-      const activeFrame = selectedLayout.frames[activeFrameIndex]
-      if (activeFrame) {
-        // Parse width and height percentages to determine orientation
-        const widthPercent = parseFloat(activeFrame.width)
-        const heightPercent = parseFloat(activeFrame.height)
-        
-        let requiredOrientation = null
-        
-        // Determine orientation based on frame dimensions
-        if (heightPercent > widthPercent * 1.2) {
-          // Frame is portrait (taller than wide)
-          requiredOrientation = 'portrait'
-        } else if (widthPercent > heightPercent * 1.2) {
-          // Frame is landscape (wider than tall)
-          requiredOrientation = 'landscape'
-        } else {
-          // Frame is roughly square
-          requiredOrientation = 'square'
-        }
-
-        // Filter by orientation tag
-        if (requiredOrientation) {
-          filtered = filtered.filter(artwork => {
-            if (!artwork.tags || !Array.isArray(artwork.tags)) return true
-            
-            // Check if product has orientation tag matching required orientation
-            const hasMatchingOrientation = artwork.tags.some(tag => 
-              tag.toLowerCase() === requiredOrientation.toLowerCase()
-            )
-            
-            // If no orientation tag found, include the artwork (backwards compatibility)
-            const hasOrientationTag = artwork.tags.some(tag => 
-              ['portrait', 'landscape', 'square'].includes(tag.toLowerCase())
-            )
-            
-            return hasMatchingOrientation || !hasOrientationTag
-          })
-        }
-      }
-    }
+    // NO automatic frame size or orientation filtering
+    // Users should see ALL products and manually apply filters
 
     // Apply search query filter (searches in title, category, and tags)
     if (searchQuery.trim()) {
@@ -290,20 +232,336 @@ export default function LandingPage() {
       })
     }
 
-    // Apply color filters
-    if (selectedColorFilters.length > 0) {
+    // Apply size filters - using Size product option
+    if (selectedSizeFilters.length > 0) {
+      console.log('\n=== SIZE FILTER DEBUG ===')
+      console.log('Selected size filters:', selectedSizeFilters)
+      console.log('Products before size filter:', filtered.length)
+      
       filtered = filtered.filter(artwork => {
-        return selectedColorFilters.some(colorFilter => {
-          const hasColorTag = artwork.tags?.some(tag => 
-            tag.toLowerCase().includes(colorFilter.toLowerCase())
-          )
-          const searchText = `${artwork.category} ${artwork.title}`.toLowerCase()
-          const hasColorInText = searchText.includes(colorFilter.toLowerCase())
-          return hasColorTag || hasColorInText
+        // If no sizes defined, include the product (show for all size filters)
+        if (!artwork.sizes || !Array.isArray(artwork.sizes) || artwork.sizes.length === 0) {
+          console.log(`  ℹ️ "${artwork.title}" - no sizes, showing for all filters`)
+          return true
+        }
+        
+        const matches = selectedSizeFilters.some(sizeFilter => {
+          // Check sizes array from product options
+          return artwork.sizes.some(size => {
+            const normalizedSize = String(size).toLowerCase().replace(/[×\s×]/gi, 'x').replace(/cm/gi, '').trim()
+            const normalizedFilter = String(sizeFilter).toLowerCase().replace(/[×\s×]/gi, 'x').replace(/cm/gi, '').trim()
+            const match = normalizedSize === normalizedFilter || normalizedSize.includes(normalizedFilter) || normalizedFilter.includes(normalizedSize)
+            if (match) {
+              console.log(`  ✓ "${artwork.title}" matches - size "${size}" matches "${sizeFilter}"`)
+            }
+            return match
+          })
         })
+        
+        return matches
       })
+      console.log(`After size filter: ${filtered.length} products`)
+      console.log('=========================\n')
     }
 
+    // Apply color filters - using Color metafield
+    if (selectedColorFilters.length > 0) {
+      console.log('\n=== COLOR FILTER DEBUG ===')
+      console.log('Selected color filters:', selectedColorFilters)
+      
+      filtered = filtered.filter(artwork => {
+        // If product has NO color metafield data or tags, include it in all color filters
+        const hasColorData = artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0
+        const hasColorTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag => 
+          selectedColorFilters.some(color => tag.toLowerCase().includes(color.toLowerCase()))
+        )
+        
+        if (!hasColorData && !hasColorTags) {
+          console.log(`  ℹ️ "${artwork.title}" - no colors metafield or tags, showing for all filters`)
+          return true // Show products without color data
+        }
+        
+        return selectedColorFilters.some(colorFilter => {
+          const normalizedFilter = colorFilter.toLowerCase().trim()
+          
+          // Check colors metafield array
+          if (artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0) {
+            const hasColor = artwork.colors.some(color => {
+              const normalizedColor = color.toLowerCase().trim()
+              return normalizedColor.includes(normalizedFilter) || normalizedFilter.includes(normalizedColor)
+            })
+            if (hasColor) return true
+          }
+          
+          // Fallback to tags
+          if (artwork.tags && Array.isArray(artwork.tags)) {
+            const hasColorTag = artwork.tags.some(tag => {
+              const normalizedTag = tag.toLowerCase().trim()
+              return normalizedTag.includes(normalizedFilter) || normalizedFilter.includes(normalizedTag)
+            })
+            if (hasColorTag) return true
+          }
+          
+          // Fallback to title/category search
+          const searchText = `${artwork.category || ''} ${artwork.title || ''}`.toLowerCase()
+          return searchText.includes(normalizedFilter)
+        })
+      })
+      console.log(`After color filter: ${filtered.length} products`)
+      console.log('=========================\n')
+    }
+
+    // Apply orientation filters (user-selected)
+    if (selectedOrientationFilters.length > 0) {
+      console.log('\n=== ORIENTATION FILTER DEBUG ===')
+      console.log('Selected orientation filters:', selectedOrientationFilters)
+      
+      filtered = filtered.filter(artwork => {
+        // If no tags with orientation info, include it
+        const hasOrientationTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag => 
+          ['portrait', 'landscape', 'square', 'horizontal', 'vertical'].includes(tag.toLowerCase())
+        )
+        
+        if (!hasOrientationTags) {
+          console.log(`  ℹ️ "${artwork.title}" - no orientation tags, showing for all filters`)
+          return true
+        }
+        
+        return selectedOrientationFilters.some(orientation => {
+          if (!artwork.tags || !Array.isArray(artwork.tags)) return false
+          return artwork.tags.some(tag => 
+            tag.toLowerCase() === orientation.toLowerCase()
+          )
+        })
+      })
+      console.log(`After orientation filter: ${filtered.length} products`)
+      console.log('=========================\n')
+    }
+
+    // Apply style filters - using Filter Home Style metafield
+    if (selectedStyleFilters.length > 0) {
+      console.log('\n=== STYLE FILTER DEBUG ===')
+      console.log('Selected style filters:', selectedStyleFilters)
+      console.log('Products before style filter:', filtered.length)
+      
+      filtered = filtered.filter(artwork => {
+        // If product has NO style metafield data and NO relevant tags, include it in all style filters
+        const hasStyleData = artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0
+        const hasStyleTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag => 
+          selectedStyleFilters.some(style => tag.toLowerCase().includes(style.toLowerCase()))
+        )
+        
+        if (!hasStyleData && !hasStyleTags) {
+          console.log(`  ℹ️ "${artwork.title}" - no styles metafield or tags, showing for all filters`)
+          return true // Show products without style data
+        }
+        
+        const matches = selectedStyleFilters.some(style => {
+          const normalizedStyle = style.toLowerCase().trim()
+          
+          // Check styles metafield array
+          if (artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0) {
+            const hasStyle = artwork.styles.some(artworkStyle => {
+              const normalized = artworkStyle.toLowerCase().trim()
+              return normalized.includes(normalizedStyle) || normalizedStyle.includes(normalized)
+            })
+            if (hasStyle) return true
+          }
+          
+          // Fallback to tags
+          if (artwork.tags && Array.isArray(artwork.tags)) {
+            return artwork.tags.some(tag => {
+              const normalizedTag = tag.toLowerCase().trim()
+              return normalizedTag.includes(normalizedStyle) || normalizedStyle.includes(normalizedTag)
+            })
+          }
+          
+          return false
+        })
+        return matches
+      })
+      console.log(`After style filter: ${filtered.length} products`)
+      console.log('=========================\n')
+    }
+
+    // Apply collection filters
+    if (selectedCollectionFilters.length > 0) {
+      console.log('\n=== COLLECTION FILTER DEBUG ===')
+      console.log('Selected collection filters:', selectedCollectionFilters)
+      console.log('Products before collection filter:', filtered.length)
+      
+      // Log first 5 products to see their collection/productType data
+      filtered.slice(0, 5).forEach((artwork, idx) => {
+        console.log(`Product ${idx + 1}: "${artwork.title}" - productType: "${artwork.productType}"`)
+      })
+      
+      filtered = filtered.filter(artwork => {
+        // If product has NO productType, include it in all collection filters
+        if (!artwork.productType || artwork.productType.trim() === '') {
+          console.log(`  ℹ️ "${artwork.title}" - no productType, showing for all filters`)
+          return true // Show products without productType
+        }
+        
+        const matches = selectedCollectionFilters.some(collection => {
+          const normalizedCollection = collection.toLowerCase().trim()
+          const productType = artwork.productType.toLowerCase().trim()
+          const match = productType.includes(normalizedCollection) || normalizedCollection.includes(productType)
+          if (match) {
+            console.log(`  ✓ "${artwork.title}" matches - productType "${artwork.productType}" contains "${collection}"`)
+          }
+          return match
+        })
+        return matches
+      })
+      console.log(`After collection filter: ${filtered.length} products`)
+      console.log('=========================\n')
+    }
+
+    // Apply artist filters - using Filter Artists metafield
+    if (selectedArtistFilters.length > 0) {
+      console.log('\n=== ARTIST FILTER DEBUG ===')
+      console.log('Selected artist filters:', selectedArtistFilters)
+      console.log('Products before artist filter:', filtered.length)
+      
+      // Log first 5 products to see their artist data
+      filtered.slice(0, 5).forEach((artwork, idx) => {
+        console.log(`Product ${idx + 1}: "${artwork.title}"`)
+        console.log('  - artists metafield:', artwork.artists)
+        console.log('  - vendor field:', artwork.vendor)
+        console.log('  - tags:', artwork.tags)
+      })
+      
+      filtered = filtered.filter(artwork => {
+        // If product has NO artist metafield data, include it in all artist filters
+        // This prevents hiding products just because they don't have the metafield set up yet
+        const hasArtistData = artwork.artists && Array.isArray(artwork.artists) && artwork.artists.length > 0
+        
+        if (!hasArtistData) {
+          console.log(`  ℹ️ "${artwork.title}" - no artists metafield, showing for all filters (vendor: ${artwork.vendor})`)
+          return true // Show products without artist metafield data
+        }
+        
+        const matches = selectedArtistFilters.some(artist => {
+          const normalizedArtist = artist.toLowerCase().trim()
+          
+          // Check artists metafield array
+          const hasArtist = artwork.artists.some(artworkArtist => {
+            const normalized = artworkArtist.toLowerCase().trim()
+            const match = normalized.includes(normalizedArtist) || normalizedArtist.includes(normalized)
+            if (match) {
+              console.log(`  ✓ "${artwork.title}" matches - artist "${artworkArtist}" contains "${artist}"`)
+            }
+            return match
+          })
+          if (hasArtist) return true
+          
+          // Also check vendor field
+          if (artwork.vendor) {
+            const normalizedVendor = artwork.vendor.toLowerCase().trim()
+            const match = normalizedVendor.includes(normalizedArtist) || normalizedArtist.includes(normalizedVendor)
+            if (match) {
+              console.log(`  ✓ "${artwork.title}" matches - vendor "${artwork.vendor}" contains "${artist}"`)
+            }
+            if (match) return true
+          }
+          
+          // Also check tags as fallback
+          if (artwork.tags && Array.isArray(artwork.tags)) {
+            const hasTag = artwork.tags.some(tag => {
+              const normalizedTag = tag.toLowerCase().trim()
+              const match = normalizedTag.includes(normalizedArtist) || normalizedArtist.includes(normalizedTag)
+              if (match) {
+                console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${artist}"`)
+              }
+              return match
+            })
+            if (hasTag) return true
+          }
+          
+          return false
+        })
+        
+        if (!matches) {
+          console.log(`  ✗ "${artwork.title}" - no match (artists: ${artwork.artists?.join(', ')}, vendor: ${artwork.vendor || 'none'})`)
+        }
+        
+        return matches
+      })
+      console.log(`After artist filter: ${filtered.length} products`)
+      console.log('=========================\n')
+    }
+
+    // Apply room filters - using Filter Rooms metafield
+    if (selectedRoomFilters.length > 0) {
+      console.log('\\n=== ROOM FILTER DEBUG ===')
+      console.log('Selected room filters:', selectedRoomFilters)
+      console.log('Products before room filter:', filtered.length)
+      
+      // Log first 5 products to see their room data
+      filtered.slice(0, 5).forEach((artwork, idx) => {
+        console.log(`Product ${idx + 1}: "${artwork.title}"`)
+        console.log('  - rooms metafield:', artwork.rooms)
+        console.log('  - tags:', artwork.tags)
+      })
+      
+      filtered = filtered.filter(artwork => {
+        // If product has NO room metafield data and NO relevant tags, include it in all room filters
+        const hasRoomData = artwork.rooms && Array.isArray(artwork.rooms) && artwork.rooms.length > 0
+        const hasRoomTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag => 
+          selectedRoomFilters.some(room => tag.toLowerCase().includes(room.toLowerCase()))
+        )
+        
+        if (!hasRoomData && !hasRoomTags) {
+          console.log(`  ℹ️ "${artwork.title}" - no rooms metafield or tags, showing for all filters`)
+          return true // Show products without room data
+        }
+        
+        const matches = selectedRoomFilters.some(room => {
+          const normalizedRoom = room.toLowerCase().trim()
+          
+          // Check rooms metafield array
+          if (artwork.rooms && Array.isArray(artwork.rooms) && artwork.rooms.length > 0) {
+            const hasRoom = artwork.rooms.some(artworkRoom => {
+              const normalized = artworkRoom.toLowerCase().trim()
+              const match = normalized.includes(normalizedRoom) || normalizedRoom.includes(normalized)
+              if (match) {
+                console.log(`  ✓ "${artwork.title}" matches - room "${artworkRoom}" contains "${room}"`)
+              }
+              return match
+            })
+            if (hasRoom) return true
+          }
+          
+          // Fallback to tags
+          if (artwork.tags && Array.isArray(artwork.tags)) {
+            const hasTag = artwork.tags.some(tag => {
+              const normalizedTag = tag.toLowerCase().trim()
+              const match = normalizedTag.includes(normalizedRoom) || normalizedRoom.includes(normalizedTag)
+              if (match) {
+                console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${room}"`)
+              }
+              return match
+            })
+            if (hasTag) return true
+          }
+          
+          return false
+        })
+        
+        if (!matches) {
+          console.log(`  ✗ "${artwork.title}" - no match`)
+        }
+        
+        return matches
+      })
+      console.log(`After room filter: ${filtered.length} products`)
+      console.log('=========================\\n')
+    }
+
+    console.log('\\n=== FINAL RESULTS ===')
+    console.log('Total filtered products:', filtered.length)
+    console.log('=====================\\n')
+    
     return filtered
   }
 
@@ -327,6 +585,108 @@ export default function LandingPage() {
     { name: 'Purple', color: '#9333EA', value: 'purple' },
     { name: 'Pink', color: '#EC4899', value: 'pink' },
     { name: 'Turquoise', color: '#14B8A6', value: 'turquoise' }
+  ]
+
+  // Orientation options
+  const orientationOptions = [
+    { name: 'horizontal', value: 'horizontal' },
+    { name: 'square', value: 'square' },
+    { name: 'vertical', value: 'vertical' }
+  ]
+
+  // Size options
+  const sizeOptions = [
+    { name: '13x18', value: '13x18' },
+    { name: '21x30', value: '21x30' },
+    { name: '30x40', value: '30x40' },
+    { name: '40x50', value: '40x50' },
+    { name: '50x70', value: '50x70' },
+    { name: '70x100', value: '70x100' }
+  ]
+
+  // Style options
+  const styleOptions = [
+    { name: 'Art Noveau', value: 'art noveau' },
+    { name: 'Bohemian & Electric', value: 'bohemian & electric' },
+    { name: 'Coastal & Tropical', value: 'coastal & tropical' },
+    { name: 'Contemporary', value: 'contemporary' },
+    { name: 'Country & Farmhouse', value: 'country & farmhouse' },
+    { name: 'Industrial & Utility', value: 'industrial & utility' },
+    { name: 'Lodge', value: 'lodge' },
+    { name: 'Mid-Century', value: 'mid-century' },
+    { name: 'Minimalist', value: 'minimalist' },
+    { name: 'Modern', value: 'modern' },
+    { name: 'Pop Art', value: 'pop art' },
+    { name: 'Retro/Vintage', value: 'retro/vintage' },
+    { name: 'Rustic & Primitive', value: 'rustic & primitive' },
+    { name: 'Victorian', value: 'victorian' }
+  ]
+
+  // Collection options
+  const collectionOptions = [
+    { name: 'Abstract Art', value: 'abstract art' },
+    { name: 'Abstract Wall Art', value: 'abstract wall art' },
+    { name: 'Asian Dragon Art', value: 'asian dragon art' },
+    { name: 'Bar/Cafe', value: 'bar/cafe' },
+    { name: 'Bauhaus', value: 'bauhaus' },
+    { name: 'Bird Wall Art', value: 'bird wall art' },
+    { name: 'Botanical Prints', value: 'botanical prints' },
+    { name: 'Buddha Wall Art', value: 'buddha wall art' },
+    { name: 'Cats & Paws', value: 'cats & paws' },
+    { name: 'City Skylines', value: 'city skylines' },
+    { name: 'Coastal & Beach', value: 'coastal & beach' },
+    { name: 'Cocktail Wall Art', value: 'cocktail wall art' },
+    { name: 'Dog Wall Art', value: 'dog wall art' },
+    { name: 'Floral & Nature', value: 'floral & nature' },
+    { name: 'Flower Market', value: 'flower market' },
+    { name: 'Fruit Wall Art', value: 'fruit wall art' },
+    { name: 'Graphic Design', value: 'graphic design' },
+    { name: 'Japandi', value: 'japandi' },
+    { name: 'Japanese Ink Art', value: 'japanese ink art' },
+    { name: 'Japanese Pop Art', value: 'japanese pop art' },
+    { name: 'Kitchen Art Prints', value: 'kitchen art prints' },
+    { name: 'Mexican Art', value: 'mexican art' },
+    { name: 'Mexican Wall Art', value: 'mexican wall art' },
+    { name: 'Motivational Art', value: 'motivational art' },
+    { name: 'Nursery Wall Art', value: 'nursery wall art' },
+    { name: 'Personalised Prints', value: 'personalised prints' },
+    { name: 'Travel Poster', value: 'travel poster' },
+    { name: 'Typography', value: 'typography' },
+    { name: 'Wabi Sabi', value: 'wabi sabi' },
+    { name: 'Wall Calendar', value: 'wall calendar' },
+    { name: 'Winter Wall Art', value: 'winter wall art' },
+    { name: 'Woodblock Prints', value: 'woodblock prints' }
+  ]
+
+  // Artist options
+  const artistOptions = [
+    { name: 'Bauhaus', value: 'bauhaus' },
+    { name: 'Ellsworth Kelly', value: 'ellsworth kelly' },
+    { name: 'Frida Kahlo', value: 'frida kahlo' },
+    { name: 'Henri Matisse', value: 'henri matisse' },
+    { name: 'Laboo Studio', value: 'laboo studio' },
+    { name: 'Mark Rothko', value: 'mark rothko' },
+    { name: 'Ukiyo-e', value: 'ukiyo-e' },
+    { name: 'William Morris', value: 'william morris' },
+    { name: 'Yayoi Kusama', value: 'yayoi kusama' }
+  ]
+
+  // Room options
+  const roomOptions = [
+    { name: 'Bathroom', value: 'bathroom' },
+    { name: 'Bedroom', value: 'bedroom' },
+    { name: 'Cafe', value: 'cafe' },
+    { name: 'Dorm', value: 'dorm' },
+    { name: 'Entryway', value: 'entryway' },
+    { name: 'Game Room', value: 'game room' },
+    { name: 'Gym', value: 'gym' },
+    { name: 'Kids', value: 'kids' },
+    { name: 'Kitchen & Dining', value: 'kitchen & dining' },
+    { name: 'Laundry', value: 'laundry' },
+    { name: 'Living Room', value: 'living room' },
+    { name: 'Nursery', value: 'nursery' },
+    { name: 'Office', value: 'office' },
+    { name: 'Restaurant', value: 'restaurant' }
   ]
 
   // Frame style options
@@ -1993,13 +2353,18 @@ export default function LandingPage() {
                 {/* Color Filter Panel - Flyout to the right of sidebar */}
                 {showFilter && (
                   <div className="fixed left-0 lg:left-80 top-0 lg:top-[132px] h-full lg:h-[calc(100%-132px)] w-full lg:w-80 bg-white border-r border-gray-200 shadow-xl z-50 overflow-y-auto">
-                    {/* Header with Clear Filter and Search - aligned with ALL PRODUCTS / HIDE FILTER */}
+                    {/* Header with Clear Filter and Search */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex items-center justify-end mb-4">
                         <button 
                           onClick={() => {
                             setSearchQuery('')
                             setSelectedColorFilters([])
+                            setSelectedOrientationFilters([])
+                            setSelectedStyleFilters([])
+                            setSelectedCollectionFilters([])
+                            setSelectedArtistFilters([])
+                            setSelectedRoomFilters([])
                           }}
                           className="text-xs font-semibold text-black hover:text-gray-600 transition-colors cursor-pointer border border-gray-300 px-3 py-1.5"
                         >
@@ -2022,32 +2387,234 @@ export default function LandingPage() {
                       </div>
                     </div>
 
+                    {/* Orientation Section */}
+                    <div className="border-b border-gray-200">
+                      <button
+                        onClick={() => setExpandedFilterSection(expandedFilterSection === 'orientation' ? null : 'orientation')}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-black">Orientation</h3>
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${expandedFilterSection === 'orientation' ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {expandedFilterSection === 'orientation' && (
+                        <div className="px-6 pb-6">
+                          <div className="space-y-2">
+                            {orientationOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => toggleFilter('orientation', option.value)}
+                                className={`w-full text-left px-4 py-2 border-2 transition-all ${
+                                  selectedOrientationFilters.includes(option.value)
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">{option.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Color Section */}
-                    <div className="p-6">
-                      <h3 className="text-sm font-bold text-black mb-4">Color</h3>
-                      
-                      {/* Color Grid */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {colorOptions.map((color) => (
-                          <button
-                            key={color.value}
-                            onClick={() => toggleColorFilter(color.value)}
-                            className={`flex flex-col items-center gap-1.5 px-2 py-2.5 border-2 transition-all cursor-pointer ${
-                              selectedColorFilters.includes(color.value)
-                                ? 'border-black bg-black text-white'
-                                : 'border-gray-300 hover:border-gray-400'
-                            }`}
+                    <div className="border-b border-gray-200">
+                      <button
+                        onClick={() => setExpandedFilterSection(expandedFilterSection === 'color' ? null : 'color')}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-black">Color</h3>
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${expandedFilterSection === 'color' ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {expandedFilterSection === 'color' && (
+                        <div className="px-6 pb-6">
+                          <div className="grid grid-cols-3 gap-2">
+                            {colorOptions.map((color) => (
+                              <button
+                                key={color.value}
+                                onClick={() => toggleFilter('color', color.value)}
+                                className={`flex flex-col items-center gap-1.5 px-2 py-2.5 border-2 transition-all cursor-pointer ${
+                                  selectedColorFilters.includes(color.value)
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <div 
+                                  className="w-7 h-7 border border-gray-300"
+                                  style={{ background: color.color }}
+                                />
+                                <span className={`text-xs font-medium text-center leading-tight ${
+                                  selectedColorFilters.includes(color.value) ? 'text-white' : 'text-gray-800'
+                                }`}>{color.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Style Section */}
+                    <div className="border-b border-gray-200">
+                      <button
+                        onClick={() => setExpandedFilterSection(expandedFilterSection === 'style' ? null : 'style')}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-black">Style</h3>
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${expandedFilterSection === 'style' ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {expandedFilterSection === 'style' && (
+                        <div className="px-6 pb-6">
+                          <div className="grid grid-cols-2 gap-2">
+                            {styleOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => toggleFilter('style', option.value)}
+                                className={`px-4 py-2 border-2 transition-all ${
+                                  selectedStyleFilters.includes(option.value)
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">{option.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Collection Section - Hidden until options provided */}
+                    {collectionOptions.length > 0 && (
+                      <div className="border-b border-gray-200">
+                        <button
+                          onClick={() => setExpandedFilterSection(expandedFilterSection === 'collection' ? null : 'collection')}
+                          className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        >
+                          <h3 className="text-sm font-bold text-black">Collection</h3>
+                          <svg 
+                            className={`w-5 h-5 transition-transform ${expandedFilterSection === 'collection' ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
                           >
-                            <div 
-                              className="w-7 h-7 border border-gray-300"
-                              style={{ background: color.color }}
-                            />
-                            <span className={`text-xs font-medium text-center leading-tight ${
-                              selectedColorFilters.includes(color.value) ? 'text-white' : 'text-gray-800'
-                            }`}>{color.name}</span>
-                          </button>
-                        ))}
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {expandedFilterSection === 'collection' && (
+                          <div className="px-6 pb-6">
+                            <div className="space-y-2">
+                              {collectionOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  onClick={() => toggleFilter('collection', option.value)}
+                                  className={`w-full text-left px-4 py-2 border-2 transition-all ${
+                                    selectedCollectionFilters.includes(option.value)
+                                      ? 'border-black bg-black text-white'
+                                      : 'border-gray-300 hover:border-gray-400'
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">{option.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    )}
+
+                    {/* Artist Section */}
+                    <div className="border-b border-gray-200">
+                      <button
+                        onClick={() => setExpandedFilterSection(expandedFilterSection === 'artist' ? null : 'artist')}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-black">Artist</h3>
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${expandedFilterSection === 'artist' ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {expandedFilterSection === 'artist' && (
+                        <div className="px-6 pb-6">
+                          <div className="space-y-2">
+                            {artistOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => toggleFilter('artist', option.value)}
+                                className={`w-full text-left px-4 py-2 border-2 transition-all ${
+                                  selectedArtistFilters.includes(option.value)
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">{option.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Room Section */}
+                    <div className="border-b border-gray-200">
+                      <button
+                        onClick={() => setExpandedFilterSection(expandedFilterSection === 'room' ? null : 'room')}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-black">Room</h3>
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${expandedFilterSection === 'room' ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {expandedFilterSection === 'room' && (
+                        <div className="px-6 pb-6">
+                          <div className="grid grid-cols-2 gap-2">
+                            {roomOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => toggleFilter('room', option.value)}
+                                className={`px-4 py-2 border-2 transition-all ${
+                                  selectedRoomFilters.includes(option.value)
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">{option.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

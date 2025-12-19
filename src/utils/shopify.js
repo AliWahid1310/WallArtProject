@@ -60,14 +60,25 @@ export async function fetchArtworkProducts() {
                         amount
                         currencyCode
                       }
+                      selectedOptions {
+                        name
+                        value
+                      }
                     }
                   }
                 }
+                productType
+                vendor
                 metafields(identifiers: [
                   { namespace: "custom", key: "frame_sizes" },
-                  { namespace: "custom", key: "category" }
+                  { namespace: "custom", key: "category" },
+                  { namespace: "custom", key: "filter_home_style" },
+                  { namespace: "custom", key: "filter_rooms" },
+                  { namespace: "custom", key: "filter_artists" },
+                  { namespace: "descriptors", key: "color" }
                 ]) {
                   key
+                  namespace
                   value
                 }
               }
@@ -129,6 +140,10 @@ function transformShopifyProducts(shopifyProducts) {
     // Find metafields for sizes and category
     const sizesMetafield = node.metafields.find(m => m && m.key === 'frame_sizes')
     const categoryMetafield = node.metafields.find(m => m && m.key === 'category')
+    const colorMetafield = node.metafields.find(m => m && m.key === 'color' && m.namespace === 'descriptors')
+    const styleMetafield = node.metafields.find(m => m && m.key === 'filter_home_style')
+    const roomsMetafield = node.metafields.find(m => m && m.key === 'filter_rooms')
+    const artistsMetafield = node.metafields.find(m => m && m.key === 'filter_artists')
     
     // Parse frame sizes from metafield
     let sizes = ['50x70'] // default
@@ -154,12 +169,57 @@ function transformShopifyProducts(shopifyProducts) {
     // Get image - try featuredImage first, then fall back to images array
     const imageUrl = node.featuredImage?.url || node.images.edges[0]?.node.url || ''
     
-    return {
+    // Extract size options from variants
+    const sizeOptions = new Set()
+    node.variants.edges.forEach(variant => {
+      const sizeOption = variant.node.selectedOptions?.find(opt => opt.name.toLowerCase() === 'size')
+      if (sizeOption?.value) {
+        sizeOptions.add(sizeOption.value)
+      }
+    })
+    
+    // Helper function to parse metafield values (handles JSON arrays and comma-separated strings)
+    const parseMetafieldArray = (metafield) => {
+      if (!metafield?.value) return []
+      try {
+        const parsed = JSON.parse(metafield.value)
+        // If it's an array, filter out empty values
+        if (Array.isArray(parsed)) {
+          return parsed.filter(item => item && typeof item === 'string' && item.trim())
+        }
+        // If it's a single string, wrap in array
+        if (typeof parsed === 'string' && parsed.trim()) {
+          return [parsed.trim()]
+        }
+        return []
+      } catch (e) {
+        // If JSON parse fails, try comma-separated
+        return metafield.value.split(',')
+          .map(s => s.trim())
+          .filter(s => s) // Remove empty strings
+      }
+    }
+    
+    // Parse all metafields
+    const colors = parseMetafieldArray(colorMetafield)
+    const styles = parseMetafieldArray(styleMetafield)
+    const rooms = parseMetafieldArray(roomsMetafield)
+    const artists = parseMetafieldArray(artistsMetafield)
+    
+    const finalSizes = sizeOptions.size > 0 ? Array.from(sizeOptions) : sizes
+    
+    const product = {
       id: node.id,
       title: node.title,
       category: category,
-      sizes: sizes,
-      tags: node.tags || [], // Include tags for filtering
+      sizes: finalSizes,
+      tags: node.tags || [], // Include tags for orientation filtering
+      colors: colors, // Color metafield
+      styles: styles, // Filter Home Style metafield
+      rooms: rooms, // Filter Rooms metafield
+      artists: artists, // Filter Artists metafield
+      productType: node.productType || '', // Collection filtering
+      vendor: node.vendor || '', // Vendor/Artist name
       image: imageUrl,
       price: parseFloat(node.priceRange.minVariantPrice.amount).toFixed(2),
       currency: node.priceRange.minVariantPrice.currencyCode,
@@ -170,9 +230,26 @@ function transformShopifyProducts(shopifyProducts) {
         id: v.node.id,
         title: v.node.title,
         price: parseFloat(v.node.priceV2.amount).toFixed(2),
-        available: v.node.availableForSale
+        available: v.node.availableForSale,
+        selectedOptions: v.node.selectedOptions || []
       }))
     }
+    
+    // Log first few products for debugging
+    if (shopifyProducts.indexOf({ node }) < 3) {
+      console.log(`Product ${shopifyProducts.indexOf({ node }) + 1}:`, {
+        title: product.title,
+        colors: product.colors,
+        sizes: product.sizes,
+        styles: product.styles,
+        rooms: product.rooms,
+        artists: product.artists,
+        tags: product.tags,
+        productType: product.productType
+      })
+    }
+    
+    return product
   })
 }
 
