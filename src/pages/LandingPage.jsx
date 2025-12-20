@@ -69,6 +69,15 @@ export default function LandingPage() {
   const [savedGalleryWalls, setSavedGalleryWalls] = useState([]) // Saved gallery configurations
   const [showCartDropdown, setShowCartDropdown] = useState(false) // Cart dropdown state
   const [showMobileMenu, setShowMobileMenu] = useState(false) // Mobile menu state
+  const [isMobile, setIsMobile] = useState(false) // Track mobile viewport
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -2498,7 +2507,7 @@ export default function LandingPage() {
           {/* Main Canvas with Background and Frames */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div
-              className="flex-1 relative bg-cover bg-center transition-all duration-500"
+              className="flex-1 relative bg-cover bg-center transition-all duration-500 min-h-[85vh] lg:min-h-0"
               style={{
                 backgroundImage: selectedBackground 
                   ? `url(${selectedBackground.image})` 
@@ -2507,13 +2516,26 @@ export default function LandingPage() {
             >
               <div className="absolute inset-0">
                 {/* Frame Placeholders - Only show when layout is selected */}
-                  {selectedLayout && selectedLayout.frames.map((frame, idx) => (
+                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                  // On mobile, adjust frame dimensions
+                  const getMobileWidth = (size) => {
+                    if (!isMobile) return size
+                    const num = parseFloat(size)
+                    return `${num * 1.0}%`  // Width stays at 100%
+                  }
+                  const getMobileHeight = (size) => {
+                    if (!isMobile) return size
+                    const num = parseFloat(size)
+                    return `${num * 0.35}%`  // Height reduced to 35%
+                  }
+                  
+                  return (
                   <div
                     key={idx}
                     className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
                     style={{
-                      width: frame.width,
-                      height: frame.height,
+                      width: getMobileWidth(frame.width),
+                      height: getMobileHeight(frame.height),
                       top: frame.top,
                       bottom: frame.bottom,
                       left: frame.left,
@@ -2525,7 +2547,8 @@ export default function LandingPage() {
                       {frame.size}
                     </span>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -3506,19 +3529,31 @@ export default function LandingPage() {
           {/* Main Canvas with Background and Clickable Frames */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div
-              className="flex-1 relative bg-cover bg-center transition-all duration-500"
+              className="flex-1 relative bg-cover bg-center transition-all duration-500 min-h-[85vh] lg:min-h-0"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            {/* Frame Container - Fixed aspect ratio wrapper */}
+            {/* Frame Container */}
             <div className="absolute inset-0">
               {/* Clickable Frame Placeholders with Selected Artworks */}
               {selectedLayout && selectedLayout.frames.map((frame, idx) => {
               const artwork = selectedArtworks[idx]
               const frameStyle = selectedFrames[idx]
+              
+              // On mobile, adjust frame dimensions - keep width, reduce height less
+              const getMobileWidth = (size) => {
+                if (!isMobile) return size
+                const num = parseFloat(size)
+                return `${num * 1.0}%`  // Width stays at 100%
+              }
+              const getMobileHeight = (size) => {
+                if (!isMobile) return size
+                const num = parseFloat(size)
+                return `${num * 0.35}%`  // Height reduced to 35%
+              }
               
               return (
                 <div
@@ -3530,8 +3565,8 @@ export default function LandingPage() {
                       : ''
                   }`}
                   style={{
-                    width: frame.width,
-                    height: frame.height,
+                    width: getMobileWidth(frame.width),
+                    height: getMobileHeight(frame.height),
                     top: frame.top,
                     bottom: frame.bottom,
                     left: frame.left,
@@ -4414,7 +4449,7 @@ export default function LandingPage() {
 
           {/* Main Canvas - Final Preview */}
           <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden"
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden min-h-[85vh] lg:min-h-0"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
@@ -4428,14 +4463,26 @@ export default function LandingPage() {
                 const frameStyle = selectedFrames[idx]
 
                 if (!artwork) return null
+                
+                // On mobile, adjust frame dimensions - keep width, reduce height less
+                const getMobileWidth = (size) => {
+                  if (!isMobile) return size
+                  const num = parseFloat(size)
+                  return `${num * 1.0}%`  // Width stays at 100%
+                }
+                const getMobileHeight = (size) => {
+                  if (!isMobile) return size
+                  const num = parseFloat(size)
+                  return `${num * 0.35}%`  // Height reduced to 35%
+                }
 
                 return (
                   <div
                     key={idx}
                     className="absolute transition-all duration-300 overflow-hidden"
                     style={{
-                      width: frame.width,
-                      height: frame.height,
+                      width: getMobileWidth(frame.width),
+                      height: getMobileHeight(frame.height),
                       top: frame.top,
                       bottom: frame.bottom,
                       left: frame.left,
