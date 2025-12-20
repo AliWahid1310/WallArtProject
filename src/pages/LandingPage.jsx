@@ -1374,32 +1374,28 @@ export default function LandingPage() {
   ]
 
   // Mobile Portrait Mode Blocker - Shows rotate prompt before any content
-  if (isMobile && !isLandscape && showRotatePrompt) {
+  // Mobile Portrait Mode Blocker - Shows rotate prompt
+  if (isMobile && !isLandscape) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-6">
         <div className="text-center text-white max-w-sm">
           {/* Rotate Phone Animation */}
           <div className="mb-8 relative">
-            {/* Phone icon that rotates */}
             <div className="animate-pulse">
               <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
-            {/* Rotating arrow */}
             <div className="absolute inset-0 flex items-center justify-center">
               <svg className="w-16 h-16 animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
           </div>
-          
           <h1 className="text-3xl font-bold mb-4">Rotate Your Device</h1>
           <p className="text-gray-300 text-lg mb-8">
             Please rotate your phone to <span className="font-semibold text-white">landscape mode</span> for the best gallery wall experience.
           </p>
-          
-          {/* Landscape icon hint */}
           <div className="flex items-center justify-center gap-2 text-gray-400">
             <svg className="w-12 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={1.5} />
@@ -1407,6 +1403,32 @@ export default function LandingPage() {
             </svg>
             <span className="text-sm">Landscape mode</span>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile Landscape but NOT Fullscreen - Shows fullscreen prompt
+  if (isMobile && isLandscape && !isFullscreen) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-6">
+        <div className="text-center text-white max-w-sm">
+          {/* Fullscreen Icon */}
+          <div className="mb-8">
+            <svg className="w-28 h-28 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Go Fullscreen</h1>
+          <p className="text-gray-300 text-lg mb-8">
+            Tap the button below to enter <span className="font-semibold text-white">fullscreen mode</span> for an immersive gallery wall experience.
+          </p>
+          <button
+            onClick={enterFullscreen}
+            className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
+          >
+            ENTER FULLSCREEN
+          </button>
         </div>
       </div>
     )
@@ -2007,11 +2029,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
+              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                  className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -2129,13 +2151,13 @@ export default function LandingPage() {
           {/* Mobile/Desktop Layout Container */}
           <div className="flex flex-row flex-1 overflow-hidden">
             {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-            <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+            <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
               {/* Logo - Hidden on mobile, visible on desktop */}
               <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
               {/* Mobile: Header "2 SELECT BACKGROUND" */}
-              <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
-                <p className="text-[9px] font-bold tracking-wide">2 SELECT BACKGROUND</p>
+              <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1">
+                <p className="text-[8px] font-bold tracking-wide">2 BACKGROUND</p>
               </div>
 
               {/* Desktop: Step Header with Close Button - Fixed */}
@@ -2309,11 +2331,11 @@ export default function LandingPage() {
               >
               </div>
 
-              {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
+              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                  className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -2431,13 +2453,13 @@ export default function LandingPage() {
         {/* Mobile/Desktop Layout Container */}
         <div className="flex flex-row flex-1 overflow-hidden">
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-          <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
             {/* Logo - Hidden on mobile, visible on desktop */}
             <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
             {/* Mobile: Header "3 SELECT PICTURE WALL" */}
-            <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
-              <p className="text-[9px] font-bold tracking-wide">3 SELECT PICTURE WALL</p>
+            <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1">
+              <p className="text-[7px] font-bold tracking-wide">3 PICTURE WALL</p>
             </div>
 
             {/* Desktop: Step Header with Close Button - Fixed */}
@@ -2453,7 +2475,7 @@ export default function LandingPage() {
 
           {/* Scrollable Layout Options */}
           <div className="flex-1 flex flex-col overflow-y-auto min-h-0 py-1 lg:py-6 px-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-            <div className="space-y-3 lg:space-y-6 py-1 lg:pr-2">
+            <div className="space-y-1 lg:space-y-6 py-1 lg:pr-2">
             {layoutOptions.map((layout) => (
               <div
                 key={layout.id}
@@ -2480,7 +2502,7 @@ export default function LandingPage() {
                 className="relative cursor-pointer transition-all duration-200 group hover:shadow-lg"
               >
                 {/* Layout Preview */}
-                <div className="relative h-16 lg:h-48 bg-white group-hover:bg-gray-50">
+                <div className="relative h-10 lg:h-48 bg-white group-hover:bg-gray-50">
                   {layout.image ? (
                     /* Image-based preview */
                     <img 
@@ -2594,9 +2616,9 @@ export default function LandingPage() {
           </div>
 
           {/* Main Canvas with Background and Frames */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
             <div
-              className="flex-1 relative bg-cover bg-center transition-all duration-500 min-h-[85vh] lg:min-h-0"
+              className="flex-1 relative bg-cover bg-center transition-all duration-500"
               style={{
                 backgroundImage: selectedBackground 
                   ? `url(${selectedBackground.image})` 
@@ -2642,11 +2664,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile Bottom Menu Bar */}
-          <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+          {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
+          <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+              className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -2831,13 +2853,13 @@ export default function LandingPage() {
         {/* Mobile/Desktop Layout Container */}
         <div className="flex flex-row flex-1 overflow-hidden">
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-          <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
             {/* Logo - Hidden on mobile, visible on desktop */}
             <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
             {/* Mobile: Header "4. SELECT DESIGNS" */}
-            <div className="lg:hidden flex-shrink-0 mb-2 border-b border-gray-200 pb-1">
-              <p className="text-[8px] font-bold tracking-wide text-gray-500">4. SELECT DESIGNS</p>
+            <div className="lg:hidden flex-shrink-0 mb-1 border-b border-gray-200 pb-1">
+              <p className="text-[7px] font-bold tracking-wide text-gray-500">4. DESIGNS</p>
             </div>
 
             {/* Desktop: Step Header with Close Button - Fixed */}
@@ -2852,41 +2874,41 @@ export default function LandingPage() {
             </div>
 
           {/* Instructions or Artwork List */}
-          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-1 lg:px-4 py-2 lg:py-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div ref={artworkScrollRef} className="flex-1 overflow-y-auto px-1 lg:px-4 py-1 lg:py-6" style={{ maxHeight: 'calc(100vh - 120px)' }}>
             {activeFrameIndex === null ? (
               /* Show instructions when no frame is selected */
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <div className="mb-6">
-                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex flex-col items-center justify-center h-full text-center px-2">
+                <div className="mb-2 lg:mb-6">
+                  <svg className="w-8 h-8 lg:w-16 lg:h-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-base font-semibold text-gray-700 mb-3">
+                <p className="text-[10px] lg:text-base font-semibold text-gray-700 mb-1 lg:mb-3">
                   Click on a picture on the wall to select a design
                 </p>
-                <p className="text-sm text-gray-500">
-                  Select each frame on your gallery wall to choose artwork that fits perfectly
+                <p className="text-[8px] lg:text-sm text-gray-500">
+                  Select each frame on your gallery wall to choose artwork
                 </p>
               </div>
             ) : (
               /* Show artwork options for selected frame */
               <div className="relative">
                   {/* Mobile: Filter Header - Stacked vertically */}
-                  <div className="lg:hidden mb-2">
+                  <div className="lg:hidden mb-1">
                     <div className="flex flex-col">
                       <button 
                         onClick={() => setShowFilter(!showFilter)}
-                        className="flex items-center gap-1 text-[10px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-1 border-b border-gray-200"
+                        className="flex items-center gap-1 text-[8px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-0.5 border-b border-gray-200"
                       >
                         {showFilter ? 'HIDE FILTER' : 'SHOW FILTER'}
-                        <span className="text-[10px]">×</span>
+                        <span className="text-[8px]">×</span>
                       </button>
                       <button 
                         onClick={() => {
                           setSearchQuery('')
                           setSelectedColorFilters([])
                         }}
-                        className="text-[10px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-1 border-b border-gray-200 text-left"
+                        className="text-[8px] font-bold text-black hover:text-gray-600 transition-colors cursor-pointer py-0.5 border-b border-gray-200 text-left"
                       >
                         ALL PRODUCTS
                       </button>
@@ -3201,13 +3223,13 @@ export default function LandingPage() {
 
                   {/* Artwork Grid */}
                   {availableArtworks.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 text-xs lg:text-base">No artworks available</p>
+                    <div className="text-center py-4 lg:py-8">
+                      <p className="text-gray-500 text-[8px] lg:text-base">No artworks available</p>
                     </div>
                   ) : (
                     <div>
-                      {/* Single column grid on mobile */}
-                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                      {/* Two column grid on mobile for compact view */}
+                      <div className="grid grid-cols-2 gap-1 lg:grid-cols-2 lg:gap-3">
                         {availableArtworks.slice(0, displayedArtworkCount).map((artwork) => (
                           <div
                             key={artwork.id}
@@ -3219,29 +3241,29 @@ export default function LandingPage() {
                             }}
                             className={`relative cursor-pointer transition-all duration-200 group ${
                               selectedArtworks[activeFrameIndex]?.id === artwork.id
-                                ? 'ring-2 ring-black ring-offset-1 lg:ring-offset-2'
+                                ? 'ring-1 lg:ring-2 ring-black ring-offset-0 lg:ring-offset-2'
                                 : 'hover:shadow-lg'
                             }`}
                           >
                             {/* Artwork Image */}
-                            <div className="relative aspect-[3/4] bg-gray-200 overflow-hidden">
+                            <div className="relative aspect-square lg:aspect-[3/4] bg-gray-200 overflow-hidden">
                               <img 
                                 src={artwork.image}
                                 alt={artwork.title}
                                 className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
                               />
                               {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
-                                <div className="absolute top-1 left-1 lg:top-2 lg:left-2 bg-black text-white rounded w-4 h-4 lg:w-6 lg:h-6 flex items-center justify-center">
-                                  <span className="text-[10px] lg:text-sm font-bold">✓</span>
+                                <div className="absolute top-0.5 left-0.5 lg:top-2 lg:left-2 bg-black text-white rounded w-3 h-3 lg:w-6 lg:h-6 flex items-center justify-center">
+                                  <span className="text-[8px] lg:text-sm font-bold">✓</span>
                                 </div>
                               )}
                             </div>
 
                             {/* Artwork Info */}
-                            <div className="p-1 lg:p-2 bg-white border border-t-0 border-gray-200">
-                              <h3 className="text-[8px] lg:text-xs font-bold text-black mb-0.5 lg:mb-1 line-clamp-1">{artwork.title}</h3>
+                            <div className="p-0.5 lg:p-2 bg-white border border-t-0 border-gray-200">
+                              <h3 className="text-[6px] lg:text-xs font-bold text-black mb-0 lg:mb-1 line-clamp-1">{artwork.title}</h3>
                               <div className="flex items-center justify-center">
-                                <span className="text-[9px] lg:text-xs font-semibold text-black">£{artwork.price}</span>
+                                <span className="text-[7px] lg:text-xs font-semibold text-black">£{artwork.price}</span>
                               </div>
                             </div>
                           </div>
@@ -3616,9 +3638,9 @@ export default function LandingPage() {
           </div>
 
           {/* Main Canvas with Background and Clickable Frames */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
             <div
-              className="flex-1 relative bg-cover bg-center transition-all duration-500 min-h-[85vh] lg:min-h-0"
+              className="flex-1 relative bg-cover bg-center transition-all duration-500"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
@@ -3738,11 +3760,11 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-              {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
+              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                  className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -4197,15 +4219,15 @@ export default function LandingPage() {
         )}
       <div className="flex flex-row min-h-screen bg-white">
         {/* Left Sidebar - Summary */}
-        <div className="w-36 lg:w-80 border-r border-gray-200 flex flex-col h-screen">
+        <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-screen">
           {/* Logo - Desktop only */}
           <div className="hidden lg:block px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Completed Steps */}
-          <div className="flex-1 overflow-y-auto px-2 lg:px-6 py-4 lg:py-6">
-            <div className="space-y-4 lg:space-y-8">
+          <div className="flex-1 overflow-y-auto px-1 lg:px-6 py-2 lg:py-6">
+            <div className="space-y-2 lg:space-y-8">
               {/* Step 1 - Background */}
               <button
                 onClick={() => setCurrentStep("step1")}
@@ -4538,7 +4560,7 @@ export default function LandingPage() {
 
           {/* Main Canvas - Final Preview */}
           <div
-            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden min-h-[85vh] lg:min-h-0"
+            className="flex-1 relative bg-cover bg-center transition-all duration-500 overflow-hidden no-scroll-fullscreen"
             style={{
               backgroundImage: selectedBackground 
                 ? `url(${selectedBackground.image})` 
@@ -4591,11 +4613,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile: Bottom Navigation Bar */}
-          <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+          {/* Mobile: Bottom Navigation Bar - Hidden in fullscreen */}
+          <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+              className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

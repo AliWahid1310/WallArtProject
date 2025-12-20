@@ -1,6 +1,21 @@
 @import "tailwindcss";
 @import "./assets/icons.css";
 
+/* Hide elements when in fullscreen mode */
+:fullscreen .hide-in-fullscreen,
+:-webkit-full-screen .hide-in-fullscreen,
+:-moz-full-screen .hide-in-fullscreen {
+  display: none !important;
+}
+
+/* Prevent vertical scrolling on right side in fullscreen */
+:fullscreen .no-scroll-fullscreen,
+:-webkit-full-screen .no-scroll-fullscreen,
+:-moz-full-screen .no-scroll-fullscreen {
+  overflow: hidden !important;
+  max-height: 100vh !important;
+}
+
 /* Custom styles for the gallery configurator */
 body {
   margin: 0;
