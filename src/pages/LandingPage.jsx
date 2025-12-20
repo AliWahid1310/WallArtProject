@@ -72,7 +72,7 @@ export default function LandingPage() {
   const [isMobile, setIsMobile] = useState(false) // Track mobile viewport
   const [isLandscape, setIsLandscape] = useState(false) // Track landscape orientation
   const [isFullscreen, setIsFullscreen] = useState(false) // Track fullscreen mode
-  const [showRotatePrompt, setShowRotatePrompt] = useState(false) // Show rotate/fullscreen prompt
+  const [showRotatePrompt, setShowRotatePrompt] = useState(true) // Show rotate/fullscreen prompt - starts true on mobile
 
   // Detect mobile viewport and orientation
   useEffect(() => {
@@ -81,8 +81,8 @@ export default function LandingPage() {
       const landscape = window.innerWidth > window.innerHeight
       setIsMobile(mobile)
       setIsLandscape(landscape)
-      // Show rotate prompt on mobile portrait mode (only for steps with canvas)
-      if (mobile && !landscape && (currentStep === 'step3' || currentStep === 'step4' || currentStep === 'checkout')) {
+      // On mobile portrait, always show rotate prompt (blocks entire app)
+      if (mobile && !landscape) {
         setShowRotatePrompt(true)
       } else {
         setShowRotatePrompt(false)
@@ -95,7 +95,7 @@ export default function LandingPage() {
       window.removeEventListener('resize', checkMobile)
       window.removeEventListener('orientationchange', checkMobile)
     }
-  }, [currentStep])
+  }, [])
 
   // Track fullscreen changes
   useEffect(() => {
@@ -1372,6 +1372,45 @@ export default function LandingPage() {
       ]
     }
   ]
+
+  // Mobile Portrait Mode Blocker - Shows rotate prompt before any content
+  if (isMobile && !isLandscape && showRotatePrompt) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-6">
+        <div className="text-center text-white max-w-sm">
+          {/* Rotate Phone Animation */}
+          <div className="mb-8 relative">
+            {/* Phone icon that rotates */}
+            <div className="animate-pulse">
+              <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            {/* Rotating arrow */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-16 h-16 animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+          </div>
+          
+          <h1 className="text-3xl font-bold mb-4">Rotate Your Device</h1>
+          <p className="text-gray-300 text-lg mb-8">
+            Please rotate your phone to <span className="font-semibold text-white">landscape mode</span> for the best gallery wall experience.
+          </p>
+          
+          {/* Landscape icon hint */}
+          <div className="flex items-center justify-center gap-2 text-gray-400">
+            <svg className="w-12 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={1.5} />
+              <circle cx="12" cy="12" r="1" fill="currentColor" />
+            </svg>
+            <span className="text-sm">Landscape mode</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Intro page (original)
   if (currentStep === "intro") {
@@ -2748,49 +2787,6 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-
-        {/* Mobile Rotate & Fullscreen Prompt */}
-        {showRotatePrompt && !isFullscreen && (
-          <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] p-6">
-            <div className="text-center text-white max-w-sm">
-              {!isLandscape ? (
-                <>
-                  <div className="mb-6">
-                    <svg className="w-24 h-24 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <div className="mt-2 flex items-center justify-center">
-                      <svg className="w-8 h-8 animate-spin" style={{animationDuration: '2s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Rotate Your Device</h2>
-                  <p className="text-gray-300 mb-6">For the best gallery wall experience, please rotate your phone to landscape mode.</p>
-                  <button onClick={() => setShowRotatePrompt(false)} className="text-sm text-gray-400 underline hover:text-white">Continue in portrait mode</button>
-                </>
-              ) : (
-                <>
-                  <div className="mb-6">
-                    <svg className="w-24 h-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Go Fullscreen</h2>
-                  <p className="text-gray-300 mb-6">Tap the button below for an immersive gallery wall experience.</p>
-                  <button onClick={() => { enterFullscreen(); setShowRotatePrompt(false) }} className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded mb-4">ENTER FULLSCREEN</button>
-                  <br /><button onClick={() => setShowRotatePrompt(false)} className="text-sm text-gray-400 underline hover:text-white mt-4">Skip for now</button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isFullscreen && (
-          <button onClick={exitFullscreen} className="fixed top-4 right-4 z-[100] bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all" title="Exit fullscreen">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        )}
       </>
     )
   }
@@ -4160,49 +4156,6 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-
-        {/* Mobile Rotate & Fullscreen Prompt */}
-        {showRotatePrompt && !isFullscreen && (
-          <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] p-6">
-            <div className="text-center text-white max-w-sm">
-              {!isLandscape ? (
-                <>
-                  <div className="mb-6">
-                    <svg className="w-24 h-24 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <div className="mt-2 flex items-center justify-center">
-                      <svg className="w-8 h-8 animate-spin" style={{animationDuration: '2s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Rotate Your Device</h2>
-                  <p className="text-gray-300 mb-6">For the best gallery wall experience, please rotate your phone to landscape mode.</p>
-                  <button onClick={() => setShowRotatePrompt(false)} className="text-sm text-gray-400 underline hover:text-white">Continue in portrait mode</button>
-                </>
-              ) : (
-                <>
-                  <div className="mb-6">
-                    <svg className="w-24 h-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Go Fullscreen</h2>
-                  <p className="text-gray-300 mb-6">Tap the button below for an immersive gallery wall experience.</p>
-                  <button onClick={() => { enterFullscreen(); setShowRotatePrompt(false) }} className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded mb-4">ENTER FULLSCREEN</button>
-                  <br /><button onClick={() => setShowRotatePrompt(false)} className="text-sm text-gray-400 underline hover:text-white mt-4">Skip for now</button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isFullscreen && (
-          <button onClick={exitFullscreen} className="fixed top-4 right-4 z-[100] bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all" title="Exit fullscreen">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        )}
       </div>
     )
   }  // END OF STEP 5 - FRAME SELECTION - COMMENTED OUT
@@ -4854,81 +4807,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Mobile Rotate & Fullscreen Prompt */}
-          {showRotatePrompt && !isFullscreen && (
-            <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[100] p-6">
-              <div className="text-center text-white max-w-sm">
-                {!isLandscape ? (
-                  <>
-                    {/* Rotate Phone Icon */}
-                    <div className="mb-6">
-                      <svg className="w-24 h-24 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <div className="mt-2 flex items-center justify-center">
-                        <svg className="w-8 h-8 animate-spin" style={{animationDuration: '2s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      </div>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-3">Rotate Your Device</h2>
-                    <p className="text-gray-300 mb-6">
-                      For the best gallery wall experience, please rotate your phone to landscape mode.
-                    </p>
-                    <button
-                      onClick={() => setShowRotatePrompt(false)}
-                      className="text-sm text-gray-400 underline hover:text-white"
-                    >
-                      Continue in portrait mode
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {/* Fullscreen Icon */}
-                    <div className="mb-6">
-                      <svg className="w-24 h-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                      </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-3">Go Fullscreen</h2>
-                    <p className="text-gray-300 mb-6">
-                      Tap the button below to enter fullscreen mode for an immersive gallery wall experience.
-                    </p>
-                    <button
-                      onClick={() => {
-                        enterFullscreen()
-                        setShowRotatePrompt(false)
-                      }}
-                      className="bg-white text-black px-8 py-3 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded mb-4"
-                    >
-                      ENTER FULLSCREEN
-                    </button>
-                    <br />
-                    <button
-                      onClick={() => setShowRotatePrompt(false)}
-                      className="text-sm text-gray-400 underline hover:text-white mt-4"
-                    >
-                      Skip for now
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Fullscreen Exit Button - Shows when in fullscreen */}
-          {isFullscreen && (
-            <button
-              onClick={exitFullscreen}
-              className="fixed top-4 right-4 z-[100] bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-              title="Exit fullscreen"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           )}
         </div>
       </div>
