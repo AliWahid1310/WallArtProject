@@ -271,43 +271,46 @@ export default function LandingPage() {
     if (selectedColorFilters.length > 0) {
       console.log('\n=== COLOR FILTER DEBUG ===')
       console.log('Selected color filters:', selectedColorFilters)
+      console.log('Products before color filter:', filtered.length)
       
       filtered = filtered.filter(artwork => {
-        // If product has NO color metafield data or tags, include it in all color filters
-        const hasColorData = artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0
-        const hasColorTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag => 
-          selectedColorFilters.some(color => tag.toLowerCase().includes(color.toLowerCase()))
-        )
-        
-        if (!hasColorData && !hasColorTags) {
-          console.log(`  ℹ️ "${artwork.title}" - no colors metafield or tags, showing for all filters`)
-          return true // Show products without color data
-        }
-        
+        // Check if artwork matches ANY of the selected color filters
         return selectedColorFilters.some(colorFilter => {
           const normalizedFilter = colorFilter.toLowerCase().trim()
           
           // Check colors metafield array
           if (artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0) {
-            const hasColor = artwork.colors.some(color => {
+            const matchesColor = artwork.colors.some(color => {
               const normalizedColor = color.toLowerCase().trim()
-              return normalizedColor.includes(normalizedFilter) || normalizedFilter.includes(normalizedColor)
+              const matches = normalizedColor.includes(normalizedFilter) || normalizedFilter.includes(normalizedColor)
+              if (matches) {
+                console.log(`  ✓ "${artwork.title}" matches - color "${color}" contains "${colorFilter}"`)
+              }
+              return matches
             })
-            if (hasColor) return true
+            if (matchesColor) return true
           }
           
-          // Fallback to tags
+          // Check tags as fallback
           if (artwork.tags && Array.isArray(artwork.tags)) {
-            const hasColorTag = artwork.tags.some(tag => {
+            const matchesTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
-              return normalizedTag.includes(normalizedFilter) || normalizedFilter.includes(normalizedTag)
+              const matches = normalizedTag.includes(normalizedFilter) || normalizedFilter.includes(normalizedTag)
+              if (matches) {
+                console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${colorFilter}"`)
+              }
+              return matches
             })
-            if (hasColorTag) return true
+            if (matchesTag) return true
           }
           
-          // Fallback to title/category search
+          // Check title/category as last fallback for text-based color mentions
           const searchText = `${artwork.category || ''} ${artwork.title || ''}`.toLowerCase()
-          return searchText.includes(normalizedFilter)
+          const matchesText = searchText.includes(normalizedFilter)
+          if (matchesText) {
+            console.log(`  ✓ "${artwork.title}" matches - title/category contains "${colorFilter}"`)
+          }
+          return matchesText
         })
       })
       console.log(`After color filter: ${filtered.length} products`)
@@ -1648,50 +1651,45 @@ export default function LandingPage() {
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
-          <div className="flex items-center justify-between px-3 py-2.5">
-            {/* Menu Button */}
-            <button 
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="flex flex-col items-center gap-0.5 text-gray-700 hover:text-gray-900 transition-colors flex-1"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <span className="text-[10px] font-semibold">MENU</span>
-            </button>
-
-            {/* Saved Gallery Walls */}
-            <button className="flex flex-col items-center gap-0.5 text-gray-700 hover:text-gray-900 transition-colors flex-1 border-x border-gray-200">
-              <div className="relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {savedGalleryWalls.length > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                    {savedGalleryWalls.length}
-                  </span>
-                )}
-              </div>
-              <span className="text-[9px] font-semibold text-center leading-tight">
-                SAVED<br/>GALLERY WALLS
-              </span>
-            </button>
-
-            {/* Add to Cart Button */}
-            <button 
-              onClick={() => setShowCartDropdown(!showCartDropdown)}
-              className="flex flex-col items-center gap-0.5 bg-black text-white px-3 py-1.5 hover:bg-gray-800 transition-colors flex-1"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-semibold">ADD TO</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <span className="text-xs font-bold">£0</span>
-            </button>
-          </div>
+        <div className="lg:hidden fixed bottom-0 left-28 sm:left-32 right-0 bg-white border-t border-gray-300 flex items-center">
+          <button 
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            MENU
+          </button>
+          <button 
+            className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
+            SAVED GALLERY WALLS
+          </button>
+          <button 
+            onClick={() => setShowCart(!showCart)}
+            className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+              {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+            </span>
+          </button>
+          <button 
+            onClick={handleAddToCart}
+            className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+          >
+            ADD TO 
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+          </button>
         </div>
 
         {/* Mobile Menu Modal */}
@@ -1912,37 +1910,44 @@ export default function LandingPage() {
               </div>
 
               {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                   MENU
                 </button>
-                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <button 
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
                   </svg>
                   SAVED GALLERY WALLS
                 </button>
                 <button 
-                  onClick={handleCheckout}
-                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                  onClick={() => setShowCart(!showCart)}
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
-                  <div className="relative">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
-                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
-                      </span>
-                    )}
-                  </div>
-                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                  </span>
+                </button>
+                <button 
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  ADD TO 
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
                 </button>
               </div>
             </div>
@@ -2207,37 +2212,44 @@ export default function LandingPage() {
               </div>
 
               {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                   MENU
                 </button>
-                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <button 
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
                   </svg>
                   SAVED GALLERY WALLS
                 </button>
                 <button 
-                  onClick={handleCheckout}
-                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                  onClick={() => setShowCart(!showCart)}
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
-                  <div className="relative">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
-                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
-                      </span>
-                    )}
-                  </div>
-                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                  </span>
+                </button>
+                <button 
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  ADD TO 
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
                 </button>
               </div>
 
@@ -2519,37 +2531,44 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile Bottom Menu Bar */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+          <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
             >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
               MENU
             </button>
-            <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            <button 
+              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
               </svg>
               SAVED GALLERY WALLS
             </button>
             <button 
-              onClick={handleCheckout}
-              className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+              onClick={() => setShowCart(!showCart)}
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
             >
-              <div className="relative">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
-                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
-                  </span>
-                )}
-              </div>
-              ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+              </svg>
+              <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+                {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+              </span>
+            </button>
+            <button 
+              onClick={handleAddToCart}
+              className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+            >
+              ADD TO 
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
             </button>
           </div>
         </div>
@@ -3596,37 +3615,44 @@ export default function LandingPage() {
           </div>
         )}
               {/* Mobile Bottom Menu Bar */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 px-3 py-2.5 flex items-center justify-between gap-3 z-50">
+              <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors"
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                   MENU
                 </button>
-                <button className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide hover:text-gray-600 transition-colors">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <button 
+                  className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
                   </svg>
                   SAVED GALLERY WALLS
                 </button>
                 <button 
-                  onClick={handleCheckout}
-                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 text-[11px] font-bold tracking-wide hover:bg-gray-800 transition-colors"
+                  onClick={() => setShowCart(!showCart)}
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
-                  <div className="relative">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    {(Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length) > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-white text-black text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center leading-tight">
-                        {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
-                      </span>
-                    )}
-                  </div>
-                  ADD TO £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+                    {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+                  </span>
+                </button>
+                <button 
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  ADD TO 
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  £{(Object.keys(cartItems.artworks).length > 0 || Object.keys(cartItems.frames).length > 0) ? calculateCartTotal() : '0'}
                 </button>
               </div>
         </div>{/* End of flex-row container */}
@@ -4045,113 +4071,113 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="flex flex-col lg:flex-row min-h-screen bg-white">
+      <div className="flex flex-row min-h-screen bg-white">
         {/* Left Sidebar - Summary */}
-        <div className="w-full lg:w-80 border-b lg:border-r border-gray-200 flex flex-col max-h-screen lg:h-screen">
-          {/* Logo */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+        <div className="w-36 lg:w-80 border-r border-gray-200 flex flex-col h-screen">
+          {/* Logo - Desktop only */}
+          <div className="hidden lg:block px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
           </div>
 
           {/* Completed Steps */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
-            <div className="space-y-8">
+          <div className="flex-1 overflow-y-auto px-2 lg:px-6 py-4 lg:py-6">
+            <div className="space-y-4 lg:space-y-8">
               {/* Step 1 - Background */}
               <button
                 onClick={() => setCurrentStep("step1")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
               >
                 {/* Checkmark - positioned top-left */}
-                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
                   ✓
                 </div>
                 
                 {/* Overlapping frames icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="relative w-10 h-10">
+                <div className="flex justify-center mb-2 lg:mb-4">
+                  <div className="relative w-8 h-8 lg:w-10 lg:h-10">
                     {/* Back frame */}
-                    <div className="absolute top-0 right-0 w-7 h-9 border-2 border-gray-400 group-hover:border-black bg-white transition-colors transform rotate-6"></div>
+                    <div className="absolute top-0 right-0 w-5 h-7 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors transform rotate-6"></div>
                     {/* Front frame */}
-                    <div className="absolute top-1 left-0 w-7 h-9 border-2 border-gray-400 group-hover:border-black bg-white transition-colors">
+                    <div className="absolute top-1 left-0 w-5 h-7 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors">
                       {/* Small image representation inside frame */}
-                      <div className="absolute inset-2 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                      <div className="absolute inset-1 lg:inset-2 bg-gray-400 group-hover:bg-black transition-colors"></div>
                     </div>
                   </div>
                 </div>
-                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
-                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT BACKGROUND</p>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
+                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT BACKGROUND</p>
               </button>
 
               {/* Step 2 - Picture Wall */}
               <button
                 onClick={() => setCurrentStep("step3")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
               >
                 {/* Checkmark - positioned top-left */}
-                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
                   ✓
                 </div>
                 
                 {/* Picture wall layout icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="flex gap-1 items-start">
+                <div className="flex justify-center mb-2 lg:mb-4">
+                  <div className="flex gap-0.5 lg:gap-1 items-start">
                     {/* Large rectangle on left */}
-                    <div className="w-5 h-8 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                    <div className="w-4 h-6 lg:w-5 lg:h-8 bg-gray-400 group-hover:bg-black transition-colors"></div>
                     {/* Two smaller rectangles stacked on right */}
-                    <div className="flex flex-col gap-1">
-                      <div className="w-2 h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
-                      <div className="w-2 h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                    <div className="flex flex-col gap-0.5 lg:gap-1">
+                      <div className="w-1.5 h-2.5 lg:w-2 lg:h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                      <div className="w-1.5 h-2.5 lg:w-2 lg:h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
                     </div>
                   </div>
                 </div>
-                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
-                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT PICTURE WALL</p>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
+                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT PICTURE WALL</p>
               </button>
 
-              {/* Step 3 - Design */}
+              {/* Step 3 - Frame */}
               <button
-                onClick={() => setCurrentStep("step4")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+                onClick={() => setCurrentStep("step3")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
               >
                 {/* Checkmark - positioned top-left */}
-                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
                   ✓
                 </div>
                 
-                {/* Tall rectangle with circle icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="relative w-6 h-9 border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
-                    <div className="w-2 h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
+                {/* Frame icon */}
+                <div className="flex justify-center mb-2 lg:mb-4">
+                  <div className="relative w-5 h-7 lg:w-6 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
+                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
                   </div>
                 </div>
-                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
-                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT DESIGN</p>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
+                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT FRAME</p>
               </button>
 
-              {/* Step 4 - Select Design */}
+              {/* Step 4 - Design */}
               <button
                 onClick={() => setCurrentStep("step4")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-3 group relative"
+                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
               >
                 {/* Checkmark - positioned top-left */}
-                <div className="absolute top-0 left-12 text-gray-400 text-sm">
+                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
                   ✓
                 </div>
                 
-                {/* Tall rectangle with circle icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="relative w-6 h-9 border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
-                    <div className="w-2 h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
+                {/* Design icon */}
+                <div className="flex justify-center mb-2 lg:mb-4">
+                  <div className="relative w-5 h-7 lg:w-6 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
+                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
                   </div>
                 </div>
-                <p className="text-sm font-semibold mb-1 text-gray-400 group-hover:text-black transition-colors">4</p>
-                <p className="text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT DESIGN</p>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">4</p>
+                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT DESIGN</p>
               </button>
             </div>
           </div>
 
-          {/* Price and Add to Cart */}
-          <div className="px-6 py-6 border-t border-gray-200">
+          {/* Price and Add to Cart - Desktop only */}
+          <div className="hidden lg:block px-6 py-6 border-t border-gray-200">
             <div className="text-center mb-4">
               <div className="text-3xl font-bold text-black">{currency} {totalPrice}</div>
             </div>
@@ -4168,9 +4194,22 @@ export default function LandingPage() {
         </div>
 
         {/* Right Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Navigation */}
-          <div className="bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between">
+        <div className="flex-1 flex flex-col h-screen">
+          {/* Mobile Header */}
+          <div className="lg:hidden bg-white border-b border-gray-300 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[10px] font-bold tracking-widest text-black">SUMMARY</h2>
+              <button 
+                onClick={() => setCurrentStep("intro")}
+                className="text-xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {/* Top Navigation - Desktop only */}
+          <div className="hidden lg:flex bg-white border-b border-gray-300 px-6 py-4 items-center justify-between">
             <div className="flex items-center gap-3">
               <button className="px-5 py-2.5 border-2 border-black text-xs font-bold flex items-center gap-2 hover:bg-black hover:text-white transition-all duration-200 cursor-pointer">
                 ▼ SAVED
@@ -4193,7 +4232,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Cart Icon with Dropdown */}
+              {/* Cart Icon with Dropdown - Desktop */}
               <div className="relative">
                 <button
                   onClick={() => setShowCart(!showCart)}
@@ -4207,7 +4246,7 @@ export default function LandingPage() {
                   </span>
                 </button>
 
-                {/* Cart Dropdown */}
+                {/* Cart Dropdown - Desktop */}
                 {showCart && (
                   <div className="fixed top-16 sm:top-20 right-0 w-full sm:w-[500px] md:w-[600px] bg-white border border-gray-200 shadow-2xl z-50 max-h-[400px] sm:max-h-[600px] flex flex-col">
                     {/* Cart Items */}
@@ -4368,8 +4407,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Breadcrumb */}
-          <div className="bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
+          {/* Breadcrumb - Desktop only */}
+          <div className="hidden lg:block bg-white px-6 py-2 text-xs text-gray-400 border-b border-gray-300">
             WALL ART / INSPIRATION / <span className="text-gray-700 font-semibold">CREATE YOUR GALLERY WALL</span>
           </div>
 
@@ -4415,6 +4454,224 @@ export default function LandingPage() {
               })}
             </div>
           </div>
+
+          {/* Mobile: Bottom Navigation Bar */}
+          <div className="lg:hidden fixed bottom-0 left-36 right-0 bg-white border-t border-gray-300 flex items-center">
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              MENU
+            </button>
+            <button 
+              className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+              </svg>
+              SAVED GALLERY WALLS
+            </button>
+            <button 
+              onClick={() => setShowCart(!showCart)}
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
+              </svg>
+              <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-semibold">
+                {Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length}
+              </span>
+            </button>
+            <button 
+              onClick={handleAddToCart}
+              className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+            >
+              ADD TO 
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              {currency}{totalPrice}
+            </button>
+          </div>
+
+          {/* Mobile Cart Popup */}
+          {showCart && (
+            <div className="lg:hidden fixed top-0 right-0 bottom-12 w-[55%] bg-white shadow-2xl flex flex-col animate-slide-in-right z-50">
+
+                {/* Checkout Button Header */}
+                <div className="bg-black p-4">
+                  <button 
+                    onClick={handleCheckout}
+                    className="w-full bg-black text-white py-3 font-bold text-sm tracking-widest border-2 border-white hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                  >
+                    CHECKOUT
+                  </button>
+                </div>
+
+                {/* Total Amount */}
+                <div className="px-4 py-4 border-b border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-bold">TOTAL AMOUNT</span>
+                    <span className="text-base font-bold">{currency} {calculateCartTotal()}</span>
+                  </div>
+                </div>
+
+                {/* Cart Items Scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 py-2">
+                  {/* Artwork Items */}
+                  {Object.entries(cartItems.artworks).map(([frameIdx, artwork]) => (
+                    <div key={`artwork-${frameIdx}`} className="flex gap-3 py-3 border-b border-gray-200">
+                      {/* Thumbnail */}
+                      <div className="w-20 h-24 flex-shrink-0 border border-gray-200">
+                        <img 
+                          src={artwork.image}
+                          alt={artwork.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Details */}
+                      <div className="flex-1 flex flex-col">
+                        <h3 className="font-medium text-sm mb-2">{artwork.title}</h3>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-gray-400 line-through text-xs">{currency} {artwork.price}</span>
+                          <span className="text-red-600 font-bold text-sm">{currency} {artwork.price}</span>
+                        </div>
+                        
+                        {/* Quantity */}
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={quantities.artworks[frameIdx] || 1}
+                            onChange={(e) => handleQuantityChange('artworks', frameIdx, e.target.value)}
+                            className="w-20 px-2 py-1.5 border border-gray-300 text-sm text-center"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Delete Button */}
+                      <button 
+                        onClick={() => {
+                          const newArtworks = { ...cartItems.artworks }
+                          delete newArtworks[frameIdx]
+                          setCartItems({ ...cartItems, artworks: newArtworks })
+                        }}
+                        className="text-gray-400 hover:text-black transition-colors cursor-pointer self-start"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Frame Items */}
+                  {Object.entries(cartItems.frames).map(([frameIdx, frame]) => {
+                    const artwork = cartItems.artworks[frameIdx]
+                    if (!artwork) return null
+                    
+                    return (
+                      <div key={`frame-${frameIdx}`} className="flex gap-3 py-3 border-b border-gray-200">
+                        {/* Thumbnail with frame */}
+                        <div 
+                          className="w-20 h-24 flex-shrink-0 border border-gray-200"
+                          style={{
+                            padding: '3px',
+                            backgroundColor: frame.color,
+                            border: frame.borderColor ? `1px solid ${frame.borderColor}` : 'none'
+                          }}
+                        >
+                          <div className="w-full h-full bg-white">
+                            <img 
+                              src={artwork.image}
+                              alt={`${frame.name} frame`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Details */}
+                        <div className="flex-1 flex flex-col">
+                          <h3 className="font-medium text-sm mb-2">{frame.name} picture frame</h3>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-gray-400 line-through text-xs">{currency} {frame.price.toFixed(2)}</span>
+                            <span className="text-red-600 font-bold text-sm">{currency} {frame.price.toFixed(2)}</span>
+                          </div>
+                          
+                          {/* Quantity */}
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={quantities.frames[frameIdx] || 1}
+                              onChange={(e) => handleQuantityChange('frames', frameIdx, e.target.value)}
+                              className="w-20 px-2 py-1.5 border border-gray-300 text-sm text-center"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Delete Button */}
+                        <button 
+                          onClick={() => {
+                            const newFrames = { ...cartItems.frames }
+                            delete newFrames[frameIdx]
+                            setCartItems({ ...cartItems, frames: newFrames })
+                          }}
+                          className="text-gray-400 hover:text-black transition-colors cursor-pointer self-start"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+            </div>
+          )}
+
+          {/* Mobile Menu Popup */}
+          {showMobileMenu && (
+            <div className="lg:hidden fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowMobileMenu(false)}>
+              <div 
+                className="absolute bottom-16 left-0 right-0 bg-white shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 space-y-3">
+                  <button 
+                    className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    SAVE
+                  </button>
+                  <button 
+                    className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    🔗 SHARE
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowResetModal(true)
+                      setShowMobileMenu(false)
+                    }}
+                    className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"
+                  >
+                    ■ CREATE NEW
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </>
