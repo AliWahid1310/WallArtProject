@@ -2555,8 +2555,8 @@ export default function LandingPage() {
                 }}
                 className="relative cursor-pointer transition-all duration-200 group hover:shadow-lg"
               >
-                {/* Layout Preview - On mobile landscape: wider boxes (w-full h-8), On desktop: taller boxes (h-48) */}
-                <div className="relative w-full h-8 lg:h-48 bg-white group-hover:bg-gray-50 aspect-[16/9] lg:aspect-auto">
+                {/* Layout Preview */}
+                <div className="relative h-10 lg:h-48 bg-white group-hover:bg-gray-50">
                   {layout.image ? (
                     /* Image-based preview */
                     <img 
@@ -2566,35 +2566,27 @@ export default function LandingPage() {
                     />
                   ) : (
                     /* Fallback to frame boxes */
-                    layout.frames.map((frame, idx) => {
-                      // For mobile: swap width/height calculations for landscape orientation
-                      const mobileWidth = `${parseInt(frame.width) / 8}px`
-                      const mobileHeight = `${parseInt(frame.height) / 10}px`
-                      const desktopWidth = `${parseInt(frame.width) / 3.5}px`
-                      const desktopHeight = `${parseInt(frame.height) / 3.5}px`
-                      
-                      return (
+                    layout.frames.map((frame, idx) => (
                       <div
                         key={idx}
                         className={`absolute bg-gray-300 border border-gray-400 flex items-center justify-center transition-all duration-200 ${
                           selectedLayout?.id === layout.id ? 'border-black border-2' : 'group-hover:border-gray-600 group-hover:bg-gray-400'
                         }`}
                         style={{
-                          width: isMobile ? mobileWidth : desktopWidth,
-                          height: isMobile ? mobileHeight : desktopHeight,
-                          top: frame.top ? `${parseInt(frame.top) / (isMobile ? 3 : 1.8)}%` : undefined,
-                          bottom: frame.bottom ? `${parseInt(frame.bottom) / (isMobile ? 3 : 1.8)}%` : undefined,
-                          left: frame.left ? `${parseInt(frame.left) / (isMobile ? 3 : 1.8)}%` : undefined,
-                          right: frame.right ? `${parseInt(frame.right) / (isMobile ? 3 : 1.8)}%` : undefined,
+                          width: `${parseInt(frame.width) / 3.5}px`,
+                          height: `${parseInt(frame.height) / 3.5}px`,
+                          top: frame.top ? `${parseInt(frame.top) / 1.8}%` : undefined,
+                          bottom: frame.bottom ? `${parseInt(frame.bottom) / 1.8}%` : undefined,
+                          left: frame.left ? `${parseInt(frame.left) / 1.8}%` : undefined,
+                          right: frame.right ? `${parseInt(frame.right) / 1.8}%` : undefined,
                           transform: frame.transform
                         }}
                       >
-                        <div className="text-[6px] lg:text-[9px] text-gray-600 font-semibold">
-                          {isMobile ? '' : frame.size}
+                        <div className="text-[9px] text-gray-600 font-semibold">
+                          {frame.size}
                         </div>
                       </div>
-                      )
-                    })
+                    ))
                   )}
                   
                   {/* Selected Indicator */}
