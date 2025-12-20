@@ -73,9 +73,15 @@ export default function LandingPage() {
   const [isLandscape, setIsLandscape] = useState(false) // Track landscape orientation
   const [isFullscreen, setIsFullscreen] = useState(false) // Track fullscreen mode
   const [showRotatePrompt, setShowRotatePrompt] = useState(true) // Show rotate/fullscreen prompt - starts true on mobile
+  const [isIOS, setIsIOS] = useState(false) // Track if device is iOS
 
-  // Detect mobile viewport and orientation
+  // Detect mobile viewport, orientation, and iOS
   useEffect(() => {
+    // Detect iOS
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    setIsIOS(iOS)
+    
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024
       const landscape = window.innerWidth > window.innerHeight
@@ -100,14 +106,33 @@ export default function LandingPage() {
   // Track fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
+      // Check various fullscreen properties for cross-browser support
+      const isFS = !!(document.fullscreenElement || 
+                      document.webkitFullscreenElement || 
+                      document.mozFullScreenElement ||
+                      document.msFullscreenElement)
+      setIsFullscreen(isFS)
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+    }
   }, [])
 
-  // Function to enter fullscreen
+  // Function to enter fullscreen (or skip for iOS)
   const enterFullscreen = () => {
+    // iOS doesn't support Fullscreen API - just set state to continue
+    if (isIOS) {
+      setIsFullscreen(true)
+      return
+    }
+    
     const elem = document.documentElement
     if (elem.requestFullscreen) {
       elem.requestFullscreen()
@@ -120,6 +145,12 @@ export default function LandingPage() {
 
   // Function to exit fullscreen
   const exitFullscreen = () => {
+    // iOS - just set state
+    if (isIOS) {
+      setIsFullscreen(false)
+      return
+    }
+    
     if (document.exitFullscreen) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen) {
@@ -1419,16 +1450,39 @@ export default function LandingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold mb-4">Go Fullscreen</h1>
-          <p className="text-gray-300 text-lg mb-8">
-            Tap the button below to enter <span className="font-semibold text-white">fullscreen mode</span> for an immersive gallery wall experience.
-          </p>
-          <button
-            onClick={enterFullscreen}
-            className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
-          >
-            ENTER FULLSCREEN
-          </button>
+          
+          {isIOS ? (
+            // iOS-specific content
+            <>
+              <h1 className="text-3xl font-bold mb-4">Ready to Start</h1>
+              <p className="text-gray-300 text-lg mb-6">
+                For the best experience, keep your device in <span className="font-semibold text-white">landscape mode</span>.
+              </p>
+              <p className="text-gray-400 text-sm mb-8">
+                💡 Tip: Add this page to your Home Screen for a fullscreen app-like experience!
+              </p>
+              <button
+                onClick={enterFullscreen}
+                className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
+              >
+                CONTINUE
+              </button>
+            </>
+          ) : (
+            // Android/Other devices content
+            <>
+              <h1 className="text-3xl font-bold mb-4">Go Fullscreen</h1>
+              <p className="text-gray-300 text-lg mb-8">
+                Tap the button below to enter <span className="font-semibold text-white">fullscreen mode</span> for an immersive gallery wall experience.
+              </p>
+              <button
+                onClick={enterFullscreen}
+                className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
+              >
+                ENTER FULLSCREEN
+              </button>
+            </>
+          )}
         </div>
       </div>
     )
@@ -2501,8 +2555,8 @@ export default function LandingPage() {
                 }}
                 className="relative cursor-pointer transition-all duration-200 group hover:shadow-lg"
               >
-                {/* Layout Preview */}
-                <div className="relative h-10 lg:h-48 bg-white group-hover:bg-gray-50">
+                {/* Layout Preview - On mobile landscape: wider boxes (w-full h-8), On desktop: taller boxes (h-48) */}
+                <div className="relative w-full h-8 lg:h-48 bg-white group-hover:bg-gray-50 aspect-[16/9] lg:aspect-auto">
                   {layout.image ? (
                     /* Image-based preview */
                     <img 
@@ -2512,27 +2566,35 @@ export default function LandingPage() {
                     />
                   ) : (
                     /* Fallback to frame boxes */
-                    layout.frames.map((frame, idx) => (
+                    layout.frames.map((frame, idx) => {
+                      // For mobile: swap width/height calculations for landscape orientation
+                      const mobileWidth = `${parseInt(frame.width) / 8}px`
+                      const mobileHeight = `${parseInt(frame.height) / 10}px`
+                      const desktopWidth = `${parseInt(frame.width) / 3.5}px`
+                      const desktopHeight = `${parseInt(frame.height) / 3.5}px`
+                      
+                      return (
                       <div
                         key={idx}
                         className={`absolute bg-gray-300 border border-gray-400 flex items-center justify-center transition-all duration-200 ${
                           selectedLayout?.id === layout.id ? 'border-black border-2' : 'group-hover:border-gray-600 group-hover:bg-gray-400'
                         }`}
                         style={{
-                          width: `${parseInt(frame.width) / 3.5}px`,
-                          height: `${parseInt(frame.height) / 3.5}px`,
-                          top: frame.top ? `${parseInt(frame.top) / 1.8}%` : undefined,
-                          bottom: frame.bottom ? `${parseInt(frame.bottom) / 1.8}%` : undefined,
-                          left: frame.left ? `${parseInt(frame.left) / 1.8}%` : undefined,
-                          right: frame.right ? `${parseInt(frame.right) / 1.8}%` : undefined,
+                          width: isMobile ? mobileWidth : desktopWidth,
+                          height: isMobile ? mobileHeight : desktopHeight,
+                          top: frame.top ? `${parseInt(frame.top) / (isMobile ? 3 : 1.8)}%` : undefined,
+                          bottom: frame.bottom ? `${parseInt(frame.bottom) / (isMobile ? 3 : 1.8)}%` : undefined,
+                          left: frame.left ? `${parseInt(frame.left) / (isMobile ? 3 : 1.8)}%` : undefined,
+                          right: frame.right ? `${parseInt(frame.right) / (isMobile ? 3 : 1.8)}%` : undefined,
                           transform: frame.transform
                         }}
                       >
-                        <div className="text-[9px] text-gray-600 font-semibold">
-                          {frame.size}
+                        <div className="text-[6px] lg:text-[9px] text-gray-600 font-semibold">
+                          {isMobile ? '' : frame.size}
                         </div>
                       </div>
-                    ))
+                      )
+                    })
                   )}
                   
                   {/* Selected Indicator */}
