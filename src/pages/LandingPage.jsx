@@ -1532,11 +1532,11 @@ export default function LandingPage() {
           </div>
         )}
         
-        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+        <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
-          <div className="flex flex-row flex-1 overflow-hidden">
+          <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
             {/* Left Sidebar - Visible on all screen sizes, narrower on mobile */}
-            <div className="flex w-28 sm:w-32 lg:w-80 bg-white border-r border-gray-300 px-2 sm:px-4 lg:px-6 py-4 flex-col h-screen overflow-hidden">
+            <div className="flex w-28 sm:w-32 lg:w-80 bg-white border-r border-gray-300 px-2 sm:px-4 lg:px-6 py-4 flex-col h-full overflow-hidden">
               {/* Logo */}
               <h1 className="text-xs sm:text-lg lg:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">DESENIO</h1>
 
@@ -1939,11 +1939,11 @@ export default function LandingPage() {
           </div>
         )}
         
-        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+        <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
-          <div className="flex flex-row flex-1 overflow-hidden">
+          <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
             {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-            <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-screen">
+            <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-full">
               {/* Logo - Hidden on mobile, visible on desktop */}
               <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
@@ -2064,7 +2064,7 @@ export default function LandingPage() {
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Mobile & Desktop: Main preview area */}
                 <div
-                  className="flex-1 relative bg-cover bg-center"
+                  className="flex-1 relative bg-cover bg-center overflow-hidden"
                   style={{
                     backgroundImage: selectedPlace 
                       ? `url(${selectedPlace.image})` 
@@ -2201,11 +2201,11 @@ export default function LandingPage() {
           </div>
         )}
         
-        <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+        <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
-          <div className="flex flex-row flex-1 overflow-hidden">
+          <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
             {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-            <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
+            <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
               {/* Logo - Hidden on mobile, visible on desktop */}
               <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
@@ -2503,11 +2503,11 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+      <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Mobile/Desktop Layout Container */}
-        <div className="flex flex-row flex-1 overflow-hidden">
+        <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
+          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
             {/* Logo - Hidden on mobile, visible on desktop */}
             <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
@@ -2903,11 +2903,11 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+      <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Mobile/Desktop Layout Container */}
-        <div className="flex flex-row flex-1 overflow-hidden">
+        <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
-          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-screen">
+          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
             {/* Logo - Hidden on mobile, visible on desktop */}
             <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
 
@@ -4271,9 +4271,9 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-      <div className="flex flex-row min-h-screen bg-white">
+      <div className="flex flex-row h-screen bg-white overflow-hidden">
         {/* Left Sidebar - Summary */}
-        <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-screen">
+        <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-full">
           {/* Logo - Desktop only */}
           <div className="hidden lg:block px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
@@ -4394,7 +4394,7 @@ export default function LandingPage() {
         </div>
 
         {/* Right Content Area */}
-        <div className="flex-1 flex flex-col h-screen">
+        <div className="flex-1 flex flex-col h-full pb-12 lg:pb-0">
           {/* Mobile Header */}
           <div className="lg:hidden bg-white border-b border-gray-300 px-3 py-2">
             <div className="flex items-center justify-between">
