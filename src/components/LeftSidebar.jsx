@@ -12,12 +12,11 @@ const LeftSidebar = () => {
       number: 1, 
       name: 'SELECT BACKGROUND',
       icon: (
-        <svg className="w-12 h-12 text-gray-700" viewBox="0 0 48 48" fill="currentColor">
-          <rect x="8" y="6" width="12" height="16" rx="1"/>
-          <rect x="24" y="6" width="16" height="10" rx="1"/>
-          <rect x="24" y="20" width="16" height="22" rx="1"/>
-          <rect x="8" y="26" width="12" height="16" rx="1"/>
-        </svg>
+        <img 
+          src="https://cdn2.iconfinder.com/data/icons/travel-locations/24/house-512.png" 
+          alt="Select Place" 
+          className="w-12 h-12 object-contain"
+        />
       )
     },
     { 

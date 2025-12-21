@@ -1545,14 +1545,14 @@ export default function LandingPage() {
                 {/* Step 1 - Select Place */}
                 <div className="text-center cursor-pointer transition-all duration-200 py-2 group flex-shrink-0">
                   {/* House/Room icon */}
-                  <div className="flex justify-center mb-2 sm:mb-3 lg:mb-3">
-                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-10 lg:h-10">
-                      <div className="w-8 h-6 sm:w-10 sm:h-8 lg:w-8 lg:h-6 border-2 border-b-0 border-black group-hover:border-gray-400 transition-colors"></div>
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] sm:border-l-[20px] lg:border-l-[16px] border-l-transparent border-r-[16px] sm:border-r-[20px] lg:border-r-[16px] border-r-transparent border-b-[12px] sm:border-b-[16px] lg:border-b-[12px] border-b-black group-hover:border-b-gray-400 transition-colors"></div>
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 sm:w-4 sm:h-4 lg:w-3 lg:h-3 bg-black group-hover:bg-gray-400 transition-colors"></div>
-                    </div>
+                  <div className="flex justify-center mb-1 sm:mb-1 lg:mb-1">
+                    <img 
+                      src="https://cdn2.iconfinder.com/data/icons/travel-locations/24/house-512.png" 
+                      alt="Select Place" 
+                      className="w-10 h-10 sm:w-12 sm:h-12 lg:w-10 lg:h-10 object-contain group-hover:opacity-50 transition-opacity"
+                    />
                   </div>
-                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-1 sm:mb-2 lg:mb-1 text-black group-hover:text-gray-400 transition-colors">1</p>
+                  <p className="text-lg sm:text-xl lg:text-sm font-semibold mb-0.5 sm:mb-1 lg:mb-0.5 text-black group-hover:text-gray-400 transition-colors">1</p>
                   <p className="text-[9px] sm:text-xs lg:text-xs font-semibold tracking-wide text-black group-hover:text-gray-400 transition-colors leading-tight">SELECT<br className="lg:hidden"/>PLACE</p>
                 </div>
 
@@ -4426,17 +4426,13 @@ export default function LandingPage() {
                   ✓
                 </div>
                 
-                {/* Overlapping frames icon */}
+                {/* House icon */}
                 <div className="flex justify-center mb-2 lg:mb-4">
-                  <div className="relative w-8 h-8 lg:w-10 lg:h-10">
-                    {/* Back frame */}
-                    <div className="absolute top-0 right-0 w-5 h-7 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors transform rotate-6"></div>
-                    {/* Front frame */}
-                    <div className="absolute top-1 left-0 w-5 h-7 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors">
-                      {/* Small image representation inside frame */}
-                      <div className="absolute inset-1 lg:inset-2 bg-gray-400 group-hover:bg-black transition-colors"></div>
-                    </div>
-                  </div>
+                  <img 
+                    src="https://cdn2.iconfinder.com/data/icons/travel-locations/24/house-512.png" 
+                    alt="Select Place" 
+                    className="w-6 h-6 lg:w-8 lg:h-8 object-contain opacity-40 group-hover:opacity-100 transition-opacity"
+                  />
                 </div>
                 <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
                 <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT BACKGROUND</p>
