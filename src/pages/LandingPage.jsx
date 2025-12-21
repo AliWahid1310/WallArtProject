@@ -3351,6 +3351,35 @@ export default function LandingPage() {
                 if (!hasArtworks) {
                   setShowEmptyArtworkModal(true)
                 } else {
+                  // Add items to cart before going to checkout
+                  const artworksWithSize = {}
+                  Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
+                    const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
+                    artworksWithSize[frameIdx] = {
+                      ...artwork,
+                      frameSize: frameSize
+                    }
+                  })
+                  
+                  setCartItems({
+                    artworks: artworksWithSize,
+                    frames: { ...selectedFrames }
+                  })
+                  
+                  // Initialize quantities for cart items
+                  const newQuantities = { ...quantities }
+                  Object.keys(selectedArtworks).forEach(frameIdx => {
+                    if (!newQuantities.artworks[frameIdx]) {
+                      newQuantities.artworks[frameIdx] = 1
+                    }
+                  })
+                  Object.keys(selectedFrames).forEach(frameIdx => {
+                    if (!newQuantities.frames[frameIdx]) {
+                      newQuantities.frames[frameIdx] = 1
+                    }
+                  })
+                  setQuantities(newQuantities)
+                  
                   setCurrentStep("checkout")
                 }
               }}
