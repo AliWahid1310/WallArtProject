@@ -1793,7 +1793,7 @@ export default function LandingPage() {
 
               {/* Hero Section */}
               <div
-                className="flex-1 relative bg-cover bg-center pb-20 lg:pb-0"
+                className="flex-1 relative bg-cover bg-center overflow-hidden"
                 style={{
                   backgroundImage: "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
                 }}
@@ -1845,7 +1845,7 @@ export default function LandingPage() {
           </button>
           <button 
             onClick={() => setShowCart(!showCart)}
-            className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+            className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -1856,7 +1856,7 @@ export default function LandingPage() {
           </button>
           <button 
             onClick={handleAddToCart}
-            className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+            className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
           >
             ADD TO 
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2104,7 +2104,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2115,7 +2115,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
                 >
                   ADD TO 
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2406,7 +2406,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2417,7 +2417,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
                 >
                   ADD TO 
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2739,7 +2739,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={() => setShowCart(!showCart)}
-              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2750,7 +2750,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={handleAddToCart}
-              className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+              className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
               ADD TO 
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3835,7 +3835,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -3846,7 +3846,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
                 >
                   ADD TO 
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4688,7 +4688,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={() => setShowCart(!showCart)}
-              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex-1"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -4699,7 +4699,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={handleAddToCart}
-              className="flex-1 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+              className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
               ADD TO 
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
