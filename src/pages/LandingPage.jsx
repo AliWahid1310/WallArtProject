@@ -1800,18 +1800,18 @@ export default function LandingPage() {
               >
                 {/* Content */}
                 <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-4 sm:px-8">
-                  {/* Dark Box Container - Compact size */}
-                  <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-10 md:px-14 py-6 sm:py-8 md:py-10">
-                    <p className="text-[8px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 sm:mb-3 text-gray-300 font-light">STEP-BY-STEP</p>
-                    <h2 className="text-lg sm:text-2xl md:text-3xl font-serif italic mb-2 sm:mb-3 md:mb-4 text-white font-light leading-tight">
+                  {/* Dark Box Container - Compact on mobile, larger on desktop */}
+                  <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-10 md:px-14 lg:px-24 xl:px-32 py-6 sm:py-8 md:py-10 lg:py-16 xl:py-20">
+                    <p className="text-[8px] sm:text-[10px] lg:text-xs tracking-[0.2em] sm:tracking-[0.3em] mb-2 sm:mb-3 lg:mb-5 text-gray-300 font-light">STEP-BY-STEP</p>
+                    <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-serif italic mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-white font-light leading-tight">
                       Create the perfect gallery wall
                     </h2>
-                    <p className="text-[10px] sm:text-xs md:text-sm mb-4 sm:mb-5 md:mb-6 text-gray-200 font-light leading-relaxed">
+                    <p className="text-[10px] sm:text-xs md:text-sm lg:text-base mb-4 sm:mb-5 md:mb-6 lg:mb-10 text-gray-200 font-light leading-relaxed">
                       Use our new tool to find designs and frames that match each other
                     </p>
                     <button
                       onClick={() => setCurrentStep("step1")}
-                      className="bg-white text-black px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 font-bold text-[10px] sm:text-xs tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
+                      className="bg-white text-black px-6 sm:px-8 md:px-10 lg:px-12 py-2.5 sm:py-3 lg:py-4 font-bold text-[10px] sm:text-xs lg:text-sm tracking-widest hover:bg-gray-100 border-2 border-white hover:border-black transition-all duration-300 cursor-pointer"
                     >
                       START HERE
                     </button>
