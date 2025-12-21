@@ -2682,31 +2682,54 @@ export default function LandingPage() {
               <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
                 {/* Frame Placeholders - Only show when layout is selected */}
                 {isMobile ? (
-                  /* Mobile: Centered container with all boxes */
-                  <div className="relative" style={{ width: '70%', height: '80%' }}>
-                    {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                      // Scale for mobile - keep proportions tight
-                      const scale = 0.5
-                      return (
+                  /* Mobile: Centered container with all boxes grouped tightly */
+                  <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
+                    {selectedLayout && (() => {
+                      // Calculate bounding box of all frames to center them
+                      const frames = selectedLayout.frames
+                      const scale = 0.6 // Scale factor for mobile
+                      const gap = 1 // Minimal gap between boxes in %
+                      
+                      // Convert all positions to left-based and find bounds
+                      const processedFrames = frames.map(frame => {
+                        const width = parseFloat(frame.width)
+                        const height = parseFloat(frame.height)
+                        // Convert right to left position (assuming 100% container)
+                        let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                        let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
+                        return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height }
+                      })
+                      
+                      // Find the bounding box
+                      const minLeft = Math.min(...processedFrames.map(f => f.calcLeft))
+                      const maxRight = Math.max(...processedFrames.map(f => f.calcLeft + f.width))
+                      const minTop = Math.min(...processedFrames.map(f => f.calcTop))
+                      const maxBottom = Math.max(...processedFrames.map(f => f.calcTop + f.height))
+                      
+                      const groupWidth = maxRight - minLeft
+                      const groupHeight = maxBottom - minTop
+                      
+                      // Center offset
+                      const centerOffsetX = 50 - (groupWidth * scale) / 2 - (minLeft * scale)
+                      const centerOffsetY = 50 - (groupHeight * scale) / 2 - (minTop * scale)
+                      
+                      return processedFrames.map((frame, idx) => (
                         <div
                           key={idx}
                           className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
                           style={{
-                            width: `${parseFloat(frame.width) * scale}%`,
-                            height: `${parseFloat(frame.height) * scale}%`,
-                            top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
-                            bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
-                            left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
-                            right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
-                            transform: frame.transform
+                            width: `${frame.width * scale}%`,
+                            height: `${frame.height * scale}%`,
+                            left: `${frame.calcLeft * scale + centerOffsetX}%`,
+                            top: `${frame.calcTop * scale + centerOffsetY}%`,
                           }}
                         >
                           <span className="text-gray-600 font-semibold text-[8px]">
                             {frame.size}
                           </span>
                         </div>
-                      )
-                    })}
+                      ))
+                    })()}
                   </div>
                 ) : (
                   /* Desktop: Original positioning */
@@ -3750,33 +3773,55 @@ export default function LandingPage() {
             <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
               {/* Clickable Frame Placeholders with Selected Artworks */}
               {isMobile ? (
-                /* Mobile: Centered container with all boxes */
-                <div className="relative" style={{ width: '70%', height: '80%' }}>
-                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                    const artwork = selectedArtworks[idx]
-                    const scale = 0.5
-                    return (
+                /* Mobile: Centered container with all boxes grouped tightly */
+                <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
+                  {selectedLayout && (() => {
+                    // Calculate bounding box of all frames to center them
+                    const frames = selectedLayout.frames
+                    const scale = 0.6 // Scale factor for mobile
+                    
+                    // Convert all positions to left-based and find bounds
+                    const processedFrames = frames.map((frame, idx) => {
+                      const width = parseFloat(frame.width)
+                      const height = parseFloat(frame.height)
+                      // Convert right to left position (assuming 100% container)
+                      let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                      let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
+                      return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height, idx, artwork: selectedArtworks[idx] }
+                    })
+                    
+                    // Find the bounding box
+                    const minLeft = Math.min(...processedFrames.map(f => f.calcLeft))
+                    const maxRight = Math.max(...processedFrames.map(f => f.calcLeft + f.width))
+                    const minTop = Math.min(...processedFrames.map(f => f.calcTop))
+                    const maxBottom = Math.max(...processedFrames.map(f => f.calcTop + f.height))
+                    
+                    const groupWidth = maxRight - minLeft
+                    const groupHeight = maxBottom - minTop
+                    
+                    // Center offset
+                    const centerOffsetX = 50 - (groupWidth * scale) / 2 - (minLeft * scale)
+                    const centerOffsetY = 50 - (groupHeight * scale) / 2 - (minTop * scale)
+                    
+                    return processedFrames.map((frame) => (
                       <div
-                        key={idx}
-                        onClick={() => setActiveFrameIndex(idx)}
+                        key={frame.idx}
+                        onClick={() => setActiveFrameIndex(frame.idx)}
                         className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
-                          activeFrameIndex === idx ? 'z-10' : ''
+                          activeFrameIndex === frame.idx ? 'z-10' : ''
                         }`}
                         style={{
-                          width: `${parseFloat(frame.width) * scale}%`,
-                          height: `${parseFloat(frame.height) * scale}%`,
-                          top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
-                          bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
-                          left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
-                          right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
-                          transform: frame.transform
+                          width: `${frame.width * scale}%`,
+                          height: `${frame.height * scale}%`,
+                          left: `${frame.calcLeft * scale + centerOffsetX}%`,
+                          top: `${frame.calcTop * scale + centerOffsetY}%`,
                         }}
                       >
-                        {artwork ? (
+                        {frame.artwork ? (
                           <>
                             <img 
-                              src={artwork.image}
-                              alt={artwork.title}
+                              src={frame.artwork.image}
+                              alt={frame.artwork.title}
                               className="w-full h-full object-contain bg-gray-100"
                             />
                             <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
@@ -3789,8 +3834,8 @@ export default function LandingPage() {
                           </div>
                         )}
                       </div>
-                    )
-                  })}
+                    ))
+                  })()}
                 </div>
               ) : (
                 /* Desktop: Original code */
@@ -4698,34 +4743,58 @@ export default function LandingPage() {
             <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
               {/* Final Gallery Wall Preview */}
               {isMobile ? (
-                /* Mobile: Centered container with all boxes */
-                <div className="relative" style={{ width: '70%', height: '80%' }}>
-                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                    const artwork = selectedArtworks[idx]
-                    if (!artwork) return null
-                    const scale = 0.5
-                    return (
-                      <div
-                        key={idx}
-                        className="absolute transition-all duration-300 overflow-hidden"
-                        style={{
-                          width: `${parseFloat(frame.width) * scale}%`,
-                          height: `${parseFloat(frame.height) * scale}%`,
-                          top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
-                          bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
-                          left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
-                          right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
-                          transform: frame.transform
-                        }}
-                      >
-                        <img 
-                          src={artwork.image}
-                          alt={artwork.title}
-                          className="w-full h-full object-contain bg-gray-100"
-                        />
-                      </div>
-                    )
-                  })}
+                /* Mobile: Centered container with all boxes grouped tightly */
+                <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
+                  {selectedLayout && (() => {
+                    // Calculate bounding box of all frames to center them
+                    const frames = selectedLayout.frames
+                    const scale = 0.6 // Scale factor for mobile
+                    
+                    // Convert all positions to left-based and find bounds
+                    const processedFrames = frames.map((frame, idx) => {
+                      const width = parseFloat(frame.width)
+                      const height = parseFloat(frame.height)
+                      // Convert right to left position (assuming 100% container)
+                      let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                      let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
+                      return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height, idx, artwork: selectedArtworks[idx] }
+                    })
+                    
+                    // Find the bounding box
+                    const minLeft = Math.min(...processedFrames.map(f => f.calcLeft))
+                    const maxRight = Math.max(...processedFrames.map(f => f.calcLeft + f.width))
+                    const minTop = Math.min(...processedFrames.map(f => f.calcTop))
+                    const maxBottom = Math.max(...processedFrames.map(f => f.calcTop + f.height))
+                    
+                    const groupWidth = maxRight - minLeft
+                    const groupHeight = maxBottom - minTop
+                    
+                    // Center offset
+                    const centerOffsetX = 50 - (groupWidth * scale) / 2 - (minLeft * scale)
+                    const centerOffsetY = 50 - (groupHeight * scale) / 2 - (minTop * scale)
+                    
+                    return processedFrames.map((frame) => {
+                      if (!frame.artwork) return null
+                      return (
+                        <div
+                          key={frame.idx}
+                          className="absolute transition-all duration-300 overflow-hidden"
+                          style={{
+                            width: `${frame.width * scale}%`,
+                            height: `${frame.height * scale}%`,
+                            left: `${frame.calcLeft * scale + centerOffsetX}%`,
+                            top: `${frame.calcTop * scale + centerOffsetY}%`,
+                          }}
+                        >
+                          <img 
+                            src={frame.artwork.image}
+                            alt={frame.artwork.title}
+                            className="w-full h-full object-contain bg-gray-100"
+                          />
+                        </div>
+                      )
+                    })
+                  })()}
                 </div>
               ) : (
                 /* Desktop: Original code */
