@@ -2679,47 +2679,57 @@ export default function LandingPage() {
                   : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
               }}
             >
-              <div className="absolute inset-0">
+              <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
                 {/* Frame Placeholders - Only show when layout is selected */}
-                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                  // On mobile landscape: scale dimensions and positions for proper spacing
-                  const getMobileWidth = (size) => {
-                    if (!isMobile) return size
-                    const num = parseFloat(size)
-                    return `${num * 0.55}%`  // Width at 55% for wider boxes
-                  }
-                  const getMobileHeight = (size) => {
-                    if (!isMobile) return size
-                    const num = parseFloat(size)
-                    return `${num * 0.45}%`  // Height at 45% for shorter boxes
-                  }
-                  const getMobilePosition = (pos, isVertical = false) => {
-                    if (!isMobile || !pos) return pos
-                    const num = parseFloat(pos)
-                    // Scale positions for minimal spacing between boxes
-                    return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
-                  }
-                  
-                  return (
-                  <div
-                    key={idx}
-                    className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
-                    style={{
-                      width: getMobileWidth(frame.width),
-                      height: getMobileHeight(frame.height),
-                      top: getMobilePosition(frame.top, true),
-                      bottom: getMobilePosition(frame.bottom, true),
-                      left: getMobilePosition(frame.left, false),
-                      right: getMobilePosition(frame.right, false),
-                      transform: frame.transform
-                    }}
-                  >
-                    <span className="text-gray-600 font-semibold text-sm">
-                      {frame.size}
-                    </span>
+                {isMobile ? (
+                  /* Mobile: Centered container with all boxes */
+                  <div className="relative" style={{ width: '70%', height: '80%' }}>
+                    {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                      // Scale for mobile - keep proportions tight
+                      const scale = 0.5
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                          style={{
+                            width: `${parseFloat(frame.width) * scale}%`,
+                            height: `${parseFloat(frame.height) * scale}%`,
+                            top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
+                            bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
+                            left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
+                            right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
+                            transform: frame.transform
+                          }}
+                        >
+                          <span className="text-gray-600 font-semibold text-[8px]">
+                            {frame.size}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                  )
-                })}
+                ) : (
+                  /* Desktop: Original positioning */
+                  selectedLayout && selectedLayout.frames.map((frame, idx) => (
+                    <div
+                      key={idx}
+                      className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                      style={{
+                        width: frame.width,
+                        height: frame.height,
+                        top: frame.top,
+                        bottom: frame.bottom,
+                        left: frame.left,
+                        right: frame.right,
+                        transform: frame.transform
+                      }}
+                    >
+                      <span className="text-gray-600 font-semibold text-sm">
+                        {frame.size}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -3737,87 +3747,110 @@ export default function LandingPage() {
             }}
           >
             {/* Frame Container */}
-            <div className="absolute inset-0">
+            <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
               {/* Clickable Frame Placeholders with Selected Artworks */}
-              {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-              const artwork = selectedArtworks[idx]
-              const frameStyle = selectedFrames[idx]
-              
-              // On mobile landscape: scale dimensions and positions for proper spacing
-              const getMobileWidth = (size) => {
-                if (!isMobile) return size
-                const num = parseFloat(size)
-                return `${num * 0.55}%`  // Width at 55% for wider boxes
-              }
-              const getMobileHeight = (size) => {
-                if (!isMobile) return size
-                const num = parseFloat(size)
-                return `${num * 0.45}%`  // Height at 45% for shorter boxes
-              }
-              const getMobilePosition = (pos, isVertical = false) => {
-                if (!isMobile || !pos) return pos
-                const num = parseFloat(pos)
-                // Scale positions for minimal spacing between boxes
-                return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
-              }
-              
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setActiveFrameIndex(idx)}
-                  className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
-                    activeFrameIndex === idx 
-                      ? 'z-10' 
-                      : ''
-                  }`}
-                  style={{
-                    width: getMobileWidth(frame.width),
-                    height: getMobileHeight(frame.height),
-                    top: getMobilePosition(frame.top, true),
-                    bottom: getMobilePosition(frame.bottom, true),
-                    left: getMobilePosition(frame.left, false),
-                    right: getMobilePosition(frame.right, false),
-                    transform: frame.transform
-                  }}
-                >
-                  {artwork ? (
-                    /* Show selected artwork - fits entire box without cropping */
-                    <>
-                      <img 
-                        src={artwork.image}
-                        alt={artwork.title}
-                        className={`w-full h-full ${isMobile ? 'object-contain' : 'object-cover'} bg-gray-100`}
-                      />
-                      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                      <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        CHANGE
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const newArtworks = { ...selectedArtworks }
-                          delete newArtworks[idx]
-                          setSelectedArtworks(newArtworks)
+              {isMobile ? (
+                /* Mobile: Centered container with all boxes */
+                <div className="relative" style={{ width: '70%', height: '80%' }}>
+                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                    const artwork = selectedArtworks[idx]
+                    const scale = 0.5
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setActiveFrameIndex(idx)}
+                        className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
+                          activeFrameIndex === idx ? 'z-10' : ''
+                        }`}
+                        style={{
+                          width: `${parseFloat(frame.width) * scale}%`,
+                          height: `${parseFloat(frame.height) * scale}%`,
+                          top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
+                          bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
+                          left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
+                          right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
+                          transform: frame.transform
                         }}
-                        className="absolute top-2 left-2 bg-white text-black w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white shadow-lg cursor-pointer"
-                        title="Remove design"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </>
-                  ) : (
-                    /* Show placeholder */
-                    <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors">
-                      <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
-                        {frame.size}
-                      </span>
-                    </div>
-                  )}
+                        {artwork ? (
+                          <>
+                            <img 
+                              src={artwork.image}
+                              alt={artwork.title}
+                              className="w-full h-full object-contain bg-gray-100"
+                            />
+                            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400">
+                            <span className="text-gray-600 font-semibold text-[8px]">
+                              {frame.size}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+              ) : (
+                /* Desktop: Original code */
+                selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  const frameStyle = selectedFrames[idx]
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setActiveFrameIndex(idx)}
+                      className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
+                        activeFrameIndex === idx ? 'z-10' : ''
+                      }`}
+                      style={{
+                        width: frame.width,
+                        height: frame.height,
+                        top: frame.top,
+                        bottom: frame.bottom,
+                        left: frame.left,
+                        right: frame.right,
+                        transform: frame.transform
+                      }}
+                    >
+                      {artwork ? (
+                        <>
+                          <img 
+                            src={artwork.image}
+                            alt={artwork.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                          <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            CHANGE
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const newArtworks = { ...selectedArtworks }
+                              delete newArtworks[idx]
+                              setSelectedArtworks(newArtworks)
+                            }}
+                            className="absolute top-2 left-2 bg-white text-black w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white shadow-lg cursor-pointer"
+                            title="Remove design"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors">
+                          <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                            {frame.size}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
         </div>
@@ -4662,55 +4695,67 @@ export default function LandingPage() {
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            <div className="absolute inset-0">
+            <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
               {/* Final Gallery Wall Preview */}
-              {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                const artwork = selectedArtworks[idx]
-                const frameStyle = selectedFrames[idx]
-
-                if (!artwork) return null
-                
-                // On mobile landscape: scale dimensions and positions for proper spacing
-                const getMobileWidth = (size) => {
-                  if (!isMobile) return size
-                  const num = parseFloat(size)
-                  return `${num * 0.55}%`  // Width at 55% for wider boxes
-                }
-                const getMobileHeight = (size) => {
-                  if (!isMobile) return size
-                  const num = parseFloat(size)
-                  return `${num * 0.45}%`  // Height at 45% for shorter boxes
-                }
-                const getMobilePosition = (pos, isVertical = false) => {
-                  if (!isMobile || !pos) return pos
-                  const num = parseFloat(pos)
-                  // Scale positions for minimal spacing between boxes
-                  return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
-                }
-
-                return (
-                  <div
-                    key={idx}
-                    className="absolute transition-all duration-300 overflow-hidden"
-                    style={{
-                      width: getMobileWidth(frame.width),
-                      height: getMobileHeight(frame.height),
-                      top: getMobilePosition(frame.top, true),
-                      bottom: getMobilePosition(frame.bottom, true),
-                      left: getMobilePosition(frame.left, false),
-                      right: getMobilePosition(frame.right, false),
-                      transform: frame.transform
-                    }}
-                  >
-                    {/* Artwork Image - fits entire box without cropping */}
-                    <img 
-                      src={artwork.image}
-                      alt={artwork.title}
-                      className={`w-full h-full ${isMobile ? 'object-contain' : 'object-cover'} bg-gray-100`}
-                    />
-                  </div>
-                )
-              })}
+              {isMobile ? (
+                /* Mobile: Centered container with all boxes */
+                <div className="relative" style={{ width: '70%', height: '80%' }}>
+                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                    const artwork = selectedArtworks[idx]
+                    if (!artwork) return null
+                    const scale = 0.5
+                    return (
+                      <div
+                        key={idx}
+                        className="absolute transition-all duration-300 overflow-hidden"
+                        style={{
+                          width: `${parseFloat(frame.width) * scale}%`,
+                          height: `${parseFloat(frame.height) * scale}%`,
+                          top: frame.top ? `${parseFloat(frame.top) * scale}%` : undefined,
+                          bottom: frame.bottom ? `${parseFloat(frame.bottom) * scale}%` : undefined,
+                          left: frame.left ? `${parseFloat(frame.left) * scale}%` : undefined,
+                          right: frame.right ? `${parseFloat(frame.right) * scale}%` : undefined,
+                          transform: frame.transform
+                        }}
+                      >
+                        <img 
+                          src={artwork.image}
+                          alt={artwork.title}
+                          className="w-full h-full object-contain bg-gray-100"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                /* Desktop: Original code */
+                selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  const frameStyle = selectedFrames[idx]
+                  if (!artwork) return null
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute transition-all duration-300 overflow-hidden"
+                      style={{
+                        width: frame.width,
+                        height: frame.height,
+                        top: frame.top,
+                        bottom: frame.bottom,
+                        left: frame.left,
+                        right: frame.right,
+                        transform: frame.transform
+                      }}
+                    >
+                      <img 
+                        src={artwork.image}
+                        alt={artwork.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
 
