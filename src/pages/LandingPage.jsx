@@ -2682,16 +2682,16 @@ export default function LandingPage() {
               <div className="absolute inset-0">
                 {/* Frame Placeholders - Only show when layout is selected */}
                   {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                  // On mobile, adjust frame dimensions
+                  // On mobile landscape, swap width and height scaling to fix orientation
                   const getMobileWidth = (size) => {
                     if (!isMobile) return size
                     const num = parseFloat(size)
-                    return `${num * 1.0}%`  // Width stays at 100%
+                    return `${num * 0.35}%`  // Width reduced to 35% in landscape
                   }
                   const getMobileHeight = (size) => {
                     if (!isMobile) return size
                     const num = parseFloat(size)
-                    return `${num * 0.35}%`  // Height reduced to 35%
+                    return `${num * 1.0}%`  // Height stays at 100% in landscape
                   }
                   
                   return (
@@ -3737,16 +3737,16 @@ export default function LandingPage() {
               const artwork = selectedArtworks[idx]
               const frameStyle = selectedFrames[idx]
               
-              // On mobile, adjust frame dimensions - keep width, reduce height less
+              // On mobile landscape, swap width and height scaling to fix orientation
               const getMobileWidth = (size) => {
                 if (!isMobile) return size
                 const num = parseFloat(size)
-                return `${num * 1.0}%`  // Width stays at 100%
+                return `${num * 0.35}%`  // Width reduced to 35% in landscape
               }
               const getMobileHeight = (size) => {
                 if (!isMobile) return size
                 const num = parseFloat(size)
-                return `${num * 0.35}%`  // Height reduced to 35%
+                return `${num * 1.0}%`  // Height stays at 100% in landscape
               }
               
               return (
@@ -4658,16 +4658,16 @@ export default function LandingPage() {
 
                 if (!artwork) return null
                 
-                // On mobile, adjust frame dimensions - keep width, reduce height less
+                // On mobile landscape, swap width and height scaling to fix orientation
                 const getMobileWidth = (size) => {
                   if (!isMobile) return size
                   const num = parseFloat(size)
-                  return `${num * 1.0}%`  // Width stays at 100%
+                  return `${num * 0.35}%`  // Width reduced to 35% in landscape
                 }
                 const getMobileHeight = (size) => {
                   if (!isMobile) return size
                   const num = parseFloat(size)
-                  return `${num * 0.35}%`  // Height reduced to 35%
+                  return `${num * 1.0}%`  // Height stays at 100% in landscape
                 }
 
                 return (
