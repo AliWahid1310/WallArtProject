@@ -2682,16 +2682,16 @@ export default function LandingPage() {
               <div className="absolute inset-0">
                 {/* Frame Placeholders - Only show when layout is selected */}
                   {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                  // On mobile landscape, swap width and height scaling to fix orientation
+                  // On mobile landscape: wider boxes, less height
                   const getMobileWidth = (size) => {
                     if (!isMobile) return size
                     const num = parseFloat(size)
-                    return `${num * 0.35}%`  // Width reduced to 35% in landscape
+                    return `${num * 0.55}%`  // Width at 55% for wider boxes
                   }
                   const getMobileHeight = (size) => {
                     if (!isMobile) return size
                     const num = parseFloat(size)
-                    return `${num * 1.0}%`  // Height stays at 100% in landscape
+                    return `${num * 0.45}%`  // Height at 45% for shorter boxes
                   }
                   
                   return (
@@ -3737,16 +3737,16 @@ export default function LandingPage() {
               const artwork = selectedArtworks[idx]
               const frameStyle = selectedFrames[idx]
               
-              // On mobile landscape, swap width and height scaling to fix orientation
+              // On mobile landscape: wider boxes, less height
               const getMobileWidth = (size) => {
                 if (!isMobile) return size
                 const num = parseFloat(size)
-                return `${num * 0.35}%`  // Width reduced to 35% in landscape
+                return `${num * 0.55}%`  // Width at 55% for wider boxes
               }
               const getMobileHeight = (size) => {
                 if (!isMobile) return size
                 const num = parseFloat(size)
-                return `${num * 1.0}%`  // Height stays at 100% in landscape
+                return `${num * 0.45}%`  // Height at 45% for shorter boxes
               }
               
               return (
@@ -3769,12 +3769,12 @@ export default function LandingPage() {
                   }}
                 >
                   {artwork ? (
-                    /* Show selected artwork - fills entire box */
+                    /* Show selected artwork - fits entire box without cropping */
                     <>
                       <img 
                         src={artwork.image}
                         alt={artwork.title}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full ${isMobile ? 'object-contain' : 'object-cover'} bg-gray-100`}
                       />
                       <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
                       <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -4658,16 +4658,16 @@ export default function LandingPage() {
 
                 if (!artwork) return null
                 
-                // On mobile landscape, swap width and height scaling to fix orientation
+                // On mobile landscape: wider boxes, less height
                 const getMobileWidth = (size) => {
                   if (!isMobile) return size
                   const num = parseFloat(size)
-                  return `${num * 0.35}%`  // Width reduced to 35% in landscape
+                  return `${num * 0.55}%`  // Width at 55% for wider boxes
                 }
                 const getMobileHeight = (size) => {
                   if (!isMobile) return size
                   const num = parseFloat(size)
-                  return `${num * 1.0}%`  // Height stays at 100% in landscape
+                  return `${num * 0.45}%`  // Height at 45% for shorter boxes
                 }
 
                 return (
@@ -4684,11 +4684,11 @@ export default function LandingPage() {
                       transform: frame.transform
                     }}
                   >
-                    {/* Artwork Image - fills entire box */}
+                    {/* Artwork Image - fits entire box without cropping */}
                     <img 
                       src={artwork.image}
                       alt={artwork.title}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full ${isMobile ? 'object-contain' : 'object-cover'} bg-gray-100`}
                     />
                   </div>
                 )
