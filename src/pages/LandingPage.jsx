@@ -2682,7 +2682,7 @@ export default function LandingPage() {
               <div className="absolute inset-0">
                 {/* Frame Placeholders - Only show when layout is selected */}
                   {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                  // On mobile landscape: wider boxes, less height
+                  // On mobile landscape: scale dimensions and positions for proper spacing
                   const getMobileWidth = (size) => {
                     if (!isMobile) return size
                     const num = parseFloat(size)
@@ -2693,6 +2693,12 @@ export default function LandingPage() {
                     const num = parseFloat(size)
                     return `${num * 0.45}%`  // Height at 45% for shorter boxes
                   }
+                  const getMobilePosition = (pos, isVertical = false) => {
+                    if (!isMobile || !pos) return pos
+                    const num = parseFloat(pos)
+                    // Scale positions to maintain spacing - vertical positions scale less, horizontal more
+                    return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
+                  }
                   
                   return (
                   <div
@@ -2701,10 +2707,10 @@ export default function LandingPage() {
                     style={{
                       width: getMobileWidth(frame.width),
                       height: getMobileHeight(frame.height),
-                      top: frame.top,
-                      bottom: frame.bottom,
-                      left: frame.left,
-                      right: frame.right,
+                      top: getMobilePosition(frame.top, true),
+                      bottom: getMobilePosition(frame.bottom, true),
+                      left: getMobilePosition(frame.left, false),
+                      right: getMobilePosition(frame.right, false),
                       transform: frame.transform
                     }}
                   >
@@ -3737,7 +3743,7 @@ export default function LandingPage() {
               const artwork = selectedArtworks[idx]
               const frameStyle = selectedFrames[idx]
               
-              // On mobile landscape: wider boxes, less height
+              // On mobile landscape: scale dimensions and positions for proper spacing
               const getMobileWidth = (size) => {
                 if (!isMobile) return size
                 const num = parseFloat(size)
@@ -3747,6 +3753,12 @@ export default function LandingPage() {
                 if (!isMobile) return size
                 const num = parseFloat(size)
                 return `${num * 0.45}%`  // Height at 45% for shorter boxes
+              }
+              const getMobilePosition = (pos, isVertical = false) => {
+                if (!isMobile || !pos) return pos
+                const num = parseFloat(pos)
+                // Scale positions to maintain spacing - vertical positions scale less, horizontal more
+                return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
               }
               
               return (
@@ -3761,10 +3773,10 @@ export default function LandingPage() {
                   style={{
                     width: getMobileWidth(frame.width),
                     height: getMobileHeight(frame.height),
-                    top: frame.top,
-                    bottom: frame.bottom,
-                    left: frame.left,
-                    right: frame.right,
+                    top: getMobilePosition(frame.top, true),
+                    bottom: getMobilePosition(frame.bottom, true),
+                    left: getMobilePosition(frame.left, false),
+                    right: getMobilePosition(frame.right, false),
                     transform: frame.transform
                   }}
                 >
@@ -4658,7 +4670,7 @@ export default function LandingPage() {
 
                 if (!artwork) return null
                 
-                // On mobile landscape: wider boxes, less height
+                // On mobile landscape: scale dimensions and positions for proper spacing
                 const getMobileWidth = (size) => {
                   if (!isMobile) return size
                   const num = parseFloat(size)
@@ -4669,6 +4681,12 @@ export default function LandingPage() {
                   const num = parseFloat(size)
                   return `${num * 0.45}%`  // Height at 45% for shorter boxes
                 }
+                const getMobilePosition = (pos, isVertical = false) => {
+                  if (!isMobile || !pos) return pos
+                  const num = parseFloat(pos)
+                  // Scale positions to maintain spacing - vertical positions scale less, horizontal more
+                  return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
+                }
 
                 return (
                   <div
@@ -4677,10 +4695,10 @@ export default function LandingPage() {
                     style={{
                       width: getMobileWidth(frame.width),
                       height: getMobileHeight(frame.height),
-                      top: frame.top,
-                      bottom: frame.bottom,
-                      left: frame.left,
-                      right: frame.right,
+                      top: getMobilePosition(frame.top, true),
+                      bottom: getMobilePosition(frame.bottom, true),
+                      left: getMobilePosition(frame.left, false),
+                      right: getMobilePosition(frame.right, false),
                       transform: frame.transform
                     }}
                   >
