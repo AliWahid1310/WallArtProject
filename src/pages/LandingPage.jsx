@@ -2696,8 +2696,8 @@ export default function LandingPage() {
                   const getMobilePosition = (pos, isVertical = false) => {
                     if (!isMobile || !pos) return pos
                     const num = parseFloat(pos)
-                    // Scale positions to maintain spacing - vertical positions scale less, horizontal more
-                    return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
+                    // Scale positions for minimal spacing between boxes
+                    return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
                   }
                   
                   return (
@@ -3757,8 +3757,8 @@ export default function LandingPage() {
               const getMobilePosition = (pos, isVertical = false) => {
                 if (!isMobile || !pos) return pos
                 const num = parseFloat(pos)
-                // Scale positions to maintain spacing - vertical positions scale less, horizontal more
-                return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
+                // Scale positions for minimal spacing between boxes
+                return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
               }
               
               return (
@@ -4684,8 +4684,8 @@ export default function LandingPage() {
                 const getMobilePosition = (pos, isVertical = false) => {
                   if (!isMobile || !pos) return pos
                   const num = parseFloat(pos)
-                  // Scale positions to maintain spacing - vertical positions scale less, horizontal more
-                  return isVertical ? `${num * 0.45}%` : `${num * 0.55}%`
+                  // Scale positions for minimal spacing between boxes
+                  return isVertical ? `${num * 0.25}%` : `${num * 0.30}%`
                 }
 
                 return (
