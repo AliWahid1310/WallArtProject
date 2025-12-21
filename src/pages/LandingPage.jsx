@@ -1825,7 +1825,7 @@ export default function LandingPage() {
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
-        <div className="lg:hidden fixed bottom-0 left-28 sm:left-32 right-0 bg-white border-t border-gray-300 flex items-center">
+        <div className="lg:hidden fixed bottom-0 left-28 sm:left-32 right-0 bg-white border-t border-gray-300 flex items-center z-40">
           <button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="px-3 py-3 text-[9px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -1845,7 +1845,7 @@ export default function LandingPage() {
           </button>
           <button 
             onClick={() => setShowCart(!showCart)}
-            className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2083,8 +2083,8 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
-              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center z-40">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
                   className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -2104,7 +2104,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2385,8 +2385,8 @@ export default function LandingPage() {
               >
               </div>
 
-              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
-              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center z-40">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
                   className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -2406,7 +2406,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -2718,8 +2718,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
-          <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
+          {/* Mobile Bottom Menu Bar */}
+          <div className="lg:hidden fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center z-40">
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -2739,7 +2739,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={() => setShowCart(!showCart)}
-              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -3814,8 +3814,8 @@ export default function LandingPage() {
             </div>
           </div>
         )}
-              {/* Mobile Bottom Menu Bar - Hidden in fullscreen */}
-              <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
+              {/* Mobile Bottom Menu Bar */}
+              <div className="lg:hidden fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center z-40">
                 <button 
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
                   className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -3835,7 +3835,7 @@ export default function LandingPage() {
                 </button>
                 <button 
                   onClick={() => setShowCart(!showCart)}
-                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -4667,8 +4667,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile: Bottom Navigation Bar - Hidden in fullscreen */}
-          <div className="lg:hidden hide-in-fullscreen fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center">
+          {/* Mobile: Bottom Navigation Bar - Summary/Checkout page */}
+          <div className="lg:hidden fixed bottom-0 left-28 right-0 bg-white border-t border-gray-300 flex items-center z-40">
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="px-2 py-2 text-[8px] font-bold tracking-wide text-black hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300 flex items-center gap-1"
@@ -4688,7 +4688,7 @@ export default function LandingPage() {
             </button>
             <button 
               onClick={() => setShowCart(!showCart)}
-              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="relative px-3 py-3 hover:bg-gray-100 transition-colors cursor-pointer border-r border-gray-300"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -4698,14 +4698,10 @@ export default function LandingPage() {
               </span>
             </button>
             <button 
-              onClick={handleAddToCart}
-              className="px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
+              onClick={handleCheckout}
+              className="flex-1 px-4 py-3 text-[10px] font-bold tracking-wide bg-black text-white hover:bg-gray-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
-              ADD TO 
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              {currency}{totalPrice}
+              CHECKOUT {currency}{calculateCartTotal()}
             </button>
           </div>
 
