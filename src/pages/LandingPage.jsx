@@ -2688,14 +2688,22 @@ export default function LandingPage() {
                       // Calculate bounding box of all frames to center them
                       const frames = selectedLayout.frames
                       const scale = 0.6 // Scale factor for mobile
-                      const gap = 1 // Minimal gap between boxes in %
                       
                       // Convert all positions to left-based and find bounds
+                      // Account for translateX(-50%) transform which shifts element left by half its width
                       const processedFrames = frames.map(frame => {
                         const width = parseFloat(frame.width)
                         const height = parseFloat(frame.height)
+                        const hasTranslateX = frame.transform && frame.transform.includes('translateX(-50%)')
+                        
                         // Convert right to left position (assuming 100% container)
                         let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                        
+                        // If translateX(-50%) is applied, the actual left position is shifted left by half the width
+                        if (hasTranslateX) {
+                          leftPos = leftPos - width / 2
+                        }
+                        
                         let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
                         return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height }
                       })
@@ -3781,11 +3789,20 @@ export default function LandingPage() {
                     const scale = 0.6 // Scale factor for mobile
                     
                     // Convert all positions to left-based and find bounds
+                    // Account for translateX(-50%) transform which shifts element left by half its width
                     const processedFrames = frames.map((frame, idx) => {
                       const width = parseFloat(frame.width)
                       const height = parseFloat(frame.height)
+                      const hasTranslateX = frame.transform && frame.transform.includes('translateX(-50%)')
+                      
                       // Convert right to left position (assuming 100% container)
                       let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                      
+                      // If translateX(-50%) is applied, the actual left position is shifted left by half the width
+                      if (hasTranslateX) {
+                        leftPos = leftPos - width / 2
+                      }
+                      
                       let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
                       return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height, idx, artwork: selectedArtworks[idx] }
                     })
@@ -4751,11 +4768,20 @@ export default function LandingPage() {
                     const scale = 0.6 // Scale factor for mobile
                     
                     // Convert all positions to left-based and find bounds
+                    // Account for translateX(-50%) transform which shifts element left by half its width
                     const processedFrames = frames.map((frame, idx) => {
                       const width = parseFloat(frame.width)
                       const height = parseFloat(frame.height)
+                      const hasTranslateX = frame.transform && frame.transform.includes('translateX(-50%)')
+                      
                       // Convert right to left position (assuming 100% container)
                       let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+                      
+                      // If translateX(-50%) is applied, the actual left position is shifted left by half the width
+                      if (hasTranslateX) {
+                        leftPos = leftPos - width / 2
+                      }
+                      
                       let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
                       return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height, idx, artwork: selectedArtworks[idx] }
                     })
