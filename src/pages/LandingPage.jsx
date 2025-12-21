@@ -1798,12 +1798,10 @@ export default function LandingPage() {
                   backgroundImage: "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
                 }}
               >
-                <div className="absolute inset-0 bg-black/40"></div>
-
                 {/* Content */}
                 <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-4 sm:px-8">
-                  {/* Dark Box Container */}
-                  <div className="bg-black/70 backdrop-blur-sm px-6 sm:px-12 md:px-20 py-8 sm:py-12 md:py-16 max-w-3xl w-full">
+                  {/* Dark Box Container - Sized to content */}
+                  <div className="bg-black/70 backdrop-blur-sm px-8 sm:px-16 md:px-24 py-10 sm:py-14 md:py-16 max-w-2xl">
                     <p className="text-[9px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] mb-3 sm:mb-6 text-gray-300 font-light">STEP-BY-STEP</p>
                     <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-serif italic mb-3 sm:mb-6 md:mb-8 text-white font-light leading-tight">
                       Create the perfect gallery wall
