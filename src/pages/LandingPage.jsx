@@ -1538,7 +1538,7 @@ export default function LandingPage() {
             {/* Left Sidebar - Visible on all screen sizes, narrower on mobile */}
             <div className="flex w-28 sm:w-32 lg:w-80 bg-white border-r border-gray-300 px-2 sm:px-4 lg:px-6 py-4 flex-col h-full overflow-hidden">
               {/* Logo */}
-              <h1 className="text-xs sm:text-lg lg:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">DESENIO</h1>
+              <h1 className="text-xs sm:text-lg lg:text-3xl font-bold tracking-tight mb-3 sm:mb-4 text-center flex-shrink-0">Laboo Studio</h1>
 
               {/* Steps Container */}
               <div className="flex-1 flex flex-col justify-start space-y-4 sm:space-y-5 lg:space-y-4 overflow-y-auto min-h-0">
@@ -1625,7 +1625,7 @@ export default function LandingPage() {
             {/* Mobile Sidebar - Compact Horizontal - HIDDEN since sidebar now always shows */}
             <div className="hidden">
               {/* Logo */}
-              <h1 className="text-lg font-bold tracking-tight">DESENIO</h1>
+              <h1 className="text-lg font-bold tracking-tight">Laboo Studio</h1>
               
               {/* Steps - Horizontal */}
               <div className="flex items-center gap-3">
@@ -1943,7 +1943,7 @@ export default function LandingPage() {
             {/* Left Sidebar - Narrow on mobile, standard on desktop */}
             <div className="flex w-36 lg:w-80 bg-white border-r border-gray-300 px-2 lg:px-6 py-3 lg:py-4 flex-col h-full">
               {/* Logo - Hidden on mobile, visible on desktop */}
-              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
+              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">Laboo Studio</h1>
 
               {/* Mobile: Header "1 SELECT PLACE" */}
               <div className="lg:hidden flex-shrink-0 mb-3 text-center border-b border-gray-200 pb-2">
@@ -2205,7 +2205,7 @@ export default function LandingPage() {
             {/* Left Sidebar - Narrow on mobile, standard on desktop */}
             <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
               {/* Logo - Hidden on mobile, visible on desktop */}
-              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
+              <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">Laboo Studio</h1>
 
               {/* Mobile: Header "2 SELECT BACKGROUND" */}
               <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1">
@@ -2507,7 +2507,7 @@ export default function LandingPage() {
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
           <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
             {/* Logo - Hidden on mobile, visible on desktop */}
-            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
+            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">Laboo Studio</h1>
 
             {/* Mobile: Header "3 SELECT PICTURE WALL" */}
             <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1">
@@ -2954,7 +2954,7 @@ export default function LandingPage() {
           {/* Left Sidebar - Narrow on mobile, standard on desktop */}
           <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 px-1 lg:px-6 py-1 lg:py-4 flex-col h-full">
             {/* Logo - Hidden on mobile, visible on desktop */}
-            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">DESENIO</h1>
+            <h1 className="hidden lg:block text-3xl font-bold tracking-tight mb-0 text-center flex-shrink-0">Laboo Studio</h1>
 
             {/* Mobile: Header "4. SELECT DESIGNS" */}
             <div className="lg:hidden flex-shrink-0 mb-1 border-b border-gray-200 pb-1">
@@ -3396,34 +3396,37 @@ export default function LandingPage() {
                 if (!hasArtworks) {
                   setShowEmptyArtworkModal(true)
                 } else {
-                  // Add items to cart before going to checkout
-                  const artworksWithSize = {}
-                  Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
-                    const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
-                    artworksWithSize[frameIdx] = {
-                      ...artwork,
-                      frameSize: frameSize
-                    }
-                  })
-                  
-                  setCartItems({
-                    artworks: artworksWithSize,
-                    frames: { ...selectedFrames }
-                  })
-                  
-                  // Initialize quantities for cart items
-                  const newQuantities = { ...quantities }
-                  Object.keys(selectedArtworks).forEach(frameIdx => {
-                    if (!newQuantities.artworks[frameIdx]) {
-                      newQuantities.artworks[frameIdx] = 1
-                    }
-                  })
-                  Object.keys(selectedFrames).forEach(frameIdx => {
-                    if (!newQuantities.frames[frameIdx]) {
-                      newQuantities.frames[frameIdx] = 1
-                    }
-                  })
-                  setQuantities(newQuantities)
+                  // For mobile only: Add items to cart before going to checkout
+                  // Desktop users should use the ADD TO CART button explicitly
+                  if (isMobile) {
+                    const artworksWithSize = {}
+                    Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
+                      const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
+                      artworksWithSize[frameIdx] = {
+                        ...artwork,
+                        frameSize: frameSize
+                      }
+                    })
+                    
+                    setCartItems({
+                      artworks: artworksWithSize,
+                      frames: { ...selectedFrames }
+                    })
+                    
+                    // Initialize quantities for cart items
+                    const newQuantities = { ...quantities }
+                    Object.keys(selectedArtworks).forEach(frameIdx => {
+                      if (!newQuantities.artworks[frameIdx]) {
+                        newQuantities.artworks[frameIdx] = 1
+                      }
+                    })
+                    Object.keys(selectedFrames).forEach(frameIdx => {
+                      if (!newQuantities.frames[frameIdx]) {
+                        newQuantities.frames[frameIdx] = 1
+                      }
+                    })
+                    setQuantities(newQuantities)
+                  }
                   
                   setCurrentStep("checkout")
                 }
@@ -4082,7 +4085,7 @@ export default function LandingPage() {
         <div className="w-80 border-r border-gray-200 flex flex-col">
           {/* Logo */}
           <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-center">Laboo Studio</h1>
           </div>
 
           {/* Step Header with Close Button */}
@@ -4410,7 +4413,7 @@ export default function LandingPage() {
         <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-full">
           {/* Logo - Desktop only */}
           <div className="hidden lg:block px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">DESENIO</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">Laboo Studio</h1>
           </div>
 
           {/* Completed Steps */}

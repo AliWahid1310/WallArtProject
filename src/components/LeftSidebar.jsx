@@ -51,7 +51,7 @@ const LeftSidebar = () => {
     <aside className="w-96 h-screen flex flex-col bg-white border-r border-gray-200">
       {/* Logo */}
       <div className="py-8 px-6 border-b border-gray-100">
-        <h1 className="text-3xl font-bold tracking-[0.15em] text-center">DESENIO</h1>
+        <h1 className="text-3xl font-bold tracking-[0.15em] text-center">Laboo Studio</h1>
       </div>
 
       {/* Step Navigation - Centered Vertical Layout */}
