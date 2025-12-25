@@ -2,8 +2,27 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
+import { useMobileDetection, useFullscreen } from '../hooks'
+import { MobilePortraitBlocker, FullscreenPrompt, ConfirmModal } from '../components'
+import {
+  placeCategories,
+  layoutOptions,
+  backgroundOptions,
+  colorOptions,
+  orientationOptions,
+  sizeOptions,
+  styleOptions,
+  collectionOptions,
+  artistOptions,
+  roomOptions,
+  frameStyles
+} from '../data'
 
 export default function LandingPage() {
+  // Mobile and fullscreen detection hooks
+  const { isMobile, isLandscape, isIOS, showRotatePrompt, setShowRotatePrompt } = useMobileDetection()
+  const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreen(isIOS)
+
   const [currentStep, setCurrentStep] = useState(() => {
     // Load current step from localStorage
     const savedStep = localStorage.getItem('galleryCurrentStep')
@@ -69,96 +88,6 @@ export default function LandingPage() {
   const [savedGalleryWalls, setSavedGalleryWalls] = useState([]) // Saved gallery configurations
   const [showCartDropdown, setShowCartDropdown] = useState(false) // Cart dropdown state
   const [showMobileMenu, setShowMobileMenu] = useState(false) // Mobile menu state
-  const [isMobile, setIsMobile] = useState(false) // Track mobile viewport
-  const [isLandscape, setIsLandscape] = useState(false) // Track landscape orientation
-  const [isFullscreen, setIsFullscreen] = useState(false) // Track fullscreen mode
-  const [showRotatePrompt, setShowRotatePrompt] = useState(true) // Show rotate/fullscreen prompt - starts true on mobile
-  const [isIOS, setIsIOS] = useState(false) // Track if device is iOS
-
-  // Detect mobile viewport, orientation, and iOS
-  useEffect(() => {
-    // Detect iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    setIsIOS(iOS)
-    
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024
-      const landscape = window.innerWidth > window.innerHeight
-      setIsMobile(mobile)
-      setIsLandscape(landscape)
-      // On mobile portrait, always show rotate prompt (blocks entire app)
-      if (mobile && !landscape) {
-        setShowRotatePrompt(true)
-      } else {
-        setShowRotatePrompt(false)
-      }
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    window.addEventListener('orientationchange', checkMobile)
-    return () => {
-      window.removeEventListener('resize', checkMobile)
-      window.removeEventListener('orientationchange', checkMobile)
-    }
-  }, [])
-
-  // Track fullscreen changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      // Check various fullscreen properties for cross-browser support
-      const isFS = !!(document.fullscreenElement || 
-                      document.webkitFullscreenElement || 
-                      document.mozFullScreenElement ||
-                      document.msFullscreenElement)
-      setIsFullscreen(isFS)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
-    }
-  }, [])
-
-  // Function to enter fullscreen (or skip for iOS)
-  const enterFullscreen = () => {
-    // iOS doesn't support Fullscreen API - just set state to continue
-    if (isIOS) {
-      setIsFullscreen(true)
-      return
-    }
-    
-    const elem = document.documentElement
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen()
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen()
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen()
-    }
-  }
-
-  // Function to exit fullscreen
-  const exitFullscreen = () => {
-    // iOS - just set state
-    if (isIOS) {
-      setIsFullscreen(false)
-      return
-    }
-    
-    if (document.exitFullscreen) {
-      document.exitFullscreen()
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen()
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen()
-    }
-  }
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -661,140 +590,6 @@ export default function LandingPage() {
     return filtered
   }
 
-  // Color options for filter
-  const colorOptions = [
-    { name: 'Multi', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', value: 'multi' },
-    { name: 'Red', color: '#DC2626', value: 'red' },
-    { name: 'Orange', color: '#F97316', value: 'orange' },
-    { name: 'Blue', color: '#2563EB', value: 'blue' },
-    { name: 'Green', color: '#16A34A', value: 'green' },
-    { name: 'Brown', color: '#92400E', value: 'brown' },
-    { name: 'Yellow', color: '#EAB308', value: 'yellow' },
-    { name: 'Beige', color: '#D4B896', value: 'beige' },
-    { name: 'Grey', color: '#6B7280', value: 'grey' },
-    { name: 'Black', color: '#000000', value: 'black' },
-    { name: 'White', color: '#FFFFFF', value: 'white' },
-    { name: 'Black and White', color: 'linear-gradient(90deg, #000 50%, #FFF 50%)', value: 'black and white' },
-    { name: 'Silver', color: '#C0C0C0', value: 'silver' },
-    { name: 'Gold', color: '#FFD700', value: 'gold' },
-    { name: 'Copper', color: '#B87333', value: 'copper' },
-    { name: 'Purple', color: '#9333EA', value: 'purple' },
-    { name: 'Pink', color: '#EC4899', value: 'pink' },
-    { name: 'Turquoise', color: '#14B8A6', value: 'turquoise' }
-  ]
-
-  // Orientation options
-  const orientationOptions = [
-    { name: 'horizontal', value: 'horizontal' },
-    { name: 'square', value: 'square' },
-    { name: 'vertical', value: 'vertical' }
-  ]
-
-  // Size options
-  const sizeOptions = [
-    { name: '13x18', value: '13x18' },
-    { name: '21x30', value: '21x30' },
-    { name: '30x40', value: '30x40' },
-    { name: '40x50', value: '40x50' },
-    { name: '50x70', value: '50x70' },
-    { name: '70x100', value: '70x100' }
-  ]
-
-  // Style options
-  const styleOptions = [
-    { name: 'Art Noveau', value: 'art noveau' },
-    { name: 'Bohemian & Electric', value: 'bohemian & electric' },
-    { name: 'Coastal & Tropical', value: 'coastal & tropical' },
-    { name: 'Contemporary', value: 'contemporary' },
-    { name: 'Country & Farmhouse', value: 'country & farmhouse' },
-    { name: 'Industrial & Utility', value: 'industrial & utility' },
-    { name: 'Lodge', value: 'lodge' },
-    { name: 'Mid-Century', value: 'mid-century' },
-    { name: 'Minimalist', value: 'minimalist' },
-    { name: 'Modern', value: 'modern' },
-    { name: 'Pop Art', value: 'pop art' },
-    { name: 'Retro/Vintage', value: 'retro/vintage' },
-    { name: 'Rustic & Primitive', value: 'rustic & primitive' },
-    { name: 'Victorian', value: 'victorian' }
-  ]
-
-  // Collection options
-  const collectionOptions = [
-    { name: 'Abstract Art', value: 'abstract art' },
-    { name: 'Abstract Wall Art', value: 'abstract wall art' },
-    { name: 'Asian Dragon Art', value: 'asian dragon art' },
-    { name: 'Bar/Cafe', value: 'bar/cafe' },
-    { name: 'Bauhaus', value: 'bauhaus' },
-    { name: 'Bird Wall Art', value: 'bird wall art' },
-    { name: 'Botanical Prints', value: 'botanical prints' },
-    { name: 'Buddha Wall Art', value: 'buddha wall art' },
-    { name: 'Cats & Paws', value: 'cats & paws' },
-    { name: 'City Skylines', value: 'city skylines' },
-    { name: 'Coastal & Beach', value: 'coastal & beach' },
-    { name: 'Cocktail Wall Art', value: 'cocktail wall art' },
-    { name: 'Dog Wall Art', value: 'dog wall art' },
-    { name: 'Floral & Nature', value: 'floral & nature' },
-    { name: 'Flower Market', value: 'flower market' },
-    { name: 'Fruit Wall Art', value: 'fruit wall art' },
-    { name: 'Graphic Design', value: 'graphic design' },
-    { name: 'Japandi', value: 'japandi' },
-    { name: 'Japanese Ink Art', value: 'japanese ink art' },
-    { name: 'Japanese Pop Art', value: 'japanese pop art' },
-    { name: 'Kitchen Art Prints', value: 'kitchen art prints' },
-    { name: 'Mexican Art', value: 'mexican art' },
-    { name: 'Mexican Wall Art', value: 'mexican wall art' },
-    { name: 'Motivational Art', value: 'motivational art' },
-    { name: 'Nursery Wall Art', value: 'nursery wall art' },
-    { name: 'Personalised Prints', value: 'personalised prints' },
-    { name: 'Travel Poster', value: 'travel poster' },
-    { name: 'Typography', value: 'typography' },
-    { name: 'Wabi Sabi', value: 'wabi sabi' },
-    { name: 'Wall Calendar', value: 'wall calendar' },
-    { name: 'Winter Wall Art', value: 'winter wall art' },
-    { name: 'Woodblock Prints', value: 'woodblock prints' }
-  ]
-
-  // Artist options
-  const artistOptions = [
-    { name: 'Bauhaus', value: 'bauhaus' },
-    { name: 'Ellsworth Kelly', value: 'ellsworth kelly' },
-    { name: 'Frida Kahlo', value: 'frida kahlo' },
-    { name: 'Henri Matisse', value: 'henri matisse' },
-    { name: 'Laboo Studio', value: 'laboo studio' },
-    { name: 'Mark Rothko', value: 'mark rothko' },
-    { name: 'Ukiyo-e', value: 'ukiyo-e' },
-    { name: 'William Morris', value: 'william morris' },
-    { name: 'Yayoi Kusama', value: 'yayoi kusama' }
-  ]
-
-  // Room options
-  const roomOptions = [
-    { name: 'Bathroom', value: 'bathroom' },
-    { name: 'Bedroom', value: 'bedroom' },
-    { name: 'Cafe', value: 'cafe' },
-    { name: 'Dorm', value: 'dorm' },
-    { name: 'Entryway', value: 'entryway' },
-    { name: 'Game Room', value: 'game room' },
-    { name: 'Gym', value: 'gym' },
-    { name: 'Kids', value: 'kids' },
-    { name: 'Kitchen & Dining', value: 'kitchen & dining' },
-    { name: 'Laundry', value: 'laundry' },
-    { name: 'Living Room', value: 'living room' },
-    { name: 'Nursery', value: 'nursery' },
-    { name: 'Office', value: 'office' },
-    { name: 'Restaurant', value: 'restaurant' }
-  ]
-
-  // Frame style options
-  const frameStyles = [
-    { id: 'black', name: 'Black', color: '#000000', borderWidth: '8px', price: 15.00 },
-    { id: 'white', name: 'White', color: '#FFFFFF', borderWidth: '8px', borderColor: '#E5E5E5', price: 15.00 },
-    { id: 'oak', name: 'Oak', color: '#D4A574', borderWidth: '8px', price: 18.00 },
-    { id: 'walnut', name: 'Walnut', color: '#5C4033', borderWidth: '8px', price: 18.00 },
-    { id: 'silver', name: 'Silver', color: '#C0C0C0', borderWidth: '8px', price: 20.00 },
-    { id: 'gold', name: 'Gold', color: '#D4AF37', borderWidth: '8px', price: 20.00 }
-  ]
-
   // Calculate total price
   const calculateTotalPrice = () => {
     let total = 0
@@ -1022,470 +817,14 @@ export default function LandingPage() {
     setShowResetModal(false)
   }
 
-  // Room/Place Categories
-  const placeCategories = [
-    {
-      id: "living-room",
-      name: "Living Room",
-      image: "PLACEHOLDER_IMAGE_URL_1",
-      description: "Modern and cozy living spaces"
-    },
-    {
-      id: "bedroom",
-      name: "Bedroom",
-      image: "PLACEHOLDER_IMAGE_URL_2",
-      description: "Relaxing bedroom environments"
-    },
-    {
-      id: "dining-room",
-      name: "Dining Room",
-      image: "PLACEHOLDER_IMAGE_URL_3",
-      description: "Elegant dining areas"
-    },
-    {
-      id: "home-office",
-      name: "Home Office",
-      image: "PLACEHOLDER_IMAGE_URL_4",
-      description: "Productive workspace settings"
-    },
-    {
-      id: "hallway",
-      name: "Hallway",
-      image: "PLACEHOLDER_IMAGE_URL_5",
-      description: "Welcoming entrance spaces"
-    },
-    {
-      id: "kids-room",
-      name: "Kids Room",
-      image: "PLACEHOLDER_IMAGE_URL_6",
-      description: "Fun and playful children's rooms"
-    }
-  ]
-
-  const layoutOptions = [
-    {
-      id: 1,
-      name: "Two 50x70",
-      image: "https://gwt.desenio.co.uk/walls/2-50x70.png",
-      frames: [
-        { width: "12%", height: "35%", size: "50X70", top: "20%", left: "37%" },
-         { width: "12%", height: "35%", size: "50X70", top: "20%", right: "37%" }
-      ]
-    },
-    {
-      id: 2,
-      name: "Two 70x100",
-      image: "https://gwt.desenio.co.uk/walls/2-70x100.png",
-      frames: [
-        { width: "15%", height: "44%", size: "70x100", top: "20%", left: "34%" },
-        { width: "15%", height: "44%", size: "70x100", top: "20%", right: "34%" }
-      ]
-    },
-    {
-      id: 3,
-      name: "Three 50x70",
-      image: "https://gwt.desenio.co.uk/walls/3-50x70.png",
-      frames: [
-        { width: "12%", height: "35%", size: "50x70", top: "25%", left: "30%" },
-        { width: "12%", height: "35%", size: "50x70", top: "25%", left: "50%", transform: "translateX(-50%)" },
-        { width: "12%", height: "35%", size: "50x70", top: "25%", right: "30%" }
-      ]
-    },
-    {
-      id: 4,
-      name: "Center 70x100 + Sides",
-      image: "https://gwt.desenio.co.uk/walls/3-mixed.png",
-      frames: [
-        { width: "11.5%", height: "31.25%", size: "50x75", top: "27%", left: "30%" },
-        { width: "15%", height: "44%", size: "70x100", top: "20%", left: "50%", transform: "translateX(-50%)" },
-        { width: "11.5%", height: "31.25%", size: "50x75", top: "27%", right: "30%", }
-      ]
-    },
-    {
-      id: 5,
-      name: "Four 30x40 Grid",
-      image: "https://gwt.desenio.co.uk/walls/4-30x40.png",
-      frames: [
-        { width: "9%", height: "27%", size: "30x40", top: "15%", left: "39.95%" },
-        { width: "9%", height: "27%", size: "30x40", top: "15%", right: "39.95%" },
-        { width: "9%", height: "27%", size: "30x40", bottom: "30%", left: "39.95%" },
-        { width: "9%", height: "27%", size: "30x40", bottom: "30%", right: "39.95%" }
-      ]
-    },
-    {
-      id: 6,
-      name: "Four Row Mix",
-      image: "https://gwt.desenio.co.uk/walls/4-mixed.png",
-      frames: [
-        { width: "9%", height: "27%", size: "30x40", top: "27%", left: "27.7%" },
-        { width: "12%", height: "35%", size: "50x70", top: "23%", left: "37.5%" },
-        { width: "12%", height: "35%", size: "50x70", top: "23%", right: "37.5%" },
-        { width: "9%", height: "27%", size: "30x40", top: "27%", right: "27.7%" }
-      ]
-    },
-    {
-      id: 7,
-      name: "Gallery Wall Mix",
-      image: "https://gwt.desenio.co.uk/walls/4-mixed-2.png",
-      frames: [
-       // TOP LEFT — 50x70 (HORIZONTAL)
-  {
-    width: "16%",
-    height: "21%",
-    size: "50x70",
-    top: "10%",
-    left: "35.5%"
-  },
-
-  // RIGHT — 70x100 (VERTICAL)
-  {
-    width: "16%",
-    height: "48%",
-    size: "70x100",
-    top: "10%",
-    left: "52%"
-  },
-
-  // BOTTOM LEFT — 30x40 (VERTICAL)
-  {
-    width: "9%",
-    height: "27%",
-    size: "30x40",
-    top: "32%",
-    left: "30%"
-  },
-
-  // BOTTOM CENTER — 50x70 (VERTICAL)
-  {
-    width: "12%",
-    height: "35%",
-    size: "50x70",
-    top: "32%",
-    left: "39.5%"
-  }
-      ]
-    },
-    {
-      id: 8,
-      name: "Asymmetric Collection",
-      image: "https://gwt.desenio.co.uk/walls/4-mixed-3.png",
-      frames: [
-        // LEFT — 50x70 (vertical big)
-  {
-    width: "12%",
-    height: "35%",
-    size: "50x70",
-    top: "12%",
-    left: "36%"
-  },
-
-  // RIGHT — 50x50 (square, top right)
-  {
-    width: "12%",
-    height: "23%",
-    size: "50x50",
-    top: "12%",
-    left: "48.5%"
-  },
-
-  // RIGHT — 30x40 (vertical, below the square)
-  {
-    width: "8.4%",
-    height: "22%",
-    size: "30x40",
-    top: "36%",
-    left: "48.5%"
-  },
-
-  // RIGHT — 13x18 (small vertical, to the right of 30x40)
-  {
-    width: "3.6%",
-    height: "11%",
-    size: "13x18",
-    top: "36%",
-    left: "57%"
-  }
-      ]
-    },
-    {
-      id: 9,
-      name: "Large Center + Corners",
-      image: "https://gwt.desenio.co.uk/walls/5-mixed.png",
-      frames: [
-        // LEFT — small 21x30 (slightly left of the two 30x40s)
-  {
-    width: "6.3%",
-    height: "15.75%",
-    size: "21x30",
-    top: "24%",
-    left: "26.7%"
-  },
-
-  // LEFT TOP — 30x40 (top of the left stack)
-  {
-    width: "8.4%",
-    height: "22%",
-    size: "30x40",
-    top: "10%",
-    left: "33.5%"
-  },
-
-  // LEFT BOTTOM — 30x40 (below the first 30x40)
-  {
-    width: "8.4%",
-    height: "22%",
-    size: "30x40",
-    top: "33%",
-    left: "33.5%"
-  },
-
-  // CENTER — 70x100 (big center piece)
-  {
-    width: "16%",
-    height: "48%",
-    size: "70x100",
-    top: "8%",
-    left: "50.5%",
-    transform: "translateX(-50%)"
-  },
-
-  // RIGHT — 50x70 (single piece on the right)
-  {
-    width: "12%",
-    height: "35%",
-    size: "50x70",
-    top: "15%",
-    right: "28.8%"
-  }
-      ]
-    },
-    {
-      id: 10,
-      name: "Creative Cluster",
-      image: "https://gwt.desenio.co.uk/walls/large-wall.png",
-      frames: [
-     // LEFT — 40x50 (top left)
-{
-  width: "9.8%",
-  height: "25%",
-  size: "40x50",
-  top: "8%",
-  left: "31.5%"
-},
-
-// LEFT — 50x70 (under the 40x50)
-{
-  width: "12%",
-  height: "35%",
-  size: "50x70",
-  top: "34.5%",
-  left: "29.3%"
-},
-
-// CENTER — 70x100 (big)
-{
-  width: "16%",
-  height: "48%",
-  size: "70x100",
-  top: "6%",
-  left: "50%",
-  transform: "translateX(-50%)"
-},
-
-// RIGHT TOP — 50x70 (top right)
-{
-  width: "12%",
-  height: "35%",
-  size: "50x70",
-  top: "6%",
-  right: "29.2%"
-},
-
-// RIGHT MID — 40x50
-{
-  width: "9.8%",
-  height: "25%",
-  size: "40x50",
-  top: "42%",
-  right: "31.5%"
-},
-
-// RIGHT MID — 30x40 **horizontal**
-{
-  width: "10%",
-  height: "15%",
-  size: "30x40",
-  top: "42%",
-  right: "21%"
-},
-
-// BOTTOM LEFT OF CENTER — 30x40 **horizontal**
-{
-  width: "10%",
-  height: "15%",
-  size: "30x40",
-  top: "54.5%",
-  left: "42%"
-},
-
-// BOTTOM CENTER — 21x30 **horizontal**
-{
-  width: "5.7%",
-  height: "15%",
-  size: "21x30",
-  top: "54.5%",
-  left: "55.2%",
-  transform: "translateX(-50%)"
-}
-      ]
-    }
-  ]
-
-  const backgroundOptions = [
-    { 
-      section: "Modern Living Room",
-      variants: [
-        { id: "bg-1-white", name: "White Wall", color: "#FFFFFF", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/4-grey.jpg" },
-        { id: "bg-1-grey", name: "Grey Wall", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/4-white.jpg" },
-        { id: "bg-1-blue", name: "Blue Wall", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/4-blue.jpg" },
-        { id: "bg-1-sage", name: "Sage Wall", color: "#98D8C8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/4-green.jpg" },
-        { id: "bg-1-pink", name: "Pink Wall", color: "#F5C0C0", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/4-pink.jpg" }
-      ]
-    },
-    { 
-      section: "Contemporary Space",
-      variants: [
-        { id: "bg-2-white", name: "White Minimal", color: "#FFFFFF", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/5-grey.jpg" },
-        { id: "bg-2-grey", name: "Grey Minimal", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/5-white.jpg" },
-        { id: "bg-2-blue", name: "Blue Minimal", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/5-blue.jpg" },
-        { id: "bg-2-sage", name: "Sage Minimal", color: "#98D8C8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/5-pink.jpg" },
-      ]
-    },
-    { 
-      section: "Cozy Corner",
-      variants: [
-        { id: "bg-3-white", name: "White Cozy", color: "#FFFFFF", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/6-grey.jpg" },
-        { id: "bg-3-grey", name: "Grey Cozy", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/6-blue.jpg" },
-      ]
-    },
-    { 
-      section: "Scandinavian Style",
-      variants: [
-        { id: "bg-4-grey", name: "Grey Nordic", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/7-grey.jpg" },
-        { id: "bg-4-blue", name: "Blue Nordic", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/7-blue.jpg" },
-        { id: "bg-4-pink", name: "Pink Nordic", color: "#F5C0C0", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/7-pink.jpg" }
-      ]
-    },
-    { 
-      section: "Urban Loft",
-      variants: [
-        { id: "bg-5-white", name: "White Industrial", color: "#FFFFFF", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/8-white.jpg" },
-        { id: "bg-5-grey", name: "Grey Industrial", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/8-grey.jpg" },
-        { id: "bg-5-blue", name: "Blue Industrial", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/8-blue.jpg" },
-        { id: "bg-5-pink", name: "Pink Industrial", color: "#F5C0C0", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/8-pink.jpg" }
-      ]
-    },
-    { 
-      section: "Classic Elegance",
-      variants: [
-        { id: "bg-6-white", name: "White Classic", color: "#FFFFFF", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/9-white.jpg" },
-        { id: "bg-6-grey", name: "Grey Classic", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/9-grey.jpg" },
-        { id: "bg-6-blue", name: "Blue Classic", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/9-green.jpg" },
-      ]
-    },
-    { 
-      section: "Minimalist Studio",
-      variants: [
-        { id: "bg-7-grey", name: "Grey Studio", color: "#E8E8E8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/10-grey.jpg" },
-        { id: "bg-7-blue", name: "Blue Studio", color: "#87CEEB", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/10-blue.jpg" },
-        { id: "bg-7-sage", name: "Sage Studio", color: "#98D8C8", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/10-dark.jpg" },
-        { id: "bg-7-pink", name: "Pink Studio", color: "#F5C0C0", image: "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/10-green.jpg" }
-      ]
-    }
-  ]
-
   // Mobile Portrait Mode Blocker - Shows rotate prompt before any content
-  // Mobile Portrait Mode Blocker - Shows rotate prompt
   if (isMobile && !isLandscape) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-6">
-        <div className="text-center text-white max-w-sm">
-          {/* Rotate Phone Animation */}
-          <div className="mb-8 relative">
-            <div className="animate-pulse">
-              <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-16 h-16 animate-spin" style={{animationDuration: '3s'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold mb-4">Rotate Your Device</h1>
-          <p className="text-gray-300 text-lg mb-8">
-            Please rotate your phone to <span className="font-semibold text-white">landscape mode</span> for the best gallery wall experience.
-          </p>
-          <div className="flex items-center justify-center gap-2 text-gray-400">
-            <svg className="w-12 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={1.5} />
-              <circle cx="12" cy="12" r="1" fill="currentColor" />
-            </svg>
-            <span className="text-sm">Landscape mode</span>
-          </div>
-        </div>
-      </div>
-    )
+    return <MobilePortraitBlocker />
   }
 
   // Mobile Landscape but NOT Fullscreen - Shows fullscreen prompt
   if (isMobile && isLandscape && !isFullscreen) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-6">
-        <div className="text-center text-white max-w-sm">
-          {/* Fullscreen Icon */}
-          <div className="mb-8">
-            <svg className="w-28 h-28 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-          </div>
-          
-          {isIOS ? (
-            // iOS-specific content
-            <>
-              <h1 className="text-3xl font-bold mb-4">Ready to Start</h1>
-              <p className="text-gray-300 text-lg mb-6">
-                For the best experience, keep your device in <span className="font-semibold text-white">landscape mode</span>.
-              </p>
-              <p className="text-gray-400 text-sm mb-8">
-                💡 Tip: Add this page to your Home Screen for a fullscreen app-like experience!
-              </p>
-              <button
-                onClick={enterFullscreen}
-                className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
-              >
-                CONTINUE
-              </button>
-            </>
-          ) : (
-            // Android/Other devices content
-            <>
-              <h1 className="text-3xl font-bold mb-4">Go Fullscreen</h1>
-              <p className="text-gray-300 text-lg mb-8">
-                Tap the button below to enter <span className="font-semibold text-white">fullscreen mode</span> for an immersive gallery wall experience.
-              </p>
-              <button
-                onClick={enterFullscreen}
-                className="bg-white text-black px-10 py-4 font-bold text-sm tracking-wider hover:bg-gray-200 transition-all duration-200 rounded-lg shadow-lg"
-              >
-                ENTER FULLSCREEN
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    )
+    return <FullscreenPrompt isIOS={isIOS} onEnterFullscreen={enterFullscreen} />
   }
 
   // Intro page (original)
@@ -1493,44 +832,17 @@ export default function LandingPage() {
     return (
       <>
         {/* Reset Confirmation Modal */}
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => setShowResetModal(false)}
-                  className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl"
-                >
-                  Yes, Start Over
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
         
         <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
@@ -1908,34 +1220,17 @@ export default function LandingPage() {
   if (currentStep === "step1") {
     return (
       <>
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
-                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
         
         <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
@@ -2170,34 +1465,17 @@ export default function LandingPage() {
   if (currentStep === "step2") {
     return (
       <>
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
-                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
         
         <div className="h-screen bg-white flex flex-col overflow-hidden">
           {/* Mobile/Desktop Layout Container */}
@@ -2473,34 +1751,17 @@ export default function LandingPage() {
   if (currentStep === "step3") {
     return (
       <>
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
-                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
       <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Mobile/Desktop Layout Container */}
         <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
@@ -2920,34 +2181,17 @@ export default function LandingPage() {
 
     return (
       <>
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
-                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
       <div className="h-screen bg-white flex flex-col overflow-hidden">
         {/* Mobile/Desktop Layout Container */}
         <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
@@ -4380,34 +3624,17 @@ export default function LandingPage() {
 
     return (
       <>
-        {showResetModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full animate-fadeIn">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">Start Over?</h3>
-                    <p className="text-sm text-gray-500 mt-1">This action cannot be undone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-gray-700 leading-relaxed">
-                  Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning.
-                </p>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3">
-                <button onClick={() => setShowResetModal(false)} className="flex-1 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-50 transition-all duration-200 cursor-pointer">Cancel</button>
-                <button onClick={handleReset} className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl">Yes, Start Over</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          title="Start Over?"
+          subtitle="This action cannot be undone"
+          message="Are you sure you want to start over? All your current selections, artworks, and frames will be cleared, and you'll return to the beginning."
+          confirmText="Yes, Start Over"
+          cancelText="Cancel"
+          type="warning"
+        />
       <div className="flex flex-row h-screen bg-white overflow-hidden">
         {/* Left Sidebar - Summary */}
         <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-full">
@@ -4419,7 +3646,7 @@ export default function LandingPage() {
           {/* Completed Steps */}
           <div className="flex-1 overflow-y-auto px-1 lg:px-6 py-2 lg:py-6">
             <div className="space-y-2 lg:space-y-8">
-              {/* Step 1 - Background */}
+              {/* Step 1 - Select Place */}
               <button
                 onClick={() => setCurrentStep("step1")}
                 className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
@@ -4438,10 +3665,36 @@ export default function LandingPage() {
                   />
                 </div>
                 <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
+                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT PLACE</p>
+              </button>
+
+              {/* Step 2 - Select Background */}
+              <button
+                onClick={() => setCurrentStep("step1")}
+                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
+              >
+                {/* Checkmark - positioned top-left */}
+                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
+                  ✓
+                </div>
+                
+                {/* Overlapping frames icon */}
+                <div className="flex justify-center mb-2 lg:mb-4">
+                  <div className="relative w-8 h-8 lg:w-10 lg:h-10">
+                    {/* Back frame */}
+                    <div className="absolute top-0 right-0 w-5 h-6 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors transform rotate-6"></div>
+                    {/* Front frame */}
+                    <div className="absolute top-1 left-0 w-5 h-6 lg:w-7 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black bg-white transition-colors">
+                      {/* Small image representation inside frame */}
+                      <div className="absolute inset-1 lg:inset-2 bg-gray-400 group-hover:bg-black transition-colors"></div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
                 <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT BACKGROUND</p>
               </button>
 
-              {/* Step 2 - Picture Wall */}
+              {/* Step 3 - Select Picture Wall */}
               <button
                 onClick={() => setCurrentStep("step3")}
                 className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
@@ -4463,31 +3716,11 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
+                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
                 <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT PICTURE WALL</p>
               </button>
 
-              {/* Step 3 - Frame */}
-              <button
-                onClick={() => setCurrentStep("step3")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
-              >
-                {/* Checkmark - positioned top-left */}
-                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
-                  ✓
-                </div>
-                
-                {/* Frame icon */}
-                <div className="flex justify-center mb-2 lg:mb-4">
-                  <div className="relative w-5 h-7 lg:w-6 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
-                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
-                  </div>
-                </div>
-                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
-                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT FRAME</p>
-              </button>
-
-              {/* Step 4 - Design */}
+              {/* Step 4 - Select Design */}
               <button
                 onClick={() => setCurrentStep("step4")}
                 className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
@@ -4497,7 +3730,7 @@ export default function LandingPage() {
                   ✓
                 </div>
                 
-                {/* Design icon */}
+                {/* Tall rectangle with circle icon */}
                 <div className="flex justify-center mb-2 lg:mb-4">
                   <div className="relative w-5 h-7 lg:w-6 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
                     <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
