@@ -1276,7 +1276,7 @@ export default function LandingPage() {
                       </div>
                       
                       {/* Place Info - Desktop only */}
-                      <div className="hidden lg:block p-4 bg-white border border-t-0 border-gray-200">
+                      <div className="hidden lg:block py-4 pl-2 pr-4 bg-white border border-t-0 border-gray-200">
                         <h3 className="text-base font-bold text-black mb-1">{place.name}</h3>
                         <p className="text-xs text-gray-600">{place.description}</p>
                       </div>
@@ -1656,7 +1656,9 @@ export default function LandingPage() {
                 style={{
                   backgroundImage: selectedBackground 
                     ? `url(${selectedBackground.image})` 
-                    : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                    : selectedPlace 
+                      ? `url(${selectedPlace.image})`
+                      : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
                 }}
               >
               </div>

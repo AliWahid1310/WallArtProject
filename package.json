@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:shopify": "vite build --config vite.config.shopify.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "shopify:dev": "npx @shopify/cli app dev",
+    "shopify:deploy": "npm run build:shopify && npx @shopify/cli app deploy",
+    "shopify:generate": "npx @shopify/cli app generate extension"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -29,6 +33,7 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
+    "terser": "^5.44.1",
     "vite": "^7.2.4"
   }
 }

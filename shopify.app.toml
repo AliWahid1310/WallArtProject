@@ -1,0 +1,20 @@
+# Shopify App Configuration
+# Replace YOUR_CLIENT_ID with your actual Client ID from Shopify Partners Dashboard
+# Get it from: partners.shopify.com → Apps → Your App → Overview → Client credentials
+
+name = "Gallery Wall Builder"
+client_id = "YOUR_CLIENT_ID_FROM_SHOPIFY_PARTNERS"
+application_url = "https://your-app-domain.com"
+embedded = false
+
+[access_scopes]
+scopes = "read_products,write_checkouts,read_checkouts"
+
+[auth]
+redirect_urls = ["https://your-app-domain.com/auth/callback"]
+
+[webhooks]
+api_version = "2024-01"
+
+[pos]
+embedded = false

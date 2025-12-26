@@ -1,0 +1,84 @@
+{% comment %}
+  Gallery Wall Builder App Block
+  This block embeds the React gallery configurator into any Shopify theme page
+{% endcomment %}
+
+{% schema %}
+{
+  "name": "Gallery Wall Builder",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["page", "index", "collection"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Create Your Gallery Wall"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show Title",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "min_height",
+      "min": 400,
+      "max": 1000,
+      "step": 50,
+      "unit": "px",
+      "label": "Minimum Height",
+      "default": 600
+    }
+  ]
+}
+{% endschema %}
+
+<style>
+  .gallery-wall-builder-container {
+    width: 100%;
+    min-height: {{ block.settings.min_height }}px;
+    position: relative;
+  }
+  
+  .gallery-wall-builder-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: {{ block.settings.min_height }}px;
+    font-family: inherit;
+  }
+  
+  .gallery-wall-builder-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #333;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+{% if block.settings.show_title %}
+  <h2 class="gallery-wall-title" style="text-align: center; margin-bottom: 20px;">
+    {{ block.settings.title }}
+  </h2>
+{% endif %}
+
+<div class="gallery-wall-builder-container">
+  <div id="gallery-wall-app" class="gallery-wall-builder-loading">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<!-- Load the React app bundle -->
+{{ 'gallery-app.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'gallery-app.js' | asset_url }}" defer></script>
