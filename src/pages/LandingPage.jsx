@@ -636,8 +636,10 @@ export default function LandingPage() {
 
   // Boundary limits for dragging (how far frames can move from center)
   const DRAG_BOUNDARY = {
-    x: 250, // Max pixels left/right from original position
-    y: 150  // Max pixels up/down from original position
+    left: 250,   // Max pixels left from original position
+    right: 250,  // Max pixels right from original position
+    top: 50,     // Max pixels up from original position (smaller to prevent top cutoff)
+    bottom: 200  // Max pixels down from original position
   }
 
   const handleDragMove = useCallback((e) => {
@@ -661,20 +663,21 @@ export default function LandingPage() {
     // Apply elastic resistance at boundaries (rubberband effect)
     const elasticFactor = 0.3 // How much resistance at boundary
     
-    if (totalX > DRAG_BOUNDARY.x) {
-      const overflow = totalX - DRAG_BOUNDARY.x
-      deltaX = DRAG_BOUNDARY.x - groupOffset.x + (overflow * elasticFactor)
-    } else if (totalX < -DRAG_BOUNDARY.x) {
-      const overflow = -DRAG_BOUNDARY.x - totalX
-      deltaX = -DRAG_BOUNDARY.x - groupOffset.x - (overflow * elasticFactor)
+    if (totalX > DRAG_BOUNDARY.right) {
+      const overflow = totalX - DRAG_BOUNDARY.right
+      deltaX = DRAG_BOUNDARY.right - groupOffset.x + (overflow * elasticFactor)
+    } else if (totalX < -DRAG_BOUNDARY.left) {
+      const overflow = -DRAG_BOUNDARY.left - totalX
+      deltaX = -DRAG_BOUNDARY.left - groupOffset.x - (overflow * elasticFactor)
     }
     
-    if (totalY > DRAG_BOUNDARY.y) {
-      const overflow = totalY - DRAG_BOUNDARY.y
-      deltaY = DRAG_BOUNDARY.y - groupOffset.y + (overflow * elasticFactor)
-    } else if (totalY < -DRAG_BOUNDARY.y) {
-      const overflow = -DRAG_BOUNDARY.y - totalY
-      deltaY = -DRAG_BOUNDARY.y - groupOffset.y - (overflow * elasticFactor)
+    // Note: negative Y = moving up, positive Y = moving down
+    if (totalY > DRAG_BOUNDARY.bottom) {
+      const overflow = totalY - DRAG_BOUNDARY.bottom
+      deltaY = DRAG_BOUNDARY.bottom - groupOffset.y + (overflow * elasticFactor)
+    } else if (totalY < -DRAG_BOUNDARY.top) {
+      const overflow = -DRAG_BOUNDARY.top - totalY
+      deltaY = -DRAG_BOUNDARY.top - groupOffset.y - (overflow * elasticFactor)
     }
     
     setDragOffset({ x: deltaX, y: deltaY })
@@ -688,8 +691,8 @@ export default function LandingPage() {
     let finalY = groupOffset.y + dragOffset.y
     
     // Clamp to boundaries (snap back with bounce animation via CSS transition)
-    finalX = Math.max(-DRAG_BOUNDARY.x, Math.min(DRAG_BOUNDARY.x, finalX))
-    finalY = Math.max(-DRAG_BOUNDARY.y, Math.min(DRAG_BOUNDARY.y, finalY))
+    finalX = Math.max(-DRAG_BOUNDARY.left, Math.min(DRAG_BOUNDARY.right, finalX))
+    finalY = Math.max(-DRAG_BOUNDARY.top, Math.min(DRAG_BOUNDARY.bottom, finalY))
     
     setGroupOffset({ x: finalX, y: finalY })
     
