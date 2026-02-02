@@ -2068,7 +2068,7 @@ export default function LandingPage() {
                       return processedFrames.map((frame, idx) => (
                         <div
                           key={idx}
-                          className="absolute cursor-grab bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
+                          className="absolute cursor-pointer bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
@@ -2088,7 +2088,7 @@ export default function LandingPage() {
                   selectedLayout && selectedLayout.frames.map((frame, idx) => (
                     <div
                       key={idx}
-                      className="absolute cursor-grab bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
+                      className="absolute cursor-pointer bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
                       style={{
                         width: frame.width,
                         height: frame.height,
@@ -3171,7 +3171,7 @@ export default function LandingPage() {
                               setActiveFrameIndex(frame.idx)
                             }
                           }}
-                          className={`absolute cursor-grab group overflow-hidden select-none ${
+                          className={`absolute cursor-pointer group overflow-hidden select-none ${
                             activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
                           }`}
                           style={{
@@ -3220,7 +3220,7 @@ export default function LandingPage() {
                           setActiveFrameIndex(idx)
                         }
                       }}
-                      className={`absolute cursor-grab group overflow-hidden select-none ${
+                      className={`absolute cursor-pointer group overflow-hidden select-none ${
                         activeFrameIndex === idx ? 'z-20' : 'z-10'
                       } hover:shadow-xl`}
                       style={{
@@ -4162,12 +4162,18 @@ export default function LandingPage() {
                       return (
                         <div
                           key={frame.idx}
-                          className="absolute transition-all duration-300 overflow-hidden cursor-grab"
+                          className="absolute transition-all duration-300 overflow-hidden cursor-pointer"
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
                             left: `${frame.calcLeft * scale + centerOffsetX}%`,
                             top: `${frame.calcTop * scale + centerOffsetY}%`,
+                          }}
+                          onClick={() => {
+                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                              setActiveFrameIndex(frame.idx)
+                              setCurrentStep("step4")
+                            }
                           }}
                         >
                           <img 
@@ -4189,7 +4195,7 @@ export default function LandingPage() {
                   return (
                     <div
                       key={idx}
-                      className="absolute transition-all duration-300 overflow-hidden cursor-grab"
+                      className="absolute transition-all duration-300 overflow-hidden cursor-pointer"
                       style={{
                         width: frame.width,
                         height: frame.height,
@@ -4198,6 +4204,12 @@ export default function LandingPage() {
                         left: frame.left,
                         right: frame.right,
                         transform: frame.transform
+                      }}
+                      onClick={() => {
+                        if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                          setActiveFrameIndex(idx)
+                          setCurrentStep("step4")
+                        }
                       }}
                     >
                       <img 
