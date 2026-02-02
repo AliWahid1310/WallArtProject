@@ -3176,7 +3176,7 @@ export default function LandingPage() {
                               <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
                             </>
                           ) : (
-                            <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm pointer-events-none">
+                            <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg pointer-events-none">
                               <span className="text-gray-500 font-semibold text-[8px]">
                                 {frame.size}
                               </span>
@@ -3244,7 +3244,7 @@ export default function LandingPage() {
                           </button>
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm group-hover:bg-gray-300/90 group-hover:shadow-xl transition-all duration-200 pointer-events-none">
+                        <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:bg-gray-300/90 group-hover:shadow-xl transition-all duration-200 pointer-events-none">
                           <span className="text-gray-500 font-semibold text-sm group-hover:text-gray-700 transition-colors">
                             {frame.size}
                           </span>
