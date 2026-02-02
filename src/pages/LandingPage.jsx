@@ -4102,18 +4102,23 @@ export default function LandingPage() {
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
+            {/* Frame Container - Draggable as a group */}
+            <div 
+              className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+              style={{
+                cursor: isDragging ? 'grabbing' : 'default',
+                transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
+                transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+              }}
+            >
               {/* Final Gallery Wall Preview */}
               {isMobile ? (
                 /* Mobile: Centered container with all boxes grouped tightly */
                 <div 
                   className="relative flex items-center justify-center" 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%',
-                    transform: `translate(${groupOffset.x}px, ${groupOffset.y}px)`,
-                    transition: isDragging ? 'none' : 'transform 0.25s ease-out'
-                  }}
+                  style={{ width: '100%', height: '100%' }}
                 >
                   {selectedLayout && (() => {
                     // Calculate bounding box of all frames to center them
@@ -4164,7 +4169,6 @@ export default function LandingPage() {
                             left: `${frame.calcLeft * scale + centerOffsetX}%`,
                             top: `${frame.calcTop * scale + centerOffsetY}%`,
                           }}
-                          onTouchStart={handleDragStart}
                         >
                           <img 
                             src={frame.artwork.image}
@@ -4177,44 +4181,33 @@ export default function LandingPage() {
                   })()}
                 </div>
               ) : (
-                /* Desktop: Original code */
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    transform: `translate(${groupOffset.x}px, ${groupOffset.y}px)`,
-                    transition: isDragging ? 'none' : 'transform 0.25s ease-out'
-                  }}
-                >
-                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                    const artwork = selectedArtworks[idx]
-                    const frameStyle = selectedFrames[idx]
-                    if (!artwork) return null
-                    return (
-                      <div
-                        key={idx}
-                        className="absolute transition-all duration-300 overflow-hidden cursor-grab"
-                        style={{
-                          width: frame.width,
-                          height: frame.height,
-                          top: frame.top,
-                          bottom: frame.bottom,
-                          left: frame.left,
-                          right: frame.right,
-                          transform: frame.transform
-                        }}
-                        onMouseDown={handleDragStart}
-                        onTouchStart={handleDragStart}
-                      >
-                        <img 
-                          src={artwork.image}
-                          alt={artwork.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )
-                  })}
-                </div>
+                /* Desktop: Original positioning */
+                selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  const frameStyle = selectedFrames[idx]
+                  if (!artwork) return null
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute transition-all duration-300 overflow-hidden cursor-grab"
+                      style={{
+                        width: frame.width,
+                        height: frame.height,
+                        top: frame.top,
+                        bottom: frame.bottom,
+                        left: frame.left,
+                        right: frame.right,
+                        transform: frame.transform
+                      }}
+                    >
+                      <img 
+                        src={artwork.image}
+                        alt={artwork.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>
