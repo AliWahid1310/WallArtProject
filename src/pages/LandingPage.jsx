@@ -97,6 +97,7 @@ export default function LandingPage() {
   const [isDragging, setIsDragging] = useState(false) // Whether currently dragging
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 }) // Starting position of drag
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }) // Current drag offset
+  const wasDraggingRef = useRef(false) // Track if drag actually moved (for click detection)
   const canvasRef = useRef(null) // Ref to the canvas container for calculating drag bounds
 
   // Fetch artwork products from Shopify on mount
@@ -630,6 +631,7 @@ export default function LandingPage() {
     setIsDragging(true)
     setDragStart({ x: clientX, y: clientY })
     setDragOffset({ x: 0, y: 0 })
+    wasDraggingRef.current = false // Reset at start of potential drag
   }
 
   const handleDragMove = useCallback((e) => {
@@ -640,6 +642,11 @@ export default function LandingPage() {
     
     const deltaX = clientX - dragStart.x
     const deltaY = clientY - dragStart.y
+    
+    // Mark as dragging if moved more than 5 pixels
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      wasDraggingRef.current = true
+    }
     
     setDragOffset({ x: deltaX, y: deltaY })
   }, [isDragging, dragStart])
@@ -655,6 +662,7 @@ export default function LandingPage() {
     
     setIsDragging(false)
     setDragOffset({ x: 0, y: 0 })
+    // Note: wasDraggingRef is NOT reset here - it stays true so onClick can check it
   }, [isDragging, dragOffset])
 
   // Reset group offset when layout changes
@@ -3167,9 +3175,10 @@ export default function LandingPage() {
                           onMouseDown={handleDragStart}
                           onTouchStart={handleDragStart}
                           onClick={() => {
-                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                            if (!wasDraggingRef.current) {
                               setActiveFrameIndex(frame.idx)
                             }
+                            wasDraggingRef.current = false
                           }}
                           className={`absolute cursor-pointer group overflow-hidden select-none ${
                             activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
@@ -3216,9 +3225,10 @@ export default function LandingPage() {
                       onTouchStart={handleDragStart}
                       onClick={(e) => {
                         // Only trigger click if not dragging
-                        if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                        if (!wasDraggingRef.current) {
                           setActiveFrameIndex(idx)
                         }
+                        wasDraggingRef.current = false
                       }}
                       className={`absolute cursor-pointer group overflow-hidden select-none ${
                         activeFrameIndex === idx ? 'z-20' : 'z-10'
@@ -4170,10 +4180,11 @@ export default function LandingPage() {
                             top: `${frame.calcTop * scale + centerOffsetY}%`,
                           }}
                           onClick={() => {
-                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                            if (!wasDraggingRef.current) {
                               setActiveFrameIndex(frame.idx)
                               setCurrentStep("step4")
                             }
+                            wasDraggingRef.current = false
                           }}
                         >
                           <img 
@@ -4206,10 +4217,11 @@ export default function LandingPage() {
                         transform: frame.transform
                       }}
                       onClick={() => {
-                        if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                        if (!wasDraggingRef.current) {
                           setActiveFrameIndex(idx)
                           setCurrentStep("step4")
                         }
+                        wasDraggingRef.current = false
                       }}
                     >
                       <img 
