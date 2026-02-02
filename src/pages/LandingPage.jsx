@@ -2109,7 +2109,7 @@ export default function LandingPage() {
                       return processedFrames.map((frame, idx) => (
                         <div
                           key={idx}
-                          className="absolute cursor-pointer bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
+                          className="absolute cursor-pointer bg-gray-200 flex items-center justify-center shadow-md select-none"
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
@@ -2129,7 +2129,7 @@ export default function LandingPage() {
                   selectedLayout && selectedLayout.frames.map((frame, idx) => (
                     <div
                       key={idx}
-                      className="absolute cursor-pointer bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
+                      className="absolute cursor-pointer bg-gray-200 flex items-center justify-center shadow-md select-none"
                       style={{
                         width: frame.width,
                         height: frame.height,
