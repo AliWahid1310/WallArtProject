@@ -3103,7 +3103,7 @@ export default function LandingPage() {
               onMouseDown={handleDragStart}
               onTouchStart={handleDragStart}
               style={{
-                cursor: isDragging ? 'grabbing' : 'grab',
+                cursor: isDragging ? 'grabbing' : 'default',
                 transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
                 transition: isDragging ? 'none' : 'transform 0.25s ease-out'
               }}
@@ -3154,7 +3154,7 @@ export default function LandingPage() {
                         <div
                           key={frame.idx}
                           onClick={() => setActiveFrameIndex(frame.idx)}
-                          className={`absolute cursor-pointer group overflow-hidden select-none ${
+                          className={`absolute cursor-grab group overflow-hidden select-none ${
                             activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
                           }`}
                           style={{
@@ -3201,7 +3201,7 @@ export default function LandingPage() {
                           setActiveFrameIndex(idx)
                         }
                       }}
-                      className={`absolute cursor-pointer group overflow-hidden select-none ${
+                      className={`absolute cursor-grab group overflow-hidden select-none ${
                         activeFrameIndex === idx ? 'z-20' : 'z-10'
                       } hover:shadow-xl`}
                       style={{
