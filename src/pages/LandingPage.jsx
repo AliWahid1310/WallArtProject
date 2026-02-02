@@ -3164,7 +3164,13 @@ export default function LandingPage() {
                       return (
                         <div
                           key={frame.idx}
-                          onClick={() => setActiveFrameIndex(frame.idx)}
+                          onMouseDown={handleDragStart}
+                          onTouchStart={handleDragStart}
+                          onClick={() => {
+                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                              setActiveFrameIndex(frame.idx)
+                            }
+                          }}
                           className={`absolute cursor-grab group overflow-hidden select-none ${
                             activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
                           }`}
@@ -3206,6 +3212,8 @@ export default function LandingPage() {
                   return (
                     <div
                       key={idx}
+                      onMouseDown={handleDragStart}
+                      onTouchStart={handleDragStart}
                       onClick={(e) => {
                         // Only trigger click if not dragging
                         if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
