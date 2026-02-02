@@ -89,12 +89,12 @@ export default function LandingPage() {
   const [showCartDropdown, setShowCartDropdown] = useState(false) // Cart dropdown state
   const [showMobileMenu, setShowMobileMenu] = useState(false) // Mobile menu state
   
-  // Draggable frame positions - stores custom positions for each frame
-  const [framePositions, setFramePositions] = useState(() => {
-    const saved = localStorage.getItem('galleryFramePositions')
-    return saved ? JSON.parse(saved) : {}
+  // Draggable group position - all frames move together
+  const [groupOffset, setGroupOffset] = useState(() => {
+    const saved = localStorage.getItem('galleryGroupOffset')
+    return saved ? JSON.parse(saved) : { x: 0, y: 0 }
   })
-  const [draggingFrame, setDraggingFrame] = useState(null) // Currently dragging frame index
+  const [isDragging, setIsDragging] = useState(false) // Whether currently dragging
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 }) // Starting position of drag
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }) // Current drag offset
   const canvasRef = useRef(null) // Ref to the canvas container for calculating drag bounds
@@ -170,10 +170,10 @@ export default function LandingPage() {
     localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames))
   }, [selectedFrames])
 
-  // Save frame positions to localStorage
+  // Save group offset to localStorage
   useEffect(() => {
-    localStorage.setItem('galleryFramePositions', JSON.stringify(framePositions))
-  }, [framePositions])
+    localStorage.setItem('galleryGroupOffset', JSON.stringify(groupOffset))
+  }, [groupOffset])
 
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
@@ -620,21 +620,20 @@ export default function LandingPage() {
     return total.toFixed(2)
   }
 
-  // ===== DRAG HANDLERS FOR FRAMES =====
-  const handleDragStart = (e, frameIdx) => {
+  // ===== DRAG HANDLERS FOR ALL FRAMES (GROUP DRAG) =====
+  const handleDragStart = (e) => {
     e.preventDefault()
-    e.stopPropagation()
     
     const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX
     const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY
     
-    setDraggingFrame(frameIdx)
+    setIsDragging(true)
     setDragStart({ x: clientX, y: clientY })
     setDragOffset({ x: 0, y: 0 })
   }
 
   const handleDragMove = useCallback((e) => {
-    if (draggingFrame === null) return
+    if (!isDragging) return
     
     const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX
     const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY
@@ -643,47 +642,31 @@ export default function LandingPage() {
     const deltaY = clientY - dragStart.y
     
     setDragOffset({ x: deltaX, y: deltaY })
-  }, [draggingFrame, dragStart])
+  }, [isDragging, dragStart])
 
   const handleDragEnd = useCallback(() => {
-    if (draggingFrame === null || !canvasRef.current) {
-      setDraggingFrame(null)
-      return
-    }
+    if (!isDragging) return
     
-    const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    
-    // Convert pixel offset to percentage of canvas
-    const deltaXPercent = (dragOffset.x / rect.width) * 100
-    const deltaYPercent = (dragOffset.y / rect.height) * 100
-    
-    // Get current position (custom or original)
-    const currentPos = framePositions[draggingFrame] || { deltaX: 0, deltaY: 0 }
-    
-    // Update frame position with accumulated delta
-    setFramePositions(prev => ({
-      ...prev,
-      [draggingFrame]: {
-        deltaX: (currentPos.deltaX || 0) + deltaXPercent,
-        deltaY: (currentPos.deltaY || 0) + deltaYPercent
-      }
+    // Update group offset with accumulated delta
+    setGroupOffset(prev => ({
+      x: prev.x + dragOffset.x,
+      y: prev.y + dragOffset.y
     }))
     
-    setDraggingFrame(null)
+    setIsDragging(false)
     setDragOffset({ x: 0, y: 0 })
-  }, [draggingFrame, dragOffset, framePositions])
+  }, [isDragging, dragOffset])
 
-  // Reset frame positions when layout changes
+  // Reset group offset when layout changes
   useEffect(() => {
     if (selectedLayout) {
-      setFramePositions({})
+      setGroupOffset({ x: 0, y: 0 })
     }
   }, [selectedLayout?.id])
 
   // Add global event listeners for drag
   useEffect(() => {
-    if (draggingFrame !== null) {
+    if (isDragging) {
       window.addEventListener('mousemove', handleDragMove)
       window.addEventListener('mouseup', handleDragEnd)
       window.addEventListener('touchmove', handleDragMove, { passive: false })
@@ -696,7 +679,7 @@ export default function LandingPage() {
         window.removeEventListener('touchend', handleDragEnd)
       }
     }
-  }, [draggingFrame, handleDragMove, handleDragEnd])
+  }, [isDragging, handleDragMove, handleDragEnd])
 
   // Handle quantity change
   const handleQuantityChange = (type, frameIdx, newQuantity) => {
@@ -3114,8 +3097,17 @@ export default function LandingPage() {
                 : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
             }}
           >
-            {/* Frame Container */}
-            <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
+            {/* Frame Container - Draggable as a group */}
+            <div 
+              className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+              style={{
+                cursor: isDragging ? 'grabbing' : 'grab',
+                transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
+                transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+              }}
+            >
               {/* Clickable Frame Placeholders with Selected Artworks */}
               {isMobile ? (
                 /* Mobile: Centered container with all boxes grouped tightly */
@@ -3158,32 +3150,19 @@ export default function LandingPage() {
                     const centerOffsetY = 50 - (groupHeight * scale) / 2 - (minTop * scale)
                     
                     return processedFrames.map((frame) => {
-                      const customPos = framePositions[frame.idx] || { deltaX: 0, deltaY: 0 }
-                      const isDragging = draggingFrame === frame.idx
-                      const currentDragX = isDragging ? dragOffset.x : 0
-                      const currentDragY = isDragging ? dragOffset.y : 0
-                      
                       return (
                         <div
                           key={frame.idx}
-                          onMouseDown={(e) => handleDragStart(e, frame.idx)}
-                          onTouchStart={(e) => handleDragStart(e, frame.idx)}
-                          onClick={(e) => {
-                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
-                              setActiveFrameIndex(frame.idx)
-                            }
-                          }}
-                          className={`absolute cursor-grab group overflow-hidden select-none ${
-                            activeFrameIndex === frame.idx ? 'z-20 ring-2 ring-blue-500' : 'z-10'
-                          } ${isDragging ? 'cursor-grabbing z-30 scale-105 shadow-2xl' : 'hover:shadow-xl'}`}
+                          onClick={() => setActiveFrameIndex(frame.idx)}
+                          className={`absolute cursor-pointer group overflow-hidden select-none ${
+                            activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
+                          }`}
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
-                            left: `${frame.calcLeft * scale + centerOffsetX + customPos.deltaX}%`,
-                            top: `${frame.calcTop * scale + centerOffsetY + customPos.deltaY}%`,
-                            transform: `translate(${currentDragX}px, ${currentDragY}px)`,
-                            transition: isDragging ? 'box-shadow 0.2s' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            willChange: isDragging ? 'transform' : 'auto'
+                            left: `${frame.calcLeft * scale + centerOffsetX}%`,
+                            top: `${frame.calcTop * scale + centerOffsetY}%`,
+                            transition: 'all 0.25s ease-out'
                           }}
                         >
                           {frame.artwork ? (
@@ -3209,31 +3188,22 @@ export default function LandingPage() {
                   })()}
                 </div>
               ) : (
-                /* Desktop: Draggable frames */
+                /* Desktop: Frames move together with container */
                 selectedLayout && selectedLayout.frames.map((frame, idx) => {
                   const artwork = selectedArtworks[idx]
-                  const frameStyle = selectedFrames[idx]
-                  const customPos = framePositions[idx] || { deltaX: 0, deltaY: 0 }
-                  const isDragging = draggingFrame === idx
-                  
-                  // Calculate drag offset in pixels for smooth dragging
-                  const currentDragX = isDragging ? dragOffset.x : 0
-                  const currentDragY = isDragging ? dragOffset.y : 0
                   
                   return (
                     <div
                       key={idx}
-                      onMouseDown={(e) => handleDragStart(e, idx)}
-                      onTouchStart={(e) => handleDragStart(e, idx)}
                       onClick={(e) => {
                         // Only trigger click if not dragging
                         if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
                           setActiveFrameIndex(idx)
                         }
                       }}
-                      className={`absolute cursor-grab group overflow-hidden select-none ${
-                        activeFrameIndex === idx ? 'z-20 ring-2 ring-blue-500 ring-offset-2' : 'z-10'
-                      } ${isDragging ? 'cursor-grabbing z-30 scale-105 shadow-2xl' : 'hover:shadow-xl'}`}
+                      className={`absolute cursor-pointer group overflow-hidden select-none ${
+                        activeFrameIndex === idx ? 'z-20' : 'z-10'
+                      } hover:shadow-xl`}
                       style={{
                         width: frame.width,
                         height: frame.height,
@@ -3241,9 +3211,8 @@ export default function LandingPage() {
                         bottom: frame.bottom,
                         left: frame.left,
                         right: frame.right,
-                        transform: `${frame.transform || ''} translate(calc(${customPos.deltaX}% + ${currentDragX}px), calc(${customPos.deltaY}% + ${currentDragY}px))`,
-                        transition: isDragging ? 'box-shadow 0.2s, transform 0.05s' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        willChange: isDragging ? 'transform' : 'auto'
+                        transform: frame.transform,
+                        transition: 'box-shadow 0.2s ease-out'
                       }}
                     >
                       {artwork ? (
@@ -3256,7 +3225,7 @@ export default function LandingPage() {
                           />
                           <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
                           <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            DRAG TO MOVE
+                            CHANGE
                           </div>
                           <button
                             onClick={(e) => {
@@ -3275,7 +3244,7 @@ export default function LandingPage() {
                           </button>
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm group-hover:bg-gray-300/90 group-hover:shadow-xl transition-all duration-300 pointer-events-none">
+                        <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm group-hover:bg-gray-300/90 group-hover:shadow-xl transition-all duration-200 pointer-events-none">
                           <span className="text-gray-500 font-semibold text-sm group-hover:text-gray-700 transition-colors">
                             {frame.size}
                           </span>
