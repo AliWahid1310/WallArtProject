@@ -88,6 +88,16 @@ export default function LandingPage() {
   const [savedGalleryWalls, setSavedGalleryWalls] = useState([]) // Saved gallery configurations
   const [showCartDropdown, setShowCartDropdown] = useState(false) // Cart dropdown state
   const [showMobileMenu, setShowMobileMenu] = useState(false) // Mobile menu state
+  
+  // Draggable frame positions - stores custom positions for each frame
+  const [framePositions, setFramePositions] = useState(() => {
+    const saved = localStorage.getItem('galleryFramePositions')
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [draggingFrame, setDraggingFrame] = useState(null) // Currently dragging frame index
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 }) // Starting position of drag
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }) // Current drag offset
+  const canvasRef = useRef(null) // Ref to the canvas container for calculating drag bounds
 
   // Fetch artwork products from Shopify on mount
   useEffect(() => {
@@ -160,9 +170,10 @@ export default function LandingPage() {
     localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames))
   }, [selectedFrames])
 
+  // Save frame positions to localStorage
   useEffect(() => {
-    localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames))
-  }, [selectedFrames])
+    localStorage.setItem('galleryFramePositions', JSON.stringify(framePositions))
+  }, [framePositions])
 
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
@@ -608,6 +619,84 @@ export default function LandingPage() {
     
     return total.toFixed(2)
   }
+
+  // ===== DRAG HANDLERS FOR FRAMES =====
+  const handleDragStart = (e, frameIdx) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY
+    
+    setDraggingFrame(frameIdx)
+    setDragStart({ x: clientX, y: clientY })
+    setDragOffset({ x: 0, y: 0 })
+  }
+
+  const handleDragMove = useCallback((e) => {
+    if (draggingFrame === null) return
+    
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY
+    
+    const deltaX = clientX - dragStart.x
+    const deltaY = clientY - dragStart.y
+    
+    setDragOffset({ x: deltaX, y: deltaY })
+  }, [draggingFrame, dragStart])
+
+  const handleDragEnd = useCallback(() => {
+    if (draggingFrame === null || !canvasRef.current) {
+      setDraggingFrame(null)
+      return
+    }
+    
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    
+    // Convert pixel offset to percentage of canvas
+    const deltaXPercent = (dragOffset.x / rect.width) * 100
+    const deltaYPercent = (dragOffset.y / rect.height) * 100
+    
+    // Get current position (custom or original)
+    const currentPos = framePositions[draggingFrame] || { deltaX: 0, deltaY: 0 }
+    
+    // Update frame position with accumulated delta
+    setFramePositions(prev => ({
+      ...prev,
+      [draggingFrame]: {
+        deltaX: (currentPos.deltaX || 0) + deltaXPercent,
+        deltaY: (currentPos.deltaY || 0) + deltaYPercent
+      }
+    }))
+    
+    setDraggingFrame(null)
+    setDragOffset({ x: 0, y: 0 })
+  }, [draggingFrame, dragOffset, framePositions])
+
+  // Reset frame positions when layout changes
+  useEffect(() => {
+    if (selectedLayout) {
+      setFramePositions({})
+    }
+  }, [selectedLayout?.id])
+
+  // Add global event listeners for drag
+  useEffect(() => {
+    if (draggingFrame !== null) {
+      window.addEventListener('mousemove', handleDragMove)
+      window.addEventListener('mouseup', handleDragEnd)
+      window.addEventListener('touchmove', handleDragMove, { passive: false })
+      window.addEventListener('touchend', handleDragEnd)
+      
+      return () => {
+        window.removeEventListener('mousemove', handleDragMove)
+        window.removeEventListener('mouseup', handleDragEnd)
+        window.removeEventListener('touchmove', handleDragMove)
+        window.removeEventListener('touchend', handleDragEnd)
+      }
+    }
+  }, [draggingFrame, handleDragMove, handleDragEnd])
 
   // Handle quantity change
   const handleQuantityChange = (type, frameIdx, newQuantity) => {
@@ -3017,6 +3106,7 @@ export default function LandingPage() {
           {/* Main Canvas with Background and Clickable Frames */}
           <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
             <div
+              ref={canvasRef}
               className="flex-1 relative bg-cover bg-center transition-all duration-500"
             style={{
               backgroundImage: selectedBackground 
@@ -3067,52 +3157,83 @@ export default function LandingPage() {
                     const centerOffsetX = 50 - (groupWidth * scale) / 2 - (minLeft * scale)
                     const centerOffsetY = 50 - (groupHeight * scale) / 2 - (minTop * scale)
                     
-                    return processedFrames.map((frame) => (
-                      <div
-                        key={frame.idx}
-                        onClick={() => setActiveFrameIndex(frame.idx)}
-                        className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
-                          activeFrameIndex === frame.idx ? 'z-10' : ''
-                        }`}
-                        style={{
-                          width: `${frame.width * scale}%`,
-                          height: `${frame.height * scale}%`,
-                          left: `${frame.calcLeft * scale + centerOffsetX}%`,
-                          top: `${frame.calcTop * scale + centerOffsetY}%`,
-                        }}
-                      >
-                        {frame.artwork ? (
-                          <>
-                            <img 
-                              src={frame.artwork.image}
-                              alt={frame.artwork.title}
-                              className="w-full h-full object-contain bg-gray-100"
-                            />
-                            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400">
-                            <span className="text-gray-600 font-semibold text-[8px]">
-                              {frame.size}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))
+                    return processedFrames.map((frame) => {
+                      const customPos = framePositions[frame.idx] || { deltaX: 0, deltaY: 0 }
+                      const isDragging = draggingFrame === frame.idx
+                      const currentDragX = isDragging ? dragOffset.x : 0
+                      const currentDragY = isDragging ? dragOffset.y : 0
+                      
+                      return (
+                        <div
+                          key={frame.idx}
+                          onMouseDown={(e) => handleDragStart(e, frame.idx)}
+                          onTouchStart={(e) => handleDragStart(e, frame.idx)}
+                          onClick={(e) => {
+                            if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                              setActiveFrameIndex(frame.idx)
+                            }
+                          }}
+                          className={`absolute cursor-grab group overflow-hidden select-none ${
+                            activeFrameIndex === frame.idx ? 'z-20 ring-2 ring-blue-500' : 'z-10'
+                          } ${isDragging ? 'cursor-grabbing z-30 scale-105 shadow-2xl' : 'hover:shadow-xl'}`}
+                          style={{
+                            width: `${frame.width * scale}%`,
+                            height: `${frame.height * scale}%`,
+                            left: `${frame.calcLeft * scale + centerOffsetX + customPos.deltaX}%`,
+                            top: `${frame.calcTop * scale + centerOffsetY + customPos.deltaY}%`,
+                            transform: `translate(${currentDragX}px, ${currentDragY}px)`,
+                            transition: isDragging ? 'box-shadow 0.2s' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                            willChange: isDragging ? 'transform' : 'auto'
+                          }}
+                        >
+                          {frame.artwork ? (
+                            <>
+                              <img 
+                                src={frame.artwork.image}
+                                alt={frame.artwork.title}
+                                className="w-full h-full object-contain bg-gray-100 pointer-events-none"
+                                draggable={false}
+                              />
+                              <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm pointer-events-none">
+                              <span className="text-gray-500 font-semibold text-[8px]">
+                                {frame.size}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
                   })()}
                 </div>
               ) : (
-                /* Desktop: Original code */
+                /* Desktop: Draggable frames */
                 selectedLayout && selectedLayout.frames.map((frame, idx) => {
                   const artwork = selectedArtworks[idx]
                   const frameStyle = selectedFrames[idx]
+                  const customPos = framePositions[idx] || { deltaX: 0, deltaY: 0 }
+                  const isDragging = draggingFrame === idx
+                  
+                  // Calculate drag offset in pixels for smooth dragging
+                  const currentDragX = isDragging ? dragOffset.x : 0
+                  const currentDragY = isDragging ? dragOffset.y : 0
+                  
                   return (
                     <div
                       key={idx}
-                      onClick={() => setActiveFrameIndex(idx)}
-                      className={`absolute transition-all duration-300 cursor-pointer group overflow-hidden ${
-                        activeFrameIndex === idx ? 'z-10' : ''
-                      }`}
+                      onMouseDown={(e) => handleDragStart(e, idx)}
+                      onTouchStart={(e) => handleDragStart(e, idx)}
+                      onClick={(e) => {
+                        // Only trigger click if not dragging
+                        if (Math.abs(dragOffset.x) < 5 && Math.abs(dragOffset.y) < 5) {
+                          setActiveFrameIndex(idx)
+                        }
+                      }}
+                      className={`absolute cursor-grab group overflow-hidden select-none ${
+                        activeFrameIndex === idx ? 'z-20 ring-2 ring-blue-500 ring-offset-2' : 'z-10'
+                      } ${isDragging ? 'cursor-grabbing z-30 scale-105 shadow-2xl' : 'hover:shadow-xl'}`}
                       style={{
                         width: frame.width,
                         height: frame.height,
@@ -3120,7 +3241,9 @@ export default function LandingPage() {
                         bottom: frame.bottom,
                         left: frame.left,
                         right: frame.right,
-                        transform: frame.transform
+                        transform: `${frame.transform || ''} translate(calc(${customPos.deltaX}% + ${currentDragX}px), calc(${customPos.deltaY}% + ${currentDragY}px))`,
+                        transition: isDragging ? 'box-shadow 0.2s, transform 0.05s' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        willChange: isDragging ? 'transform' : 'auto'
                       }}
                     >
                       {artwork ? (
@@ -3128,11 +3251,12 @@ export default function LandingPage() {
                           <img 
                             src={artwork.image}
                             alt={artwork.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover pointer-events-none"
+                            draggable={false}
                           />
-                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                          <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                            CHANGE
+                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"></div>
+                          <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            DRAG TO MOVE
                           </div>
                           <button
                             onClick={(e) => {
@@ -3141,6 +3265,7 @@ export default function LandingPage() {
                               delete newArtworks[idx]
                               setSelectedArtworks(newArtworks)
                             }}
+                            onMouseDown={(e) => e.stopPropagation()}
                             className="absolute top-2 left-2 bg-white text-black w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white shadow-lg cursor-pointer"
                             title="Remove design"
                           >
@@ -3150,8 +3275,8 @@ export default function LandingPage() {
                           </button>
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center border-2 border-dashed border-gray-400 group-hover:border-blue-400 transition-colors">
-                          <span className="text-gray-600 font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                        <div className="absolute inset-0 bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg rounded-sm group-hover:bg-gray-300/90 group-hover:shadow-xl transition-all duration-300 pointer-events-none">
+                          <span className="text-gray-500 font-semibold text-sm group-hover:text-gray-700 transition-colors">
                             {frame.size}
                           </span>
                         </div>
