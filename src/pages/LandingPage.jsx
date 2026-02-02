@@ -4106,7 +4106,15 @@ export default function LandingPage() {
               {/* Final Gallery Wall Preview */}
               {isMobile ? (
                 /* Mobile: Centered container with all boxes grouped tightly */
-                <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
+                <div 
+                  className="relative flex items-center justify-center" 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%',
+                    transform: `translate(${groupOffset.x}px, ${groupOffset.y}px)`,
+                    transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                  }}
+                >
                   {selectedLayout && (() => {
                     // Calculate bounding box of all frames to center them
                     const frames = selectedLayout.frames
@@ -4149,13 +4157,14 @@ export default function LandingPage() {
                       return (
                         <div
                           key={frame.idx}
-                          className="absolute transition-all duration-300 overflow-hidden"
+                          className="absolute transition-all duration-300 overflow-hidden cursor-grab"
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
                             left: `${frame.calcLeft * scale + centerOffsetX}%`,
                             top: `${frame.calcTop * scale + centerOffsetY}%`,
                           }}
+                          onTouchStart={handleDragStart}
                         >
                           <img 
                             src={frame.artwork.image}
@@ -4169,32 +4178,43 @@ export default function LandingPage() {
                 </div>
               ) : (
                 /* Desktop: Original code */
-                selectedLayout && selectedLayout.frames.map((frame, idx) => {
-                  const artwork = selectedArtworks[idx]
-                  const frameStyle = selectedFrames[idx]
-                  if (!artwork) return null
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute transition-all duration-300 overflow-hidden"
-                      style={{
-                        width: frame.width,
-                        height: frame.height,
-                        top: frame.top,
-                        bottom: frame.bottom,
-                        left: frame.left,
-                        right: frame.right,
-                        transform: frame.transform
-                      }}
-                    >
-                      <img 
-                        src={artwork.image}
-                        alt={artwork.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )
-                })
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    transform: `translate(${groupOffset.x}px, ${groupOffset.y}px)`,
+                    transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                  }}
+                >
+                  {selectedLayout && selectedLayout.frames.map((frame, idx) => {
+                    const artwork = selectedArtworks[idx]
+                    const frameStyle = selectedFrames[idx]
+                    if (!artwork) return null
+                    return (
+                      <div
+                        key={idx}
+                        className="absolute transition-all duration-300 overflow-hidden cursor-grab"
+                        style={{
+                          width: frame.width,
+                          height: frame.height,
+                          top: frame.top,
+                          bottom: frame.bottom,
+                          left: frame.left,
+                          right: frame.right,
+                          transform: frame.transform
+                        }}
+                        onMouseDown={handleDragStart}
+                        onTouchStart={handleDragStart}
+                      >
+                        <img 
+                          src={artwork.image}
+                          alt={artwork.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </div>
           </div>
