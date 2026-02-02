@@ -634,36 +634,69 @@ export default function LandingPage() {
     wasDraggingRef.current = false // Reset at start of potential drag
   }
 
+  // Boundary limits for dragging (how far frames can move from center)
+  const DRAG_BOUNDARY = {
+    x: 250, // Max pixels left/right from original position
+    y: 150  // Max pixels up/down from original position
+  }
+
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return
     
     const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX
     const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY
     
-    const deltaX = clientX - dragStart.x
-    const deltaY = clientY - dragStart.y
+    let deltaX = clientX - dragStart.x
+    let deltaY = clientY - dragStart.y
     
     // Mark as dragging if moved more than 5 pixels
     if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
       wasDraggingRef.current = true
     }
     
+    // Calculate total offset (current group position + new drag)
+    const totalX = groupOffset.x + deltaX
+    const totalY = groupOffset.y + deltaY
+    
+    // Apply elastic resistance at boundaries (rubberband effect)
+    const elasticFactor = 0.3 // How much resistance at boundary
+    
+    if (totalX > DRAG_BOUNDARY.x) {
+      const overflow = totalX - DRAG_BOUNDARY.x
+      deltaX = DRAG_BOUNDARY.x - groupOffset.x + (overflow * elasticFactor)
+    } else if (totalX < -DRAG_BOUNDARY.x) {
+      const overflow = -DRAG_BOUNDARY.x - totalX
+      deltaX = -DRAG_BOUNDARY.x - groupOffset.x - (overflow * elasticFactor)
+    }
+    
+    if (totalY > DRAG_BOUNDARY.y) {
+      const overflow = totalY - DRAG_BOUNDARY.y
+      deltaY = DRAG_BOUNDARY.y - groupOffset.y + (overflow * elasticFactor)
+    } else if (totalY < -DRAG_BOUNDARY.y) {
+      const overflow = -DRAG_BOUNDARY.y - totalY
+      deltaY = -DRAG_BOUNDARY.y - groupOffset.y - (overflow * elasticFactor)
+    }
+    
     setDragOffset({ x: deltaX, y: deltaY })
-  }, [isDragging, dragStart])
+  }, [isDragging, dragStart, groupOffset])
 
   const handleDragEnd = useCallback(() => {
     if (!isDragging) return
     
-    // Update group offset with accumulated delta
-    setGroupOffset(prev => ({
-      x: prev.x + dragOffset.x,
-      y: prev.y + dragOffset.y
-    }))
+    // Calculate final position
+    let finalX = groupOffset.x + dragOffset.x
+    let finalY = groupOffset.y + dragOffset.y
+    
+    // Clamp to boundaries (snap back with bounce animation via CSS transition)
+    finalX = Math.max(-DRAG_BOUNDARY.x, Math.min(DRAG_BOUNDARY.x, finalX))
+    finalY = Math.max(-DRAG_BOUNDARY.y, Math.min(DRAG_BOUNDARY.y, finalY))
+    
+    setGroupOffset({ x: finalX, y: finalY })
     
     setIsDragging(false)
     setDragOffset({ x: 0, y: 0 })
     // Note: wasDraggingRef is NOT reset here - it stays true so onClick can check it
-  }, [isDragging, dragOffset])
+  }, [isDragging, dragOffset, groupOffset])
 
   // Reset group offset when layout changes
   useEffect(() => {
@@ -2029,7 +2062,7 @@ export default function LandingPage() {
                 style={{
                   cursor: isDragging ? 'grabbing' : 'default',
                   transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
-                  transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                  transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
                 }}
               >
                 {/* Frame Placeholders - Only show when layout is selected */}
@@ -3124,7 +3157,7 @@ export default function LandingPage() {
               style={{
                 cursor: isDragging ? 'grabbing' : 'default',
                 transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
-                transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
               }}
             >
               {/* Clickable Frame Placeholders with Selected Artworks */}
@@ -4120,7 +4153,7 @@ export default function LandingPage() {
               style={{
                 cursor: isDragging ? 'grabbing' : 'default',
                 transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
-                transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
               }}
             >
               {/* Final Gallery Wall Preview */}
