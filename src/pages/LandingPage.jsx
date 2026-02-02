@@ -2005,6 +2005,7 @@ export default function LandingPage() {
           {/* Main Canvas with Background and Frames */}
           <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
             <div
+              ref={canvasRef}
               className="flex-1 relative bg-cover bg-center transition-all duration-500"
               style={{
                 backgroundImage: selectedBackground 
@@ -2012,7 +2013,17 @@ export default function LandingPage() {
                   : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
               }}
             >
-              <div className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}>
+              {/* Frame Container - Draggable as a group */}
+              <div 
+                className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
+                onMouseDown={handleDragStart}
+                onTouchStart={handleDragStart}
+                style={{
+                  cursor: isDragging ? 'grabbing' : 'default',
+                  transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.25s ease-out'
+                }}
+              >
                 {/* Frame Placeholders - Only show when layout is selected */}
                 {isMobile ? (
                   /* Mobile: Centered container with all boxes grouped tightly */
@@ -2057,7 +2068,7 @@ export default function LandingPage() {
                       return processedFrames.map((frame, idx) => (
                         <div
                           key={idx}
-                          className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                          className="absolute cursor-grab bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
                           style={{
                             width: `${frame.width * scale}%`,
                             height: `${frame.height * scale}%`,
@@ -2065,7 +2076,7 @@ export default function LandingPage() {
                             top: `${frame.calcTop * scale + centerOffsetY}%`,
                           }}
                         >
-                          <span className="text-gray-600 font-semibold text-[8px]">
+                          <span className="text-gray-500 font-semibold text-[8px]">
                             {frame.size}
                           </span>
                         </div>
@@ -2077,7 +2088,7 @@ export default function LandingPage() {
                   selectedLayout && selectedLayout.frames.map((frame, idx) => (
                     <div
                       key={idx}
-                      className="absolute bg-gray-300 border-2 border-gray-400 flex items-center justify-center transition-all duration-300"
+                      className="absolute cursor-grab bg-gray-200/80 backdrop-blur-sm flex items-center justify-center shadow-lg select-none hover:shadow-xl transition-shadow duration-200"
                       style={{
                         width: frame.width,
                         height: frame.height,
@@ -2088,7 +2099,7 @@ export default function LandingPage() {
                         transform: frame.transform
                       }}
                     >
-                      <span className="text-gray-600 font-semibold text-sm">
+                      <span className="text-gray-500 font-semibold text-sm">
                         {frame.size}
                       </span>
                     </div>
