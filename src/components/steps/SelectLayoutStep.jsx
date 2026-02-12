@@ -107,14 +107,14 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* Prints filter */}
-            <div className="hidden lg:flex items-center gap-3 px-1 pb-3 flex-shrink-0">
-              <span className="text-base font-semibold text-gray-700">Prints:</span>
-              <div className="flex gap-2">
+            <div className="hidden lg:flex flex-wrap items-center gap-2 px-1 pb-3 flex-shrink-0">
+              <span className="text-sm xl:text-base font-semibold text-gray-700">Prints:</span>
+              <div className="flex flex-wrap gap-1.5">
                 {printsOptions.map(opt => (
                   <button
                     key={opt}
                     onClick={() => setPrintsFilter(opt)}
-                    className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 xl:px-3.5 py-1 xl:py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all duration-150 cursor-pointer ${
                       printsFilter === opt
                         ? 'bg-[#4a6741] text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -127,14 +127,14 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* Orientation filter */}
-            <div className="hidden lg:flex items-center gap-3 px-1 pb-4 border-b border-gray-200 flex-shrink-0">
-              <span className="text-base font-semibold text-gray-700">Orientation:</span>
-              <div className="flex gap-2">
+            <div className="hidden lg:flex flex-wrap items-center gap-2 px-1 pb-4 border-b border-gray-200 flex-shrink-0">
+              <span className="text-sm xl:text-base font-semibold text-gray-700 whitespace-nowrap">Orientation:</span>
+              <div className="flex flex-wrap gap-1.5">
                 {orientationOptions.map(opt => (
                   <button
                     key={opt}
                     onClick={() => setOrientationFilter(opt)}
-                    className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 xl:px-3.5 py-1 xl:py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all duration-150 cursor-pointer ${
                       orientationFilter === opt
                         ? 'bg-[#4a6741] text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
