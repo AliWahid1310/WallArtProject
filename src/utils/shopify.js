@@ -75,11 +75,24 @@ export async function fetchArtworkProducts() {
                   { namespace: "custom", key: "filter_home_style" },
                   { namespace: "custom", key: "filter_rooms" },
                   { namespace: "custom", key: "filter_artists" },
+                  { namespace: "custom", key: "artwork_file" },
                   { namespace: "descriptors", key: "color" }
                 ]) {
                   key
                   namespace
                   value
+                  type
+                  reference {
+                    ... on MediaImage {
+                      image {
+                        url
+                        altText
+                      }
+                    }
+                    ... on GenericFile {
+                      url
+                    }
+                  }
                 }
               }
             }
@@ -88,7 +101,7 @@ export async function fetchArtworkProducts() {
       `
 
       const response = await fetch(
-        `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+        `https://${shopifyConfig.domain}/api/2024-04/graphql.json`,
         {
           method: 'POST',
           headers: {
@@ -111,6 +124,27 @@ export async function fetchArtworkProducts() {
       }
 
       const products = data.data.products.edges
+      
+      // Debug: log raw metafield data from first batch to check artwork_file
+      if (allProducts.length === 0 && products.length > 0) {
+        const first5WithMeta = products.slice(0, 5).map(p => ({
+          title: p.node.title,
+          metafields: p.node.metafields
+        }))
+        console.log('[DEBUG] First 5 products raw metafields:', JSON.stringify(first5WithMeta, null, 2))
+        
+        // Specifically check for artwork_file
+        const withArtwork = products.filter(p => 
+          p.node.metafields.some(m => m && m.key === 'artwork_file')
+        )
+        console.log(`[DEBUG] Products with artwork_file in first batch: ${withArtwork.length}/${products.length}`)
+        if (withArtwork.length > 0) {
+          console.log('[DEBUG] First artwork_file data:', JSON.stringify(
+            withArtwork[0].node.metafields.find(m => m && m.key === 'artwork_file'), null, 2
+          ))
+        }
+      }
+      
       allProducts = allProducts.concat(products)
       
       hasNextPage = data.data.products.pageInfo.hasNextPage
@@ -120,6 +154,13 @@ export async function fetchArtworkProducts() {
     }
     
     console.log(`Total products fetched: ${allProducts.length}`)
+    
+    // Count products with artwork_file metafield
+    const artworkFileCount = allProducts.filter(p => 
+      p.node.metafields.some(m => m && m.key === 'artwork_file' && m.namespace === 'custom')
+    ).length
+    console.log(`🖼️ Products with frameless artwork_file: ${artworkFileCount}/${allProducts.length}`)
+    
     const transformedProducts = transformShopifyProducts(allProducts)
     console.log('Transformed products:', transformedProducts)
     
@@ -144,6 +185,12 @@ function transformShopifyProducts(shopifyProducts) {
     const styleMetafield = node.metafields.find(m => m && m.key === 'filter_home_style')
     const roomsMetafield = node.metafields.find(m => m && m.key === 'filter_rooms')
     const artistsMetafield = node.metafields.find(m => m && m.key === 'filter_artists')
+    const artworkFileMetafield = node.metafields.find(m => m && m.key === 'artwork_file' && m.namespace === 'custom')
+    
+    // Debug: log artwork_file metafield for first few products
+    if (artworkFileMetafield) {
+      console.log(`[artwork_file] ${node.title}:`, JSON.stringify(artworkFileMetafield, null, 2))
+    }
     
     // Parse frame sizes from metafield
     let sizes = ['50x70'] // default
@@ -166,8 +213,19 @@ function transformShopifyProducts(shopifyProducts) {
       if (categoryTag) category = categoryTag
     }
     
-    // Get image - try featuredImage first, then fall back to images array
-    const imageUrl = node.featuredImage?.url || node.images.edges[0]?.node.url || ''
+    // Get artwork image from artwork_file metafield (frameless), falling back to featured image
+    // Try multiple paths: MediaImage reference, GenericFile reference, or direct URL in value
+    let artworkFileUrl = ''
+    if (artworkFileMetafield) {
+      // Path 1: MediaImage reference (reference.image.url)
+      artworkFileUrl = artworkFileMetafield.reference?.image?.url
+        // Path 2: GenericFile reference (reference.url)
+        || artworkFileMetafield.reference?.url
+        // Path 3: Value is a direct CDN URL string
+        || (artworkFileMetafield.value?.startsWith?.('http') ? artworkFileMetafield.value : '')
+        || ''
+    }
+    const imageUrl = artworkFileUrl || node.featuredImage?.url || node.images.edges[0]?.node.url || ''
     
     // Extract size options from variants
     const sizeOptions = new Set()
@@ -235,10 +293,12 @@ function transformShopifyProducts(shopifyProducts) {
       }))
     }
     
-    // Log first few products for debugging
-    if (shopifyProducts.indexOf({ node }) < 3) {
-      console.log(`Product ${shopifyProducts.indexOf({ node }) + 1}:`, {
+    // Log first 3 products for debugging (use index from map)
+    const productIndex = shopifyProducts.findIndex(p => p.node.id === node.id)
+    if (productIndex < 3 && productIndex >= 0) {
+      console.log(`Product ${productIndex + 1}:`, {
         title: product.title,
+        image: product.image,
         colors: product.colors,
         sizes: product.sizes,
         styles: product.styles,
@@ -292,7 +352,7 @@ export async function fetchProductByHandle(handle) {
 
   try {
     const response = await fetch(
-      `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+      `https://${shopifyConfig.domain}/api/2024-04/graphql.json`,
       {
         method: 'POST',
         headers: {
@@ -360,7 +420,7 @@ export async function createCheckout(lineItems) {
     console.log('Line items:', lineItems)
     
     const response = await fetch(
-      `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+      `https://${shopifyConfig.domain}/api/2024-04/graphql.json`,
       {
         method: 'POST',
         headers: {
@@ -450,7 +510,7 @@ export async function fetchFrameProducts() {
 
   try {
     const response = await fetch(
-      `https://${shopifyConfig.domain}/api/2024-01/graphql.json`,
+      `https://${shopifyConfig.domain}/api/2024-04/graphql.json`,
       {
         method: 'POST',
         headers: {
