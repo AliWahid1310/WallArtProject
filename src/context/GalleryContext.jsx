@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 import { useMobileDetection, useFullscreen } from '../hooks'
 
@@ -63,7 +63,7 @@ export function GalleryProvider({ children }) {
     const savedQuantities = localStorage.getItem('galleryQuantities')
     return savedQuantities ? JSON.parse(savedQuantities) : { artworks: {}, frames: {} }
   })
-  const [displayedArtworkCount, setDisplayedArtworkCount] = useState(20)
+  const [displayedArtworkCount, setDisplayedArtworkCount] = useState(120)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const artworkScrollRef = useRef(null)
   const [showLayoutChangeModal, setShowLayoutChangeModal] = useState(false)
@@ -130,7 +130,7 @@ export function GalleryProvider({ children }) {
 
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
-    setDisplayedArtworkCount(20)
+    setDisplayedArtworkCount(120)
   }, [activeFrameIndex, searchQuery, selectedColorFilters, selectedOrientationFilters, selectedStyleFilters, selectedCollectionFilters, selectedArtistFilters, selectedRoomFilters])
 
   // ===== FILTER LOGIC =====
@@ -157,21 +157,9 @@ export function GalleryProvider({ children }) {
     }
   }
 
-  const getArtworksForFrameSize = (frameSize) => {
-    let filtered = [...artworkProducts]
-
-    console.log('=== FILTER DEBUG ===')
-    console.log('Total products BEFORE filtering:', artworkProducts.length)
-    console.log('Active filters:', {
-      search: searchQuery,
-      colors: selectedColorFilters,
-      orientations: selectedOrientationFilters,
-      sizes: selectedSizeFilters,
-      styles: selectedStyleFilters,
-      collections: selectedCollectionFilters,
-      artists: selectedArtistFilters,
-      rooms: selectedRoomFilters
-    })
+  // Memoized filtered artworks — only recalculates when products or filters change
+  const filteredArtworks = useMemo(() => {
+    let filtered = artworkProducts
 
     // Apply search query filter
     if (searchQuery.trim()) {
@@ -184,75 +172,52 @@ export function GalleryProvider({ children }) {
 
     // Apply size filters
     if (selectedSizeFilters.length > 0) {
-      console.log('\n=== SIZE FILTER DEBUG ===')
-      console.log('Selected size filters:', selectedSizeFilters)
-      console.log('Products before size filter:', filtered.length)
       filtered = filtered.filter(artwork => {
         if (!artwork.sizes || !Array.isArray(artwork.sizes) || artwork.sizes.length === 0) {
-          console.log(`  ℹ️ "${artwork.title}" - no sizes, showing for all filters`)
           return true
         }
-        const matches = selectedSizeFilters.some(sizeFilter => {
+        return selectedSizeFilters.some(sizeFilter => {
           return artwork.sizes.some(size => {
             const normalizedSize = String(size).toLowerCase().replace(/[×\s×]/gi, 'x').replace(/cm/gi, '').trim()
             const normalizedFilter = String(sizeFilter).toLowerCase().replace(/[×\s×]/gi, 'x').replace(/cm/gi, '').trim()
-            const match = normalizedSize === normalizedFilter || normalizedSize.includes(normalizedFilter) || normalizedFilter.includes(normalizedSize)
-            if (match) console.log(`  ✓ "${artwork.title}" matches - size "${size}" matches "${sizeFilter}"`)
-            return match
+            return normalizedSize === normalizedFilter || normalizedSize.includes(normalizedFilter) || normalizedFilter.includes(normalizedSize)
           })
         })
-        return matches
       })
-      console.log(`After size filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
     // Apply color filters
     if (selectedColorFilters.length > 0) {
-      console.log('\n=== COLOR FILTER DEBUG ===')
-      console.log('Selected color filters:', selectedColorFilters)
-      console.log('Products before color filter:', filtered.length)
       filtered = filtered.filter(artwork => {
         return selectedColorFilters.some(colorFilter => {
           const normalizedFilter = colorFilter.toLowerCase().trim()
           if (artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0) {
             const matchesColor = artwork.colors.some(color => {
               const normalizedColor = color.toLowerCase().trim()
-              const matches = normalizedColor.includes(normalizedFilter) || normalizedFilter.includes(normalizedColor)
-              if (matches) console.log(`  ✓ "${artwork.title}" matches - color "${color}" contains "${colorFilter}"`)
-              return matches
+              return normalizedColor.includes(normalizedFilter) || normalizedFilter.includes(normalizedColor)
             })
             if (matchesColor) return true
           }
           if (artwork.tags && Array.isArray(artwork.tags)) {
             const matchesTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
-              const matches = normalizedTag.includes(normalizedFilter) || normalizedFilter.includes(normalizedTag)
-              if (matches) console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${colorFilter}"`)
-              return matches
+              return normalizedTag.includes(normalizedFilter) || normalizedFilter.includes(normalizedTag)
             })
             if (matchesTag) return true
           }
           const searchText = `${artwork.category || ''} ${artwork.title || ''}`.toLowerCase()
-          const matchesText = searchText.includes(normalizedFilter)
-          if (matchesText) console.log(`  ✓ "${artwork.title}" matches - title/category contains "${colorFilter}"`)
-          return matchesText
+          return searchText.includes(normalizedFilter)
         })
       })
-      console.log(`After color filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
     // Apply orientation filters
     if (selectedOrientationFilters.length > 0) {
-      console.log('\n=== ORIENTATION FILTER DEBUG ===')
-      console.log('Selected orientation filters:', selectedOrientationFilters)
       filtered = filtered.filter(artwork => {
         const hasOrientationTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag =>
           ['portrait', 'landscape', 'square', 'horizontal', 'vertical'].includes(tag.toLowerCase())
         )
         if (!hasOrientationTags) {
-          console.log(`  ℹ️ "${artwork.title}" - no orientation tags, showing for all filters`)
           return true
         }
         return selectedOrientationFilters.some(orientation => {
@@ -260,25 +225,19 @@ export function GalleryProvider({ children }) {
           return artwork.tags.some(tag => tag.toLowerCase() === orientation.toLowerCase())
         })
       })
-      console.log(`After orientation filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
     // Apply style filters
     if (selectedStyleFilters.length > 0) {
-      console.log('\n=== STYLE FILTER DEBUG ===')
-      console.log('Selected style filters:', selectedStyleFilters)
-      console.log('Products before style filter:', filtered.length)
       filtered = filtered.filter(artwork => {
         const hasStyleData = artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0
         const hasStyleTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag =>
           selectedStyleFilters.some(style => tag.toLowerCase().includes(style.toLowerCase()))
         )
         if (!hasStyleData && !hasStyleTags) {
-          console.log(`  ℹ️ "${artwork.title}" - no styles metafield or tags, showing for all filters`)
           return true
         }
-        const matches = selectedStyleFilters.some(style => {
+        return selectedStyleFilters.some(style => {
           const normalizedStyle = style.toLowerCase().trim()
           if (artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0) {
             const hasStyle = artwork.styles.some(artworkStyle => {
@@ -295,144 +254,91 @@ export function GalleryProvider({ children }) {
           }
           return false
         })
-        return matches
       })
-      console.log(`After style filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
-    // Apply collection filters
+    // Apply collection filters (matches against productType)
     if (selectedCollectionFilters.length > 0) {
-      console.log('\n=== COLLECTION FILTER DEBUG ===')
-      console.log('Selected collection filters:', selectedCollectionFilters)
-      console.log('Products before collection filter:', filtered.length)
-      filtered.slice(0, 5).forEach((artwork, idx) => {
-        console.log(`Product ${idx + 1}: "${artwork.title}" - productType: "${artwork.productType}"`)
-      })
       filtered = filtered.filter(artwork => {
         if (!artwork.productType || artwork.productType.trim() === '') {
-          console.log(`  ℹ️ "${artwork.title}" - no productType, showing for all filters`)
-          return true
+          return false // Products without a productType should NOT pass collection filter
         }
-        const matches = selectedCollectionFilters.some(collection => {
+        return selectedCollectionFilters.some(collection => {
           const normalizedCollection = collection.toLowerCase().trim()
           const productType = artwork.productType.toLowerCase().trim()
-          const match = productType.includes(normalizedCollection) || normalizedCollection.includes(productType)
-          if (match) console.log(`  ✓ "${artwork.title}" matches - productType "${artwork.productType}" contains "${collection}"`)
-          return match
+          return productType === normalizedCollection || productType.includes(normalizedCollection) || normalizedCollection.includes(productType)
         })
-        return matches
       })
-      console.log(`After collection filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
     // Apply artist filters
     if (selectedArtistFilters.length > 0) {
-      console.log('\n=== ARTIST FILTER DEBUG ===')
-      console.log('Selected artist filters:', selectedArtistFilters)
-      console.log('Products before artist filter:', filtered.length)
-      filtered.slice(0, 5).forEach((artwork, idx) => {
-        console.log(`Product ${idx + 1}: "${artwork.title}"`)
-        console.log('  - artists metafield:', artwork.artists)
-        console.log('  - vendor field:', artwork.vendor)
-        console.log('  - tags:', artwork.tags)
-      })
       filtered = filtered.filter(artwork => {
         const hasArtistData = artwork.artists && Array.isArray(artwork.artists) && artwork.artists.length > 0
         if (!hasArtistData) {
-          console.log(`  ℹ️ "${artwork.title}" - no artists metafield, showing for all filters (vendor: ${artwork.vendor})`)
           return true
         }
-        const matches = selectedArtistFilters.some(artist => {
+        return selectedArtistFilters.some(artist => {
           const normalizedArtist = artist.toLowerCase().trim()
           const hasArtist = artwork.artists.some(artworkArtist => {
             const normalized = artworkArtist.toLowerCase().trim()
-            const match = normalized.includes(normalizedArtist) || normalizedArtist.includes(normalized)
-            if (match) console.log(`  ✓ "${artwork.title}" matches - artist "${artworkArtist}" contains "${artist}"`)
-            return match
+            return normalized.includes(normalizedArtist) || normalizedArtist.includes(normalized)
           })
           if (hasArtist) return true
           if (artwork.vendor) {
             const normalizedVendor = artwork.vendor.toLowerCase().trim()
-            const match = normalizedVendor.includes(normalizedArtist) || normalizedArtist.includes(normalizedVendor)
-            if (match) console.log(`  ✓ "${artwork.title}" matches - vendor "${artwork.vendor}" contains "${artist}"`)
-            if (match) return true
+            if (normalizedVendor.includes(normalizedArtist) || normalizedArtist.includes(normalizedVendor)) return true
           }
           if (artwork.tags && Array.isArray(artwork.tags)) {
             const hasTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
-              const match = normalizedTag.includes(normalizedArtist) || normalizedArtist.includes(normalizedTag)
-              if (match) console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${artist}"`)
-              return match
+              return normalizedTag.includes(normalizedArtist) || normalizedArtist.includes(normalizedTag)
             })
             if (hasTag) return true
           }
           return false
         })
-        if (!matches) {
-          console.log(`  ✗ "${artwork.title}" - no match (artists: ${artwork.artists?.join(', ')}, vendor: ${artwork.vendor || 'none'})`)
-        }
-        return matches
       })
-      console.log(`After artist filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
     // Apply room filters
     if (selectedRoomFilters.length > 0) {
-      console.log('\n=== ROOM FILTER DEBUG ===')
-      console.log('Selected room filters:', selectedRoomFilters)
-      console.log('Products before room filter:', filtered.length)
-      filtered.slice(0, 5).forEach((artwork, idx) => {
-        console.log(`Product ${idx + 1}: "${artwork.title}"`)
-        console.log('  - rooms metafield:', artwork.rooms)
-        console.log('  - tags:', artwork.tags)
-      })
       filtered = filtered.filter(artwork => {
         const hasRoomData = artwork.rooms && Array.isArray(artwork.rooms) && artwork.rooms.length > 0
         const hasRoomTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag =>
           selectedRoomFilters.some(room => tag.toLowerCase().includes(room.toLowerCase()))
         )
         if (!hasRoomData && !hasRoomTags) {
-          console.log(`  ℹ️ "${artwork.title}" - no rooms metafield or tags, showing for all filters`)
           return true
         }
-        const matches = selectedRoomFilters.some(room => {
+        return selectedRoomFilters.some(room => {
           const normalizedRoom = room.toLowerCase().trim()
           if (artwork.rooms && Array.isArray(artwork.rooms) && artwork.rooms.length > 0) {
             const hasRoom = artwork.rooms.some(artworkRoom => {
               const normalized = artworkRoom.toLowerCase().trim()
-              const match = normalized.includes(normalizedRoom) || normalizedRoom.includes(normalized)
-              if (match) console.log(`  ✓ "${artwork.title}" matches - room "${artworkRoom}" contains "${room}"`)
-              return match
+              return normalized.includes(normalizedRoom) || normalizedRoom.includes(normalized)
             })
             if (hasRoom) return true
           }
           if (artwork.tags && Array.isArray(artwork.tags)) {
             const hasTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
-              const match = normalizedTag.includes(normalizedRoom) || normalizedRoom.includes(normalizedTag)
-              if (match) console.log(`  ✓ "${artwork.title}" matches - tag "${tag}" contains "${room}"`)
-              return match
+              return normalizedTag.includes(normalizedRoom) || normalizedRoom.includes(normalizedTag)
             })
             if (hasTag) return true
           }
           return false
         })
-        if (!matches) console.log(`  ✗ "${artwork.title}" - no match`)
-        return matches
       })
-      console.log(`After room filter: ${filtered.length} products`)
-      console.log('=========================\n')
     }
 
-    console.log('\n=== FINAL RESULTS ===')
-    console.log('Total filtered products:', filtered.length)
-    console.log('=====================\n')
+    console.log(`🎨 Filter results: ${filtered.length}/${artworkProducts.length} products`)
 
     return filtered
-  }
+  }, [artworkProducts, searchQuery, selectedSizeFilters, selectedColorFilters, selectedOrientationFilters, selectedStyleFilters, selectedCollectionFilters, selectedArtistFilters, selectedRoomFilters])
+
+  // Keep getArtworksForFrameSize as a simple wrapper for backward compat
+  const getArtworksForFrameSize = (frameSize) => filteredArtworks
 
   // ===== INFINITE SCROLL =====
 
@@ -443,16 +349,14 @@ export function GalleryProvider({ children }) {
     const scrollHeight = container.scrollHeight
     const clientHeight = container.clientHeight
     if (scrollTop + clientHeight >= scrollHeight * 0.8) {
-      const availableArtworks = activeFrameIndex !== null ? getArtworksForFrameSize(selectedLayout?.frames[activeFrameIndex]?.size) : []
-      if (displayedArtworkCount < availableArtworks.length) {
-        setIsLoadingMore(true)
-        setTimeout(() => {
-          setDisplayedArtworkCount(prev => Math.min(prev + 20, availableArtworks.length))
-          setIsLoadingMore(false)
-        }, 500)
-      }
+      if (displayedArtworkCount >= filteredArtworks.length) return
+      setIsLoadingMore(true)
+      setTimeout(() => {
+        setDisplayedArtworkCount(prev => Math.min(prev + 80, filteredArtworks.length))
+        setIsLoadingMore(false)
+      }, 200)
     }
-  }, [isLoadingMore, displayedArtworkCount, activeFrameIndex, selectedLayout])
+  }, [isLoadingMore, displayedArtworkCount, filteredArtworks.length])
 
   useEffect(() => {
     const container = artworkScrollRef.current

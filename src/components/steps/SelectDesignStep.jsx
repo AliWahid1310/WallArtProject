@@ -194,6 +194,7 @@ export default function SelectDesignStep() {
                               <img 
                                 src={artwork.image}
                                 alt={artwork.title}
+                                loading="lazy"
                                 className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
                               />
                               {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
@@ -214,18 +215,24 @@ export default function SelectDesignStep() {
                         ))}
                       </div>
 
-                      {/* Loading Indicator - Shown when loading more */}
-                      {isLoadingMore && (
-                        <div className="mt-4 lg:mt-6 flex justify-center py-2 lg:py-4">
+                      {/* Show count & loading */}
+                      <div className="text-center py-2">
+                        <p className="text-[7px] lg:text-xs text-gray-400">
+                          Showing {Math.min(displayedArtworkCount, availableArtworks.length)} of {availableArtworks.length} products
+                        </p>
+                      </div>
+                      {isLoadingMore && displayedArtworkCount < availableArtworks.length && (
+                        <div className="flex justify-center py-2">
                           <div className="flex items-center gap-2 text-gray-500">
-                            <svg className="animate-spin h-4 w-4 lg:h-6 lg:w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span className="text-xs lg:text-sm font-medium">Loading more...</span>
+                            <span className="text-xs font-medium">Loading more...</span>
                           </div>
                         </div>
                       )}
+
                     </div>
                   )}
               </div>
