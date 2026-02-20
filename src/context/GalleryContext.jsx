@@ -3,6 +3,9 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 import { useMobileDetection, useFullscreen } from '../hooks'
+import { portraitLayoutOptions } from '../data'
+
+const DEFAULT_LAYOUT = portraitLayoutOptions[0] // Single Portrait
 
 const GalleryContext = createContext(null)
 
@@ -27,7 +30,7 @@ export function GalleryProvider({ children }) {
   })
   const [selectedLayout, setSelectedLayout] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedLayout')
-    return saved ? JSON.parse(saved) : null
+    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT
   })
   const [activeVariants, setActiveVariants] = useState(() => {
     const saved = localStorage.getItem('galleryActiveVariants')
@@ -78,9 +81,9 @@ export function GalleryProvider({ children }) {
 
   // Customize Your Prints settings
   const [measurementUnit, setMeasurementUnit] = useState('cm')
-  const [printOrientation, setPrintOrientation] = useState('Landscape')
+  const [printOrientation, setPrintOrientation] = useState('Portrait')
   const [printStyle, setPrintStyle] = useState('Black')
-  const [printSize, setPrintSize] = useState('')
+  const [printSize, setPrintSize] = useState('13 × 18')
   const [spacingPreset, setSpacingPreset] = useState('tight')
   const [spacingValue, setSpacingValue] = useState(2) // in cm
   const [innerShadow, setInnerShadow] = useState({
@@ -707,7 +710,7 @@ export function GalleryProvider({ children }) {
     setCurrentStep('step1')
     setSelectedPlace(null)
     setSelectedBackground(null)
-    setSelectedLayout(null)
+    setSelectedLayout(DEFAULT_LAYOUT)
     setActiveVariants({})
     setSelectedArtworks({})
     setSelectedFrames({})
@@ -721,6 +724,12 @@ export function GalleryProvider({ children }) {
     setSelectedColorFilters([])
     setShowCart(false)
     setShowResetModal(false)
+    setPrintOrientation('Portrait')
+    setPrintSize('13 × 18')
+    setPrintStyle('Black')
+    setMeasurementUnit('cm')
+    setWallScale(0)
+    setGroupOffset({ x: 0, y: 0 })
   }
 
   const value = {
