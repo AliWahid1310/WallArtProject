@@ -7,7 +7,6 @@ const STEPS = [
   { key: 'checkout', label: 'Checkout', num: 4 },
 ]
 
-// Map currentStep values to the step index (0-based)
 function getStepIndex(currentStep) {
   switch (currentStep) {
     case 'intro': return -1
@@ -24,9 +23,9 @@ export default function Breadcrumb() {
   const activeIndex = getStepIndex(currentStep)
 
   return (
-    <div className="hidden lg:block bg-gray-100 border-b border-gray-200">
+    <div className="hidden lg:block bg-[#f5f3ee] border-b border-gray-200">
       <div className="w-full px-8 py-4">
-        <div className="flex items-center">
+        <div className="flex items-center justify-center max-w-4xl mx-auto">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex
             const isCompleted = idx < activeIndex
@@ -37,14 +36,17 @@ export default function Breadcrumb() {
                 {/* Step circle + label */}
                 <button
                   onClick={() => isClickable && setCurrentStep(step.key)}
-                  className={`flex items-center gap-2 group ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+                  className={`flex items-center gap-2.5 group ${
+                    isClickable ? 'cursor-pointer' : 'cursor-default'
+                  }`}
                   disabled={!isClickable}
                 >
+                  {/* Circle */}
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 flex-shrink-0 ${
-                      isActive
-                        ? 'bg-[#4a6741] text-white'
-                        : isCompleted
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
+                      isCompleted
+                        ? 'border-2 border-[#4a6741] text-[#4a6741] bg-white'
+                        : isActive
                           ? 'bg-[#4a6741] text-white'
                           : 'border-2 border-gray-300 text-gray-400 bg-white'
                     }`}
@@ -57,10 +59,11 @@ export default function Breadcrumb() {
                       step.num
                     )}
                   </div>
+                  {/* Label */}
                   <span
-                    className={`text-base whitespace-nowrap transition-colors ${
+                    className={`text-[15px] whitespace-nowrap transition-colors ${
                       isActive
-                        ? 'font-bold text-gray-900'
+                        ? 'font-semibold text-gray-900'
                         : isCompleted
                           ? 'font-medium text-gray-600 group-hover:text-gray-900'
                           : 'font-normal text-gray-400'
@@ -72,9 +75,9 @@ export default function Breadcrumb() {
 
                 {/* Connecting line */}
                 {idx < STEPS.length - 1 && (
-                  <div className="flex-1 mx-4">
+                  <div className="flex-1 mx-5">
                     <div
-                      className={`h-[2px] w-full transition-colors duration-200 ${
+                      className={`h-[1.5px] w-full transition-colors duration-200 ${
                         idx < activeIndex ? 'bg-[#4a6741]' : 'bg-gray-300'
                       }`}
                     />
