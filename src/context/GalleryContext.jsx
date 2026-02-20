@@ -13,7 +13,9 @@ export function GalleryProvider({ children }) {
 
   const [currentStep, setCurrentStep] = useState(() => {
     const savedStep = localStorage.getItem('galleryCurrentStep')
-    return savedStep || "intro"
+    // Migration: "intro" step was removed, redirect to step1
+    if (savedStep === 'intro') return "step1"
+    return savedStep || "step1"
   })
   const [selectedPlace, setSelectedPlace] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedPlace')
@@ -74,6 +76,26 @@ export function GalleryProvider({ children }) {
   const [showCartDropdown, setShowCartDropdown] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
+  // Customize Your Prints settings
+  const [measurementUnit, setMeasurementUnit] = useState('cm')
+  const [printOrientation, setPrintOrientation] = useState('Landscape')
+  const [printStyle, setPrintStyle] = useState('Black')
+  const [printSize, setPrintSize] = useState('')
+  const [spacingPreset, setSpacingPreset] = useState('tight')
+  const [spacingValue, setSpacingValue] = useState(2) // in cm
+  const [innerShadow, setInnerShadow] = useState({
+    xOffset: 0,
+    yOffset: 2,
+    blur: 10,
+    spread: 0,
+    opacity: 20,
+  })
+
+  // Canvas overlay controls
+  const [wallScale, setWallScale] = useState(0)
+  const [showGrid, setShowGrid] = useState(false)
+  const [showRuler, setShowRuler] = useState(false)
+
   // Draggable group position
   const [groupOffset, setGroupOffset] = useState(() => {
     const saved = localStorage.getItem('galleryGroupOffset')
@@ -84,6 +106,83 @@ export function GalleryProvider({ children }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const wasDraggingRef = useRef(false)
   const canvasRef = useRef(null)
+
+  // ===== UNDO / REDO HISTORY =====
+  const historyRef = useRef([])
+  const futureRef = useRef([])
+  const isRestoringRef = useRef(false)
+  const MAX_HISTORY = 50
+
+  const getSnapshot = useCallback(() => ({
+    selectedPlace, selectedBackground, selectedLayout,
+    selectedArtworks: { ...selectedArtworks },
+    selectedFrames: { ...selectedFrames },
+    printOrientation, printStyle, printSize, measurementUnit,
+    wallScale, spacingPreset, spacingValue,
+    groupOffset: { ...groupOffset },
+  }), [selectedPlace, selectedBackground, selectedLayout, selectedArtworks, selectedFrames,
+    printOrientation, printStyle, printSize, measurementUnit, wallScale, spacingPreset, spacingValue, groupOffset])
+
+  const pushHistory = useCallback(() => {
+    if (isRestoringRef.current) return
+    const snap = getSnapshot()
+    historyRef.current = [...historyRef.current.slice(-(MAX_HISTORY - 1)), snap]
+    futureRef.current = []
+  }, [getSnapshot])
+
+  // Auto-push on meaningful state changes
+  const prevSnapRef = useRef(null)
+  useEffect(() => {
+    if (isRestoringRef.current) return
+    const snap = getSnapshot()
+    const prev = prevSnapRef.current
+    if (prev && JSON.stringify(prev) !== JSON.stringify(snap)) {
+      historyRef.current = [...historyRef.current.slice(-(MAX_HISTORY - 1)), prev]
+      futureRef.current = []
+    }
+    prevSnapRef.current = snap
+  }, [getSnapshot])
+
+  const restoreSnapshot = useCallback((snap) => {
+    isRestoringRef.current = true
+    if (snap.selectedPlace !== undefined) setSelectedPlace(snap.selectedPlace)
+    if (snap.selectedBackground !== undefined) setSelectedBackground(snap.selectedBackground)
+    if (snap.selectedLayout !== undefined) setSelectedLayout(snap.selectedLayout)
+    if (snap.selectedArtworks !== undefined) setSelectedArtworks(snap.selectedArtworks)
+    if (snap.selectedFrames !== undefined) setSelectedFrames(snap.selectedFrames)
+    if (snap.printOrientation !== undefined) setPrintOrientation(snap.printOrientation)
+    if (snap.printStyle !== undefined) setPrintStyle(snap.printStyle)
+    if (snap.printSize !== undefined) setPrintSize(snap.printSize)
+    if (snap.measurementUnit !== undefined) setMeasurementUnit(snap.measurementUnit)
+    if (snap.wallScale !== undefined) setWallScale(snap.wallScale)
+    if (snap.spacingPreset !== undefined) setSpacingPreset(snap.spacingPreset)
+    if (snap.spacingValue !== undefined) setSpacingValue(snap.spacingValue)
+    if (snap.groupOffset !== undefined) setGroupOffset(snap.groupOffset)
+    // Allow state to settle, then re-enable tracking
+    setTimeout(() => {
+      prevSnapRef.current = getSnapshot()
+      isRestoringRef.current = false
+    }, 0)
+  }, [getSnapshot])
+
+  const undo = useCallback(() => {
+    if (historyRef.current.length === 0) return
+    const current = getSnapshot()
+    futureRef.current = [current, ...futureRef.current]
+    const prev = historyRef.current.pop()
+    restoreSnapshot(prev)
+  }, [getSnapshot, restoreSnapshot])
+
+  const redo = useCallback(() => {
+    if (futureRef.current.length === 0) return
+    const current = getSnapshot()
+    historyRef.current = [...historyRef.current, current]
+    const next = futureRef.current.shift()
+    restoreSnapshot(next)
+  }, [getSnapshot, restoreSnapshot])
+
+  const canUndo = historyRef.current.length > 0
+  const canRedo = futureRef.current.length > 0
 
   // ===== EFFECTS =====
 
@@ -605,7 +704,7 @@ export function GalleryProvider({ children }) {
     localStorage.removeItem('gallerySelectedFrames')
     localStorage.removeItem('galleryCart')
     localStorage.removeItem('galleryQuantities')
-    setCurrentStep('intro')
+    setCurrentStep('step1')
     setSelectedPlace(null)
     setSelectedBackground(null)
     setSelectedLayout(null)
@@ -670,6 +769,20 @@ export function GalleryProvider({ children }) {
     showEmptyArtworkModal, setShowEmptyArtworkModal,
     showResetModal, setShowResetModal,
     showMobileMenu, setShowMobileMenu,
+    // Customize prints settings
+    measurementUnit, setMeasurementUnit,
+    printOrientation, setPrintOrientation,
+    printStyle, setPrintStyle,
+    printSize, setPrintSize,
+    spacingPreset, setSpacingPreset,
+    spacingValue, setSpacingValue,
+    innerShadow, setInnerShadow,
+    // Canvas overlay controls
+    wallScale, setWallScale,
+    showGrid, setShowGrid,
+    showRuler, setShowRuler,
+    // Undo / Redo
+    undo, redo, canUndo, canRedo,
     // Saved
     savedGalleryWalls, setSavedGalleryWalls,
     // Drag

@@ -1,8 +1,49 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useGallery } from '../../context/GalleryContext'
-import { layoutOptions } from '../../data'
+import { layoutOptions, squareLayoutOptions, portraitLayoutOptions, mixLayoutOptions, landscapeLayoutOptions, backgroundOptions } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
-import { BackgroundCanvas, DraggableFrameContainer, processMobileFrames } from '../canvas'
+import { processMobileFrames } from '../canvas'
+import { getDynamicFrames } from '../../utils/helpers'
+import Ruler from '../Ruler'
+
+const SPACING_PRESETS = [
+  { key: 'tight', label: 'TIGHT', cm: 2, inch: 0.8 },
+  { key: 'gallery', label: 'GALLERY', cm: 5, inch: 2 },
+  { key: 'breathe', label: 'BREATHE', cm: 10, inch: 4 },
+  { key: 'museum', label: 'MUSEUM', cm: 15, inch: 6 },
+]
+
+const ORIENTATION_OPTIONS = ['Portrait', 'Landscape', 'Square', 'Mix']
+const PRINT_STYLE_OPTIONS = ['Black', 'White', 'Light Oak', 'Walnut']
+
+const FRAME_STYLE_COLORS = {
+  Black:      { border: '#1a1a1a', shadow: 'rgba(0,0,0,0.45)' },
+  White:      { border: '#f0f0f0', shadow: 'rgba(0,0,0,0.15)' },
+  'Light Oak': { border: '#c8a876', shadow: 'rgba(0,0,0,0.25)' },
+  Walnut:     { border: '#4a2c2a', shadow: 'rgba(0,0,0,0.35)' },
+}
+
+// Print sizes per orientation and unit
+const PRINT_SIZES = {
+  Landscape: {
+    cm: ['18 × 13', '35 × 27', '40 × 30', '50 × 40', '60 × 40', '70 × 50', '80 × 60', '90 × 60', '100 × 70', '100 × 75', '29.7 × 21', '42 × 29.7', '59.4 × 42', '84.1 × 59.5', '118.9 × 84.1'],
+    in: ['7 × 5', '14 × 11', '16 × 12', '20 × 16', '24 × 16', '28 × 20', '32 × 24', '36 × 24', '40 × 28', '40 × 30', 'A4', 'A3', 'A2', 'A1', 'A0'],
+  },
+  Portrait: {
+    cm: ['13 × 18', '27 × 35', '30 × 40', '40 × 50', '40 × 60', '50 × 70', '60 × 80', '60 × 90', '70 × 100', '75 × 100', '21 × 29.7', '29.7 × 42', '42 × 59.4', '59.5 × 84.1', '84.1 × 118.9'],
+    in: ['5 × 7', '11 × 14', '12 × 16', '16 × 20', '16 × 24', '20 × 28', '24 × 32', '24 × 36', '28 × 40', '30 × 40', 'A4', 'A3', 'A2', 'A1', 'A0'],
+  },
+  Square: {
+    cm: ['25 × 25', '30 × 30', '35 × 35', '40 × 40', '45 × 45', '50 × 50', '70 × 70'],
+    in: ['10 × 10', '12 × 12', '14 × 14', '16 × 16', '18 × 18', '20 × 20', '28 × 28'],
+  },
+  Mix: {
+    cm: ['13 × 18', '27 × 35', '30 × 40', '40 × 50', '40 × 60', '50 × 70', '60 × 80', '60 × 90', '70 × 100', '75 × 100', '21 × 29.7', '29.7 × 42', '42 × 59.4', '59.5 × 84.1', '84.1 × 118.9'],
+    in: ['5 × 7', '11 × 14', '12 × 16', '16 × 20', '16 × 24', '20 × 28', '24 × 32', '24 × 36', '28 × 40', '30 × 40', 'A4', 'A3', 'A2', 'A1', 'A0'],
+  },
+}
+
+const PRINTS_COUNT_OPTIONS = ['1 Prints', '2 Prints', '3 Prints', '4 Prints', '5 Prints', '6+ Prints']
 
 export default function SelectLayoutStep() {
   const {
@@ -14,22 +55,69 @@ export default function SelectLayoutStep() {
     showLayoutChangeModal, setShowLayoutChangeModal,
     pendingLayout, setPendingLayout,
     isMobile,
+    isDragging,
+    groupOffset, dragOffset,
+    handleDragStart,
+    wasDraggingRef,
     canvasRef,
+    selectedPlace,
+    measurementUnit, setMeasurementUnit,
+    printOrientation, setPrintOrientation,
+    printStyle, setPrintStyle,
+    printSize, setPrintSize,
+    spacingPreset, setSpacingPreset,
+    spacingValue, setSpacingValue,
+    innerShadow, setInnerShadow,
+    wallScale, setWallScale,
+    showGrid, setShowGrid,
+    showRuler, setShowRuler,
+    undo, redo, canUndo, canRedo,
   } = useGallery()
 
-  const [searchQuery, setSearchQuery] = useState('')
   const [printsFilter, setPrintsFilter] = useState('All')
-  const [orientationFilter, setOrientationFilter] = useState('Mix')
-
-  const printsOptions = ['All', '3', '4', '5', '6+']
-  const orientationOptions = ['Mix', 'Portrait', 'Landscape', 'Square']
 
   const filteredLayouts = useMemo(() => {
+    // Use square-specific layouts when Square orientation is selected
+    if (printOrientation === 'Square') {
+      return squareLayoutOptions.filter(layout => {
+        if (printsFilter === 'All') return true
+        const count = layout.frameCount
+        if (printsFilter === '6+') return count >= 6
+        return count === parseInt(printsFilter)
+      })
+    }
+
+    // Use portrait-specific layouts when Portrait orientation is selected
+    if (printOrientation === 'Portrait') {
+      return portraitLayoutOptions.filter(layout => {
+        if (printsFilter === 'All') return true
+        const count = layout.frameCount
+        if (printsFilter === '6+') return count >= 6
+        return count === parseInt(printsFilter)
+      })
+    }
+
+    // Use mix-specific layouts when Mix orientation is selected
+    if (printOrientation === 'Mix') {
+      return mixLayoutOptions.filter(layout => {
+        if (printsFilter === 'All') return true
+        const count = layout.frameCount
+        if (printsFilter === '6+') return count >= 6
+        return count === parseInt(printsFilter)
+      })
+    }
+
+    // Use landscape-specific layouts when Landscape orientation is selected
+    if (printOrientation === 'Landscape') {
+      return landscapeLayoutOptions.filter(layout => {
+        if (printsFilter === 'All') return true
+        const count = layout.frameCount
+        if (printsFilter === '6+') return count >= 6
+        return count === parseInt(printsFilter)
+      })
+    }
+
     return layoutOptions.filter(layout => {
-      // Search filter
-      if (searchQuery && !layout.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false
-      }
       // Prints (frame count) filter
       if (printsFilter !== 'All') {
         const count = layout.frames.length
@@ -40,19 +128,24 @@ export default function SelectLayoutStep() {
         }
       }
       // Orientation filter
-      if (orientationFilter !== 'Mix') {
+      if (printOrientation !== 'Mix') {
         const hasMatchingOrientation = layout.frames.some(frame => {
           const [w, h] = frame.size.split(/x/i).map(Number)
-          if (orientationFilter === 'Portrait') return h > w
-          if (orientationFilter === 'Landscape') return w > h
-          if (orientationFilter === 'Square') return w === h
+          if (printOrientation === 'Portrait') return h > w
+          if (printOrientation === 'Landscape') return w > h
           return true
         })
         if (!hasMatchingOrientation) return false
       }
       return true
     })
-  }, [searchQuery, printsFilter, orientationFilter])
+  }, [printsFilter, printOrientation])
+
+  // Compute dynamically-sized frames when a print size is selected
+  const dynamicFrames = useMemo(() =>
+    getDynamicFrames(selectedLayout?.frames, printSize, measurementUnit, printOrientation, wallScale),
+    [selectedLayout, printSize, measurementUnit, printOrientation, wallScale]
+  )
 
   const handleLayoutSelect = (layout) => {
     const hasSelectedArtworks = Object.keys(selectedArtworks).length > 0
@@ -64,6 +157,73 @@ export default function SelectLayoutStep() {
     }
   }
 
+  const handleSpacingPreset = (preset) => {
+    setSpacingPreset(preset.key)
+    setSpacingValue(measurementUnit === 'cm' ? preset.cm : preset.inch)
+  }
+
+  const handleShadowChange = useCallback((key, value) => {
+    setInnerShadow(prev => ({ ...prev, [key]: value }))
+  }, [setInnerShadow])
+
+  const resetShadow = () => {
+    setInnerShadow({ xOffset: 0, yOffset: 2, blur: 10, spread: 0, opacity: 20 })
+  }
+
+  const innerShadowCSS = `inset ${innerShadow.xOffset}px ${innerShadow.yOffset}px ${innerShadow.blur}px ${innerShadow.spread}px rgba(0,0,0,${(innerShadow.opacity / 100).toFixed(1)})`
+
+  const unit = measurementUnit === 'cm' ? 'cm' : 'in'
+  const sizeOptions = PRINT_SIZES[printOrientation]?.[unit] || PRINT_SIZES['Landscape'][unit]
+  const spacingUnit = unit
+
+  const handleOrientationChange = (newOrientation) => {
+    setPrintOrientation(newOrientation)
+    const sizes = PRINT_SIZES[newOrientation]?.[unit] || PRINT_SIZES['Landscape'][unit]
+    if (sizes?.length) setPrintSize(sizes[0])
+  }
+
+  const handleUnitChange = (newUnit) => {
+    setMeasurementUnit(newUnit)
+    const sizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Landscape'][newUnit]
+    if (sizes?.length) setPrintSize(sizes[0])
+  }
+
+  // Resolve the human-readable background label
+  const getBackgroundLabel = () => {
+    if (!selectedBackground) return ''
+    for (const section of backgroundOptions) {
+      for (const v of section.variants) {
+        if (v.id === selectedBackground.id) return (section.label || section.section).toUpperCase()
+      }
+    }
+    return ''
+  }
+
+  // Layout name for the subtitle
+  const layoutLabel = selectedLayout?.name || selectedLayout?.label || 'Select a layout'
+
+  // Handle prints filter from dropdown
+  const handlePrintsDropdownChange = (val) => {
+    const match = val.match(/(\d+)/)
+    if (match) {
+      const num = parseInt(match[1])
+      if (num >= 6) {
+        setPrintsFilter('6+')
+      } else {
+        setPrintsFilter(String(num))
+      }
+    }
+  }
+
+  // Dropdown arrow SVG for select styling
+  const selectArrowStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+    backgroundPosition: 'right 0.5rem center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+  }
+
   return (
     <>
       <ResetModal />
@@ -72,205 +232,613 @@ export default function SelectLayoutStep() {
         <Breadcrumb />
         <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
           {/* Left Sidebar */}
-          <div className="flex w-28 lg:w-[35%] bg-white border-r border-gray-300 px-1 lg:px-4 py-1 lg:py-4 flex-col h-full">
+          <div className="flex w-28 lg:w-[35%] bg-white border-r border-gray-300 flex-col h-full">
 
-            <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1">
-              <p className="text-[7px] font-bold tracking-wide">3 PICTURE WALL</p>
+            {/* Mobile label */}
+            <div className="lg:hidden flex-shrink-0 mb-1 text-center border-b border-gray-200 pb-1 pt-1 px-1">
+              <p className="text-[7px] font-bold tracking-wide">CUSTOMIZE</p>
             </div>
 
-            {/* Step heading - desktop */}
-            <div className="hidden lg:flex items-center justify-between px-1 pb-4 flex-shrink-0">
-              <p className="text-xl font-bold text-gray-900">Step 2: Choose Layout</p>
-              <button
-                onClick={() => setCurrentStep("intro")}
-                className="text-2xl font-light text-gray-600 hover:text-black transition-colors cursor-pointer leading-none"
-              >
-                ✕
-              </button>
-            </div>
+            {/* Scrollable sidebar content */}
+            <div className="flex-1 overflow-y-auto px-1 lg:px-5 py-1 lg:py-3">
 
-            {/* Search bar */}
-            <div className="hidden lg:block px-1 pb-4 flex-shrink-0">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="M21 21l-4.35-4.35" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search layouts..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-1 focus:ring-[#4a6741] focus:border-[#4a6741] bg-white"
-                />
+              {/* Step heading - desktop */}
+              <div className="hidden lg:flex items-center gap-2 pb-4 flex-shrink-0">
+                <span className="text-lg">🖼️</span>
+                <p className="text-lg font-bold text-gray-900">Customize Your Prints</p>
               </div>
-            </div>
 
-            {/* Prints filter */}
-            <div className="hidden lg:flex flex-wrap items-center gap-2 px-1 pb-3 flex-shrink-0">
-              <span className="text-sm xl:text-base font-semibold text-gray-700">Prints:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {printsOptions.map(opt => (
+              {/* ===== MEASUREMENT UNIT ===== */}
+              <div className="hidden lg:flex items-center justify-between pb-4">
+                <label className="text-[10px] font-bold tracking-widest text-gray-500">MEASUREMENT UNIT</label>
+                <div className="flex">
                   <button
-                    key={opt}
-                    onClick={() => setPrintsFilter(opt)}
-                    className={`px-2.5 xl:px-3.5 py-1 xl:py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all duration-150 cursor-pointer ${
-                      printsFilter === opt
-                        ? 'bg-[#4a6741] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    onClick={() => handleUnitChange('cm')}
+                    className={`px-4 py-1.5 text-xs font-bold tracking-wide border transition-all duration-150 cursor-pointer ${
+                      measurementUnit === 'cm'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white text-gray-400 border-gray-300 hover:bg-gray-50'
+                    } rounded-l-md`}
                   >
-                    {opt}
+                    CM
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Orientation filter */}
-            <div className="hidden lg:flex flex-wrap items-center gap-2 px-1 pb-4 border-b border-gray-200 flex-shrink-0">
-              <span className="text-sm xl:text-base font-semibold text-gray-700 whitespace-nowrap">Orientation:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {orientationOptions.map(opt => (
                   <button
-                    key={opt}
-                    onClick={() => setOrientationFilter(opt)}
-                    className={`px-2.5 xl:px-3.5 py-1 xl:py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all duration-150 cursor-pointer ${
-                      orientationFilter === opt
-                        ? 'bg-[#4a6741] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    onClick={() => handleUnitChange('in')}
+                    className={`px-4 py-1.5 text-xs font-bold tracking-wide border-t border-b border-r transition-all duration-150 cursor-pointer ${
+                      measurementUnit === 'in'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white text-gray-400 border-gray-300 hover:bg-gray-50'
+                    } rounded-r-md`}
                   >
-                    {opt}
+                    IN
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
 
-            {/* Layout Options - 2 column grid */}
-            <div className="flex-1 overflow-y-auto min-h-0 py-2 lg:py-3 px-0 lg:px-1">
-              <div className="grid grid-cols-2 gap-2 lg:gap-3">
-                {filteredLayouts.map((layout) => (
-                  <div
-                    key={layout.id}
-                    onClick={() => handleLayoutSelect(layout)}
-                    className={`relative cursor-pointer transition-all duration-200 group rounded-lg border-2 overflow-hidden ${
-                      selectedLayout?.id === layout.id
-                        ? 'border-[#4a6741] shadow-md'
-                        : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
-                    }`}
+              {/* ===== ORIENTATION + PRINT STYLE row ===== */}
+              <div className="hidden lg:grid grid-cols-2 gap-3 pb-4">
+                <div>
+                  <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">ORIENTATION</label>
+                  <select
+                    value={printOrientation}
+                    onChange={e => handleOrientationChange(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
+                    style={selectArrowStyle}
                   >
-                    <div className="relative aspect-square bg-gray-50 p-2">
-                      {layout.image ? (
-                        <img 
-                          src={layout.image} 
-                          alt={layout.name}
-                          className="w-full h-full object-contain transition-all duration-200 group-hover:opacity-80 cursor-pointer"
-                        />
-                      ) : (
-                        layout.frames.map((frame, idx) => (
-                          <div
-                            key={idx}
-                            className={`absolute bg-gray-300 transition-all duration-200 ${
-                              selectedLayout?.id === layout.id ? 'bg-gray-500' : 'group-hover:bg-gray-400'
-                            }`}
-                            style={{
-                              width: `${parseInt(frame.width) / 3.5}px`,
-                              height: `${parseInt(frame.height) / 3.5}px`,
-                              top: frame.top ? `${parseInt(frame.top) / 1.8}%` : undefined,
-                              bottom: frame.bottom ? `${parseInt(frame.bottom) / 1.8}%` : undefined,
-                              left: frame.left ? `${parseInt(frame.left) / 1.8}%` : undefined,
-                              right: frame.right ? `${parseInt(frame.right) / 1.8}%` : undefined,
-                              transform: frame.transform
-                            }}
-                          />
-                        ))
-                      )}
+                    {ORIENTATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">PRINT STYLE</label>
+                  <select
+                    value={printStyle}
+                    onChange={e => setPrintStyle(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
+                    style={selectArrowStyle}
+                  >
+                    {PRINT_STYLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* ===== PRINT SIZE + NUMBER OF PRINTS row ===== */}
+              <div className="hidden lg:grid grid-cols-2 gap-3 pb-4">
+                <div>
+                  <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">PRINT SIZE</label>
+                  <select
+                    value={printSize}
+                    onChange={e => setPrintSize(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
+                    style={selectArrowStyle}
+                  >
+                    <option value="" disabled className="text-gray-400 italic">Select global size...</option>
+                    {sizeOptions.map(s => <option key={s} value={s}>{s.startsWith('A') ? s : `${s} ${unit === 'in' ? '"' : unit}`}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">NUMBER OF PRINTS</label>
+                  <select
+                    onChange={e => handlePrintsDropdownChange(e.target.value)}
+                    defaultValue="2 Prints"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
+                    style={selectArrowStyle}
+                  >
+                    {PRINTS_COUNT_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* ===== Layout Options - 2 column grid ===== */}
+              <div className="pb-4">
+                <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                  {filteredLayouts.map((layout) => (
+                    <div
+                      key={layout.id}
+                      onClick={() => handleLayoutSelect(layout)}
+                      className={`relative cursor-pointer transition-all duration-200 group rounded-lg border-2 overflow-hidden ${
+                        selectedLayout?.id === layout.id
+                          ? 'border-[#4a6741] shadow-md'
+                          : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                      }`}
+                    >
+                      {/* Selected checkmark */}
                       {selectedLayout?.id === layout.id && (
-                        <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
-                          <span className="bg-[#4a6741] text-white text-[9px] lg:text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                            Selected
-                          </span>
+                        <div className="absolute top-1.5 right-1.5 z-10 w-5 h-5 lg:w-6 lg:h-6 bg-[#4a6741] rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
                         </div>
                       )}
+                      <div className="relative aspect-square bg-gray-50 p-2">
+                        {layout.image ? (
+                          <img 
+                            src={layout.image} 
+                            alt={layout.name}
+                            className="w-full h-full object-contain transition-all duration-200 group-hover:opacity-80 cursor-pointer"
+                          />
+                        ) : (
+                          layout.frames.map((frame, idx) => {
+                            const isSquareLayout = typeof layout.id === 'string' && layout.id.startsWith('sq-')
+                            const isPortraitLayout = typeof layout.id === 'string' && layout.id.startsWith('pt-')
+                            const isMixLayout = typeof layout.id === 'string' && layout.id.startsWith('mx-')
+                            const thumbHeight = isPortraitLayout ? `${parseFloat(frame.height) * 0.65}%` : frame.height
+                            return (
+                              <div
+                                key={idx}
+                                className={`absolute rounded-sm transition-all duration-200 ${
+                                  selectedLayout?.id === layout.id ? 'bg-gray-500' : 'bg-gray-300 group-hover:bg-gray-400'
+                                }`}
+                                style={{
+                                  width: frame.width,
+                                  ...(isSquareLayout ? { aspectRatio: '1' } : { height: thumbHeight }),
+                                  top: frame.top || undefined,
+                                  bottom: frame.bottom || undefined,
+                                  left: frame.left || undefined,
+                                  right: frame.right || undefined,
+                                  transform: frame.transform
+                                }}
+                              />
+                            )
+                          })
+                        )}
+                      </div>
+                      <div className="px-1.5 py-1 lg:px-2 lg:py-1.5 bg-white border-t border-gray-100 text-center">
+                        <p className="text-[7px] lg:text-[11px] font-semibold text-gray-600 tracking-wide uppercase truncate">{layout.name}</p>
+                      </div>
                     </div>
-                    <div className="px-1.5 py-1 lg:px-2 lg:py-1.5 bg-white border-t border-gray-100 text-center">
-                      <p className="text-[8px] lg:text-xs font-medium text-gray-700 truncate">{layout.name}</p>
+                  ))}
+                  {filteredLayouts.length === 0 && (
+                    <div className="col-span-2 text-center py-8 text-gray-400 text-sm">
+                      No layouts match your filters
                     </div>
-                  </div>
-                ))}
-                {filteredLayouts.length === 0 && (
-                  <div className="col-span-2 text-center py-8 text-gray-400 text-sm">
-                    No layouts match your filters
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
+
+              {/* ===== SPACING Section ===== */}
+              <div className="hidden lg:block pb-4 border-t border-gray-200 pt-4">
+                <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-2.5 block">SPACING</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {SPACING_PRESETS.map(preset => {
+                    const displayVal = measurementUnit === 'cm' ? preset.cm : preset.inch
+                    return (
+                      <button
+                        key={preset.key}
+                        onClick={() => handleSpacingPreset(preset)}
+                        className={`py-2.5 rounded-lg border-2 text-center transition-all duration-150 cursor-pointer ${
+                          spacingPreset === preset.key
+                            ? 'border-[#4a6741] bg-white'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <p className={`text-[10px] font-bold tracking-wide ${spacingPreset === preset.key ? 'text-[#4a6741]' : 'text-gray-700'}`}>
+                          {preset.label}
+                        </p>
+                        <p className={`text-[10px] ${spacingPreset === preset.key ? 'text-[#4a6741]' : 'text-gray-400'}`}>
+                          {displayVal}{spacingUnit}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* ===== Fine-Tune Spacing Slider ===== */}
+              <div className="hidden lg:block pb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] font-bold tracking-widest text-gray-400">FINE-TUNE SPACING</label>
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400">ADJUST TO CUSTOMIZE</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={measurementUnit === 'cm' ? 25 : 10}
+                  step={measurementUnit === 'cm' ? 0.5 : 0.2}
+                  value={spacingValue}
+                  onChange={e => {
+                    setSpacingValue(parseFloat(e.target.value))
+                    setSpacingPreset(null)
+                  }}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                />
+              </div>
+
+              {/* ===== INNER SHADOW TUNING ===== */}
+              <div className="hidden lg:block pb-4 border-t border-gray-200 pt-5">
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 tracking-wide">INNER SHADOW TUNING</h3>
+                    <p className="text-[10px] text-gray-400 italic">Simulate depth inside the frame</p>
+                  </div>
+                  <button
+                    onClick={resetShadow}
+                    className="text-[10px] font-bold tracking-widest text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                  >
+                    RESET
+                  </button>
+                </div>
+
+                {/* X OFFSET + Y OFFSET */}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold tracking-widest text-gray-500">X OFFSET</label>
+                      <span className="text-[10px] font-bold text-gray-500">{innerShadow.xOffset}PX</span>
+                    </div>
+                    <input
+                      type="range" min={-20} max={20}
+                      value={innerShadow.xOffset}
+                      onChange={e => handleShadowChange('xOffset', parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold tracking-widest text-gray-500">Y OFFSET</label>
+                      <span className="text-[10px] font-bold text-gray-500">{innerShadow.yOffset}PX</span>
+                    </div>
+                    <input
+                      type="range" min={-20} max={20}
+                      value={innerShadow.yOffset}
+                      onChange={e => handleShadowChange('yOffset', parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                    />
+                  </div>
+                </div>
+
+                {/* BLUR RADIUS */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500">BLUR RADIUS</label>
+                    <span className="text-[10px] font-bold text-gray-500">{innerShadow.blur}PX</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={40}
+                    value={innerShadow.blur}
+                    onChange={e => handleShadowChange('blur', parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                  />
+                </div>
+
+                {/* SPREAD */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500">SPREAD</label>
+                    <span className="text-[10px] font-bold text-gray-500">{innerShadow.spread}PX</span>
+                  </div>
+                  <input
+                    type="range" min={-10} max={20}
+                    value={innerShadow.spread}
+                    onChange={e => handleShadowChange('spread', parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                  />
+                </div>
+
+                {/* OPACITY */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500">OPACITY</label>
+                    <span className="text-[10px] font-bold text-gray-500">{innerShadow.opacity}%</span>
+                  </div>
+                  <input
+                    type="range" min={0} max={100}
+                    value={innerShadow.opacity}
+                    onChange={e => handleShadowChange('opacity', parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                  />
+                </div>
+
+                {/* Inner Shadow Code Display */}
+                <div className="mt-5 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <label className="text-[9px] font-bold tracking-widest text-gray-500 mb-1.5 block">INNER SHADOW CODE:</label>
+                  <p className="text-[11px] text-gray-600 font-mono break-all">{innerShadowCSS}</p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Navigation Buttons - pinned at bottom */}
+            <div className="hidden lg:block flex-shrink-0 px-5 py-3 border-t border-gray-200">
+              <button 
+                disabled={!selectedLayout}
+                onClick={() => selectedLayout && setCurrentStep("step3")}
+                className="w-full bg-[#4a6741] text-white py-2.5 font-bold text-xs tracking-widest rounded-lg hover:bg-[#3d5636] transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+              >
+                SELECT ART &gt;
+              </button>
+              <button
+                onClick={() => setCurrentStep("step1")}
+                className="w-full text-gray-400 py-1.5 font-medium text-xs hover:text-gray-600 transition-colors cursor-pointer flex items-center justify-center gap-1 mt-1"
+              >
+                ← PREVIOUS STEP
+              </button>
             </div>
           </div>
 
-          {/* Main Content Area */}
+          {/* ========== RIGHT SECTION ========== */}
           <div className="flex-1 flex flex-col overflow-hidden">
 
-            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
-              <div
-                ref={canvasRef}
-                className="flex-1 relative bg-cover bg-center transition-all duration-500"
-                style={{
-                  backgroundImage: `url(${selectedBackground?.image || "https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1"})`,
-                }}
-              >
-                <DraggableFrameContainer>
-                  {isMobile ? (
-                    <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
-                      {selectedLayout && (() => {
-                        const { processedFrames, centerOffsetX, centerOffsetY, scale } = processMobileFrames(selectedLayout.frames)
-                        return processedFrames.map((frame, idx) => (
-                          <div
-                            key={idx}
-                            className="absolute cursor-pointer bg-gray-200 flex items-center justify-center shadow-md select-none"
-                            style={{
-                              width: `${frame.width * scale}%`,
-                              height: `${frame.height * scale}%`,
-                              left: `${frame.calcLeft * scale + centerOffsetX}%`,
-                              top: `${frame.calcTop * scale + centerOffsetY}%`,
-                            }}
-                          >
-                            <span className="text-gray-500 font-semibold text-[8px]">{frame.size}</span>
-                          </div>
-                        ))
-                      })()}
-                    </div>
-                  ) : (
-                    selectedLayout && selectedLayout.frames.map((frame, idx) => (
-                      <div
-                        key={idx}
-                        className="absolute cursor-pointer bg-gray-200 flex items-center justify-center shadow-md select-none"
-                        style={{
-                          width: frame.width,
-                          height: frame.height,
-                          top: frame.top,
-                          bottom: frame.bottom,
-                          left: frame.left,
-                          right: frame.right,
-                          transform: frame.transform
-                        }}
-                      >
-                        <span className="text-gray-500 font-semibold text-sm">{frame.size}</span>
-                      </div>
-                    ))
-                  )}
-                </DraggableFrameContainer>
+            {/* ---- Canvas Header Bar ---- */}
+            <div className="hidden lg:flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white flex-shrink-0">
+              <div className="flex-shrink-0">
+                <h3 className="text-sm font-extrabold tracking-wide text-gray-900 uppercase leading-tight">
+                  {getBackgroundLabel() || 'SELECT A BACKGROUND'}
+                </h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  Previewing Layout: {layoutLabel}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="tracking-wide leading-tight text-left">DRAG TO REPOSITION<br/>GALLERY</span>
+                </button>
+                <div className="w-px h-8 bg-gray-200 mx-1" />
+                <button
+                  onClick={() => setShowGrid(!showGrid)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
+                    showGrid ? 'text-[#4a6741] bg-green-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                  </svg>
+                  <span className="tracking-wide leading-tight text-left">GRID<br/>{showGrid ? 'ON' : 'OFF'}</span>
+                </button>
+                <div className="w-px h-8 bg-gray-200 mx-1" />
+                <button
+                  onClick={() => setShowRuler(!showRuler)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
+                    showRuler ? 'text-[#4a6741] bg-green-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+                  </svg>
+                  <span className="tracking-wide">RULER</span>
+                </button>
+                <div className="w-px h-8 bg-gray-200 mx-1" />
+                <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                  </svg>
+                  <span className="tracking-wide">ENLARGE</span>
+                </button>
               </div>
             </div>
 
-            {/* Next Button - below preview */}
-            <div className="hidden lg:flex flex-shrink-0 justify-center py-4">
-              <button 
-                disabled={!selectedLayout}
-                onClick={() => selectedLayout && setCurrentStep("step4")}
-                className="px-16 py-3 bg-[#4a6741] text-white font-bold text-sm tracking-widest rounded-full hover:bg-[#3d5636] transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer shadow-md"
+            {/* ---- Canvas Area ---- */}
+            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
+              <div
+                ref={canvasRef}
+                className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500"
+                style={{
+                  backgroundImage: selectedBackground
+                    ? `url(${selectedBackground.image})`
+                    : selectedPlace
+                      ? `url(${selectedPlace.image})`
+                      : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                }}
               >
-                NEXT
-              </button>
+                {/* Grid Overlay */}
+                {showGrid && (
+                  <div
+                    className="absolute inset-0 pointer-events-none z-10"
+                    style={{
+                      backgroundImage: 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
+                      backgroundSize: '40px 40px',
+                    }}
+                  />
+                )}
+
+                {/* Ruler Overlay */}
+                {showRuler && (
+                  <Ruler onClose={() => setShowRuler(false)} />
+                )}
+
+                {/* Frame Preview on Canvas */}
+                {selectedLayout && dynamicFrames ? (
+                  <div
+                    className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
+                    onMouseDown={handleDragStart}
+                    onTouchStart={handleDragStart}
+                    style={{
+                      cursor: isDragging ? 'grabbing' : 'default',
+                      transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
+                      transformOrigin: 'center center',
+                      transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
+                    }}
+                  >
+                    {isMobile ? (
+                      <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
+                        {(() => {
+                          const { processedFrames, centerOffsetX, centerOffsetY, scale } = processMobileFrames(dynamicFrames)
+                          const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
+                          return processedFrames.map((frame, idx) => (
+                            <div key={idx} className="absolute select-none" style={{
+                              left: `${frame.calcLeft * scale + centerOffsetX}%`,
+                              top: `${frame.calcTop * scale + centerOffsetY}%`,
+                            }}>
+                              <div
+                                className="bg-white flex items-center justify-center overflow-hidden"
+                                style={{
+                                  width: `${frame.width * scale}vw`,
+                                  height: `${frame.height * scale}vw`,
+                                  border: `${Math.max(1, frame.borderWidth - 1)}px solid ${frameColor.border}`,
+                                  borderRadius: '1px',
+                                  boxShadow: `0 4px 16px ${frameColor.shadow}, inset 0 0 0 1px rgba(255,255,255,0.1)`,
+                                }}
+                              >
+                                <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                              </div>
+                              <div className="mt-0.5 text-center">
+                                <span className="bg-white/90 text-gray-600 text-[6px] font-bold tracking-wider px-1.5 py-0.5 rounded whitespace-nowrap uppercase">
+                                  {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                      </div>
+                    ) : (
+                      (() => {
+                        const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
+                        return dynamicFrames.map((frame, idx) => (
+                          <div
+                            key={idx}
+                            className="absolute select-none"
+                            style={{
+                              top: `${frame.centerY}%`,
+                              left: `${frame.centerX}%`,
+                              width: frame.width,
+                              aspectRatio: frame.aspectRatio,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                          >
+                            <div
+                              className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                              style={{
+                                border: `${frame.borderWidth}px solid ${frameColor.border}`,
+                                borderRadius: '2px',
+                                boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                              }}
+                            >
+                              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                              </svg>
+                            </div>
+                            <div className="mt-1 flex justify-center">
+                              <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                                {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      })()
+                    )}
+                  </div>
+                ) : (
+                  !selectedPlace && !selectedBackground && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white/90 backdrop-blur-sm px-6 lg:px-12 py-4 lg:py-8 rounded-lg shadow-xl">
+                        <p className="text-xs lg:text-2xl font-light text-gray-700 text-center">
+                          Select a room to continue
+                        </p>
+                      </div>
+                    </div>
+                  )
+                )}
+                
+                {/* ---- Canvas Overlay Controls ---- */}
+                <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md">
+                  <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
+                  <input
+                    type="range"
+                    min={-50}
+                    max={50}
+                    value={wallScale}
+                    onChange={(e) => setWallScale(parseInt(e.target.value))}
+                    className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                  />
+                  <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
+                </div>
+                <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
+                  <button
+                    onClick={undo}
+                    disabled={!canUndo}
+                    className={`w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center transition-colors cursor-pointer ${canUndo ? 'hover:bg-gray-100' : 'opacity-40 cursor-default'}`}
+                  >
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={redo}
+                    disabled={!canRedo}
+                    className={`w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center transition-colors cursor-pointer ${canRedo ? 'hover:bg-gray-100' : 'opacity-40 cursor-default'}`}
+                  >
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="hidden lg:flex absolute bottom-4 left-4 z-20">
+                  <button
+                    onClick={() => handleUnitChange('cm')}
+                    className={`px-3 py-1.5 text-[10px] font-bold tracking-wide border transition-all duration-150 cursor-pointer rounded-l-md ${
+                      measurementUnit === 'cm'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    CM
+                  </button>
+                  <button
+                    onClick={() => handleUnitChange('in')}
+                    className={`px-3 py-1.5 text-[10px] font-bold tracking-wide border-t border-b border-r transition-all duration-150 cursor-pointer rounded-r-md ${
+                      measurementUnit === 'in'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    IN
+                  </button>
+                </div>
+                <div className="hidden lg:flex absolute bottom-4 right-4 z-20 items-center gap-2">
+                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                    </svg>
+                  </button>
+                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
+            <div className="hidden lg:flex items-center gap-6 px-6 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+              <div className="flex-shrink-0">
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">PRINT SIZE</label>
+                <div className="relative">
+                  <select
+                    value={printSize}
+                    onChange={(e) => setPrintSize(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[140px]"
+                    style={selectArrowStyle}
+                  >
+                    <option value="">Select size...</option>
+                    {sizeOptions.map(s => <option key={s} value={s}>{s.startsWith('A') ? s : `${s} ${unit === 'in' ? '"' : unit}`}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">YOUR FRAME STYLE</label>
+                <div className="relative">
+                  <select
+                    value={printStyle}
+                    onChange={(e) => setPrintStyle(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[120px]"
+                    style={selectArrowStyle}
+                  >
+                    {PRINT_STYLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm text-gray-400 italic leading-snug">
+                  {selectedPlace
+                    ? `A ${selectedPlace.name?.toLowerCase()} is the heart of the home.`
+                    : 'Choose a room to begin.'}
+                </p>
+              </div>
             </div>
 
             <MobileBottomNav />

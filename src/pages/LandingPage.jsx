@@ -3,9 +3,7 @@
 import { GalleryProvider, useGallery } from '../context/GalleryContext'
 import { MobilePortraitBlocker, FullscreenPrompt } from '../components'
 import {
-  IntroStep,
   SelectPlaceStep,
-  SelectBackgroundStep,
   SelectLayoutStep,
   SelectDesignStep,
   CheckoutStep
@@ -31,20 +29,16 @@ function GalleryRouter() {
   }
 
   switch (currentStep) {
-    case 'intro':
-      return <IntroStep />
     case 'step1':
       return <SelectPlaceStep />
     case 'step2':
-      return <SelectBackgroundStep />
-    case 'step3':
       return <SelectLayoutStep />
-    case 'step4':
+    case 'step3':
       return <SelectDesignStep />
     case 'checkout':
       return <CheckoutStep />
     default:
-      return <IntroStep />
+      return <SelectPlaceStep />
   }
 }
 

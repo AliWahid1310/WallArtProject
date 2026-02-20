@@ -1,6 +1,4 @@
-export { default as IntroStep } from './IntroStep'
 export { default as SelectPlaceStep } from './SelectPlaceStep'
-export { default as SelectBackgroundStep } from './SelectBackgroundStep'
 export { default as SelectLayoutStep } from './SelectLayoutStep'
 export { default as SelectDesignStep } from './SelectDesignStep'
 export { default as CheckoutStep } from './CheckoutStep'

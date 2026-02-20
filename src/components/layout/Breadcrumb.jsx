@@ -2,9 +2,9 @@ import { useGallery } from '../../context/GalleryContext'
 
 const STEPS = [
   { key: 'step1', label: 'Choose Room', num: 1 },
-  { key: 'step2', label: 'Choose Layout', num: 2 },
+  { key: 'step2', label: 'Customize Your Prints', num: 2 },
   { key: 'step3', label: 'Select Art', num: 3 },
-  { key: 'step4', label: 'Checkout', num: 4 },
+  { key: 'checkout', label: 'Checkout', num: 4 },
 ]
 
 // Map currentStep values to the step index (0-based)
@@ -14,8 +14,7 @@ function getStepIndex(currentStep) {
     case 'step1': return 0
     case 'step2': return 1
     case 'step3': return 2
-    case 'step4': return 3
-    case 'checkout': return 4
+    case 'checkout': return 3
     default: return -1
   }
 }
