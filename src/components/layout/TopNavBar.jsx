@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
-import LabooLogo from '../../assets/Laboo2.png'
+import BrandLogo from '../../assets/Gallery Wall Planner powered by Laboo Studio.png'
 
 export default function TopNavBar() {
   const {
@@ -28,16 +28,8 @@ export default function TopNavBar() {
     <div className="hidden lg:flex bg-[#f5f3ee] border-b border-gray-200 px-8 py-2 items-center justify-between">
 
       {/* ── Left: Brand ── */}
-      <div className="flex flex-col">
-        <h1 className="text-[24px] tracking-tight" style={{ lineHeight: 1, marginBottom: '-4px' }}>
-          <span className="font-extrabold text-[#2d2d2d]">GALLERY</span>
-          <span className="font-light italic text-[#4a6741]">WALL</span>
-          <span className="font-extrabold text-[#2d2d2d]">PLANNER</span>
-        </h1>
-        <div className="flex items-center">
-          <span className="text-[11px] text-gray-500 tracking-wide" style={{ marginTop: '-2px' }}>powered by</span>
-          <img src={LabooLogo} alt="Laboo Studio" className="h-[38px] object-contain" style={{ marginLeft: '-7px', marginTop: '3px' }} />
-        </div>
+      <div className="flex items-center">
+        <img src={BrandLogo} alt="Gallery Wall Planner powered by Laboo Studio" className="h-[52px] object-contain" />
       </div>
 
       {/* ── Right: Actions ── */}

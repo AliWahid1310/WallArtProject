@@ -84,6 +84,7 @@ export function GalleryProvider({ children }) {
   const [printOrientation, setPrintOrientation] = useState('Portrait')
   const [printStyle, setPrintStyle] = useState('Black')
   const [printSize, setPrintSize] = useState('13 × 18')
+  const [perFrameSizes, setPerFrameSizes] = useState([]) // per-frame size overrides
   const [spacingPreset, setSpacingPreset] = useState('tight')
   const [spacingValue, setSpacingValue] = useState(2) // in cm
   const [innerShadow, setInnerShadow] = useState({
@@ -783,6 +784,7 @@ export function GalleryProvider({ children }) {
     printOrientation, setPrintOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
+    perFrameSizes, setPerFrameSizes,
     spacingPreset, setSpacingPreset,
     spacingValue, setSpacingValue,
     innerShadow, setInnerShadow,

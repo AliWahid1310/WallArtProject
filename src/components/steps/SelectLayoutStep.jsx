@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import { layoutOptions, squareLayoutOptions, portraitLayoutOptions, mixLayoutOptions, landscapeLayoutOptions, backgroundOptions } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
@@ -65,6 +65,7 @@ export default function SelectLayoutStep() {
     printOrientation, setPrintOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
+    perFrameSizes, setPerFrameSizes,
     spacingPreset, setSpacingPreset,
     spacingValue, setSpacingValue,
     innerShadow, setInnerShadow,
@@ -75,6 +76,7 @@ export default function SelectLayoutStep() {
   } = useGallery()
 
   const [printsFilter, setPrintsFilter] = useState('All')
+  const [selectedFrameIdx, setSelectedFrameIdx] = useState(null)
 
   const filteredLayouts = useMemo(() => {
     // Use square-specific layouts when Square orientation is selected
@@ -143,8 +145,8 @@ export default function SelectLayoutStep() {
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
-    getDynamicFrames(selectedLayout?.frames, printSize, measurementUnit, printOrientation, wallScale, spacingValue),
-    [selectedLayout, printSize, measurementUnit, printOrientation, wallScale, spacingValue]
+    getDynamicFrames(selectedLayout?.frames, perFrameSizes.length > 0 ? perFrameSizes : printSize, measurementUnit, printOrientation, wallScale, spacingValue),
+    [selectedLayout, perFrameSizes, printSize, measurementUnit, printOrientation, wallScale, spacingValue]
   )
 
   const handleLayoutSelect = (layout) => {
@@ -186,6 +188,27 @@ export default function SelectLayoutStep() {
     setMeasurementUnit(newUnit)
     const sizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Landscape'][newUnit]
     if (sizes?.length) setPrintSize(sizes[0])
+  }
+
+  // Reset per-frame sizes whenever the layout changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (selectedLayout?.frames) {
+      setPerFrameSizes(new Array(selectedLayout.frames.length).fill(printSize))
+      setSelectedFrameIdx(null)
+    }
+  }, [selectedLayout?.id])
+
+  // Change size of the selected frame only, or all frames when none is selected
+  const handlePrintSizeChange = (newSize) => {
+    if (selectedFrameIdx !== null) {
+      const updated = [...perFrameSizes]
+      updated[selectedFrameIdx] = newSize
+      setPerFrameSizes(updated)
+    } else {
+      setPrintSize(newSize)
+      setPerFrameSizes(prev => prev.map(() => newSize))
+    }
   }
 
   // Resolve the human-readable background label
@@ -316,7 +339,7 @@ export default function SelectLayoutStep() {
                   <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">PRINT SIZE</label>
                   <select
                     value={printSize}
-                    onChange={e => setPrintSize(e.target.value)}
+                    onChange={e => { setPrintSize(e.target.value); setPerFrameSizes(prev => prev.map(() => e.target.value)) }}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
                     style={selectArrowStyle}
                   >
@@ -697,6 +720,7 @@ export default function SelectLayoutStep() {
                     className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
                     onMouseDown={handleDragStart}
                     onTouchStart={handleDragStart}
+                    onClick={() => setSelectedFrameIdx(null)}
                     style={{
                       cursor: isDragging ? 'grabbing' : 'default',
                       transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
@@ -740,37 +764,55 @@ export default function SelectLayoutStep() {
                     ) : (
                       (() => {
                         const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
-                        return dynamicFrames.map((frame, idx) => (
-                          <div
-                            key={idx}
-                            className="absolute select-none"
-                            style={{
-                              top: `${frame.centerY}%`,
-                              left: `${frame.centerX}%`,
-                              width: frame.width,
-                              aspectRatio: `${frame.aspectRatio}`,
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          >
+                        return dynamicFrames.map((frame, idx) => {
+                          const isSelected = selectedFrameIdx === idx
+                          return (
                             <div
-                              className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                              key={idx}
+                              className="absolute select-none cursor-pointer"
+                              onClick={(e) => { e.stopPropagation(); if (!wasDraggingRef.current) setSelectedFrameIdx(idx) }}
                               style={{
-                                border: `${frame.borderWidth}px solid ${frameColor.border}`,
-                                borderRadius: '2px',
-                                boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), ${innerShadowCSS}`,
+                                top: `${frame.centerY}%`,
+                                left: `${frame.centerX}%`,
+                                width: frame.width,
+                                aspectRatio: `${frame.aspectRatio}`,
+                                transform: 'translate(-50%, -50%)',
                               }}
                             >
-                              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                              </svg>
+                              <div
+                                className="w-full h-full bg-white flex items-center justify-center overflow-hidden relative"
+                                style={{
+                                  border: `${frame.borderWidth}px solid ${frameColor.border}`,
+                                  borderRadius: '2px',
+                                  boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), ${innerShadowCSS}`,
+                                }}
+                              >
+                              {isSelected && (
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-[#4a6741] rounded-full flex items-center justify-center z-10 shadow-md pointer-events-none">
+                                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                  </svg>
+                                </div>
+                              )}
+                                <button
+                                  className="flex items-center justify-center text-gray-300 hover:text-[#4a6741] transition-colors cursor-pointer"
+                                  style={{ width: '20px', height: '20px' }}
+                                  onClick={(e) => { e.stopPropagation(); setActiveFrameIndex(idx); setCurrentStep('step3') }}
+                                  title="Select art for this frame"
+                                >
+                                  <svg fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" className="w-full h-full">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="absolute left-0 right-0 flex justify-center" style={{ top: '100%', paddingTop: '4px' }}>
+                                <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                                  {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                                </span>
+                              </div>
                             </div>
-                            <div className="absolute left-0 right-0 flex justify-center" style={{ top: '100%', paddingTop: '4px' }}>
-                              <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
-                                {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
-                              </span>
-                            </div>
-                          </div>
-                        ))
+                          )
+                        })
                       })()
                     )}
                   </div>
@@ -859,11 +901,13 @@ export default function SelectLayoutStep() {
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
             <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">PRINT SIZE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">
+                  {selectedFrameIdx !== null ? `PRINT SIZE — FRAME ${selectedFrameIdx + 1}` : 'PRINT SIZE'}
+                </label>
                 <div className="relative">
                   <select
-                    value={printSize}
-                    onChange={(e) => setPrintSize(e.target.value)}
+                    value={selectedFrameIdx !== null ? (perFrameSizes[selectedFrameIdx] ?? printSize) : printSize}
+                    onChange={(e) => handlePrintSizeChange(e.target.value)}
                     className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[130px]"
                     style={selectArrowStyle}
                   >

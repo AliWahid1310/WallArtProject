@@ -159,19 +159,16 @@ export const parsePrintSize = (printSize) => {
  * @param {number} wallScale        – slider value (default 50); sizes scale by wallScale/50
  * @returns {Array} new frames array with computed width/height/top/left
  */
-export const getDynamicFrames = (frames, printSize, measurementUnit, printOrientation, wallScale = 50, spacingValue = 5) => {
-  if (!printSize || !frames || frames.length === 0) return frames
+export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrientation, wallScale = 50, spacingValue = 5) => {
+  if (!printSizes || !frames || frames.length === 0) return frames
 
-  const parsed = parsePrintSize(printSize)
-  if (!parsed) return frames
+  // Normalise: string → same size for every frame; array → one size per frame
+  const sizesArr = Array.isArray(printSizes)
+    ? printSizes
+    : new Array(frames.length).fill(printSizes)
 
-  // Convert to cm – A-series labels are already in cm (isCm flag)
-  let widthCm = parsed.w
-  let heightCm = parsed.h
-  if (!parsed.isCm && measurementUnit === 'in') {
-    widthCm *= 2.54
-    heightCm *= 2.54
-  }
+  const firstParsed = parsePrintSize(sizesArr[0])
+  if (!firstParsed) return frames
 
   // 1 cm ≈ 0.52% of canvas width  (canvas represents ≈ 192 cm wall)
   const CM_SCALE = 0.52
@@ -186,7 +183,17 @@ export const getDynamicFrames = (frames, printSize, measurementUnit, printOrient
 
   // ---------- Pass 1: compute raw sizes & centres ----------
   const scaleFactor = (wallScale + 50) / 50
-  const raw = frames.map(frame => {
+  const raw = frames.map((frame, i) => {
+    const sizeStr = sizesArr[i] ?? sizesArr[0]
+    const parsed = parsePrintSize(sizeStr) || firstParsed
+
+    let widthCm = parsed.w
+    let heightCm = parsed.h
+    if (!parsed.isCm && measurementUnit === 'in') {
+      widthCm *= 2.54
+      heightCm *= 2.54
+    }
+
     const origW = parseFloat(frame.width)
     const origH = parseFloat(frame.height)
 
@@ -225,9 +232,9 @@ export const getDynamicFrames = (frames, printSize, measurementUnit, printOrient
     const cy = origTop  + origH / 2
 
     // Size label
-    const isALabel = parsed.isCm && /^A\d$/i.test(printSize.trim())
+    const isALabel = parsed.isCm && /^A\d$/i.test(sizeStr.trim())
     const sizeLabel = isALabel
-      ? printSize.trim().toUpperCase()
+      ? sizeStr.trim().toUpperCase()
       : Number.isInteger(fwCm) && Number.isInteger(fhCm)
         ? `${fwCm}x${fhCm}`
         : `${parseFloat(fwCm.toFixed(1))}x${parseFloat(fhCm.toFixed(1))}`
