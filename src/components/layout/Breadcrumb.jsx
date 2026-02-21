@@ -24,7 +24,7 @@ export default function Breadcrumb() {
 
   return (
     <div className="hidden lg:block bg-[#f5f3ee] border-b border-gray-200">
-      <div className="w-full px-8 py-4">
+      <div className="w-full px-8 py-2.5">
         <div className="flex items-center justify-center max-w-4xl mx-auto">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex

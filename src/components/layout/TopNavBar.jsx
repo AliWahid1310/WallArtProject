@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
+import LabooLogo from '../../assets/Laboo2.png'
 
 export default function TopNavBar() {
   const {
@@ -24,18 +25,18 @@ export default function TopNavBar() {
   }, [currentStep])
 
   return (
-    <div className="hidden lg:flex bg-[#f5f3ee] border-b border-gray-200 px-8 py-5 items-center justify-between">
+    <div className="hidden lg:flex bg-[#f5f3ee] border-b border-gray-200 px-8 py-2 items-center justify-between">
 
       {/* ── Left: Brand ── */}
-      <div className="flex flex-col leading-tight">
-        <h1 className="text-[28px] tracking-tight">
-          <span className="font-extrabold text-gray-900">GALLERY</span>
+      <div className="flex flex-col">
+        <h1 className="text-[24px] tracking-tight" style={{ lineHeight: 1, marginBottom: '-4px' }}>
+          <span className="font-extrabold text-[#2d2d2d]">GALLERY</span>
           <span className="font-light italic text-[#4a6741]">WALL</span>
-          <span className="font-extrabold text-gray-900">PLANNER</span>
+          <span className="font-extrabold text-[#2d2d2d]">PLANNER</span>
         </h1>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[11px] text-gray-500 tracking-wide">powered by</span>
-          <span className="text-[13px] font-bold text-gray-800 leading-none" style={{ fontFamily: "'Georgia', serif" }}>Laboo<br/>Studio</span>
+        <div className="flex items-center">
+          <span className="text-[11px] text-gray-500 tracking-wide" style={{ marginTop: '-2px' }}>powered by</span>
+          <img src={LabooLogo} alt="Laboo Studio" className="h-[38px] object-contain" style={{ marginLeft: '-7px', marginTop: '3px' }} />
         </div>
       </div>
 
