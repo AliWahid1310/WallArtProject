@@ -159,7 +159,7 @@ export const parsePrintSize = (printSize) => {
  * @param {number} wallScale        – slider value (default 50); sizes scale by wallScale/50
  * @returns {Array} new frames array with computed width/height/top/left
  */
-export const getDynamicFrames = (frames, printSize, measurementUnit, printOrientation, wallScale = 50) => {
+export const getDynamicFrames = (frames, printSize, measurementUnit, printOrientation, wallScale = 50, spacingValue = 5) => {
   if (!printSize || !frames || frames.length === 0) return frames
 
   const parsed = parsePrintSize(printSize)
@@ -238,6 +238,43 @@ export const getDynamicFrames = (frames, printSize, measurementUnit, printOrient
     return { frame, wPct, hPctH, cx, cy, fwCm, fhCm, sizeLabel, borderWidth }
   })
 
+  // ---------- Pass 1b: position frames so inter-frame gap = spacingValue ----------
+  // For each pair, compute the centroid-scale factor k that places that pair's edges
+  // exactly targetGap apart.  bestK = max over all pairs so the TIGHTEST pair gets
+  // exactly targetGap and every other pair gets ≥ targetGap.
+  // Works for any wallScale: frame sizes already embed scaleFactor via wPct/hPctH.
+  const spacingCm  = measurementUnit === 'in' ? spacingValue * 2.54 : spacingValue
+  const targetGap  = spacingCm * CM_SCALE  // desired gap in width-%
+  if (raw.length > 1) {
+    const gcx = raw.reduce((s, r) => s + r.cx, 0) / raw.length
+    const gcy = raw.reduce((s, r) => s + r.cy, 0) / raw.length
+    let bestK = 0
+    for (let i = 0; i < raw.length; i++) {
+      for (let j = i + 1; j < raw.length; j++) {
+        const ri = raw[i], rj = raw[j]
+        const dx   = Math.abs(rj.cx - ri.cx)              // width-%
+        const dy_w = Math.abs(rj.cy - ri.cy) / CANVAS_AR  // height-% → width-%
+        let k_ij
+        if (dx >= dy_w) {
+          if (dx === 0) continue
+          const hwSum = (ri.wPct + rj.wPct) / 2
+          k_ij = (hwSum + targetGap) / dx
+        } else {
+          if (dy_w === 0) continue
+          const hhSum_w = (ri.hPctH + rj.hPctH) / (2 * CANVAS_AR)
+          k_ij = (hhSum_w + targetGap) / dy_w
+        }
+        if (k_ij > bestK) bestK = k_ij
+      }
+    }
+    if (bestK > 0) {
+      for (const r of raw) {
+        r.cx = gcx + (r.cx - gcx) * bestK
+        r.cy = gcy + (r.cy - gcy) * bestK
+      }
+    }
+  }
+
   // ---------- Pass 2: compute bounding box & shrink factor ----------
   // Bounding box in %-of-width (horizontal) and %-of-height (vertical)
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
@@ -271,34 +308,77 @@ export const getDynamicFrames = (frames, printSize, measurementUnit, printOrient
   const groupCX = (minX + maxX) / 2
   const groupCY = (minY + maxY) / 2
 
-  // ---------- Pass 3: apply shrink & re-centre ----------
-  return raw.map(r => {
-    const finalW = r.wPct * shrink
-    // Centre positions shrink relative to group centre
-    const newCX = groupCX + (r.cx - groupCX) * shrink
-    const newCY = groupCY + (r.cy - groupCY) * shrink
+  // ---------- Pass 2b: iterative frame separation ----------
+  // Since CSS renders frames with aspectRatio (height derived from width),
+  // frame height in pixels = wPct * canvasW / aspectRatio.
+  // Work entirely in "% of canvas width" space for both X and Y:
+  //   - X: already in width-%
+  //   - Y: convert from height-% to width-% by dividing by CANVAS_AR
+  // MIN_GAP_W = minimum clear gap between frame edges in width-% units
+  const MIN_GAP_W = 0  // overlap prevention only; spacing is fully controlled by Pass 1b
 
-    // Clamp centres so the frame stays within safe area
-    const clampedCX = Math.max(MARGIN + finalW / 2, Math.min(100 - MARGIN - finalW / 2, newCX))
-    const finalH = r.hPctH * shrink
-    const clampedCY = Math.max(MARGIN + finalH / 2, Math.min(100 - MARGIN - finalH / 2, newCY))
+  // Build mutable position array, all in width-% space
+  const pos = raw.map(r => ({
+    cx: groupCX + (r.cx - groupCX) * shrink,                    // width-%
+    cy: (groupCY + (r.cy - groupCY) * shrink) / CANVAS_AR,      // convert to width-%
+    hw: (r.wPct * shrink) / 2,                                   // half-width in width-%
+    hh: (r.wPct * shrink) / 2 / (r.fwCm / r.fhCm),             // half-height in width-% (via aspectRatio)
+  }))
 
-    return {
-      ...r.frame,
-      width:       `${finalW.toFixed(1)}%`,
-      height:      `${(r.hPctH * shrink).toFixed(1)}%`,
-      top:         undefined,
-      left:        undefined,
-      bottom:      undefined,
-      right:       undefined,
-      transform:   undefined,
-      centerX:     clampedCX,
-      centerY:     clampedCY,
-      aspectRatio: r.fwCm / r.fhCm,
-      size:        r.sizeLabel,
-      borderWidth: r.borderWidth,
+  for (let iter = 0; iter < 60; iter++) {
+    let moved = false
+    for (let i = 0; i < pos.length; i++) {
+      for (let j = i + 1; j < pos.length; j++) {
+        const a = pos[i], b = pos[j]
+        const dx = Math.abs(b.cx - a.cx)
+        const dy = Math.abs(b.cy - a.cy)
+        const minSepX = a.hw + b.hw + MIN_GAP_W
+        const minSepY = a.hh + b.hh + MIN_GAP_W
+        const ovX = minSepX - dx
+        const ovY = minSepY - dy
+        if (ovX > 0 && ovY > 0) {
+          // Push apart on the axis requiring less movement
+          if (ovX <= ovY) {
+            const push = ovX / 2
+            if (a.cx <= b.cx) { a.cx -= push; b.cx += push }
+            else               { a.cx += push; b.cx -= push }
+          } else {
+            const push = ovY / 2
+            if (a.cy <= b.cy) { a.cy -= push; b.cy += push }
+            else               { a.cy += push; b.cy -= push }
+          }
+          moved = true
+        }
+      }
     }
-  })
+    if (!moved) break
+  }
+
+  // Convert cy back to height-% and clamp within safe area
+  for (const p of pos) {
+    p.cy = p.cy * CANVAS_AR // back to height-%
+    const finalW = p.hw * 2
+    const finalH = p.hh * 2 * CANVAS_AR // height in height-%
+    p.cx = Math.max(MARGIN + p.hw,          Math.min(100 - MARGIN - p.hw,          p.cx))
+    p.cy = Math.max(MARGIN + finalH / 2,    Math.min(100 - MARGIN - finalH / 2,    p.cy))
+  }
+
+  // ---------- Pass 3: emit final frame objects using separated positions ----------
+  return raw.map((r, i) => ({
+    ...r.frame,
+    width:       `${(r.wPct * shrink).toFixed(1)}%`,
+    height:      `${(r.hPctH * shrink).toFixed(1)}%`,
+    top:         undefined,
+    left:        undefined,
+    bottom:      undefined,
+    right:       undefined,
+    transform:   undefined,
+    centerX:     pos[i].cx,
+    centerY:     pos[i].cy,
+    aspectRatio: r.fwCm / r.fhCm,
+    size:        r.sizeLabel,
+    borderWidth: r.borderWidth,
+  }))
 }
 
 /**

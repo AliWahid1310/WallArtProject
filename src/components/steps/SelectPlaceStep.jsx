@@ -116,7 +116,7 @@ export default function SelectPlaceStep() {
       <div className="h-screen bg-white flex flex-col overflow-hidden">
         <TopNavBar />
         <Breadcrumb />
-        <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
+        <div className="flex flex-row flex-1 overflow-hidden">
 
           {/* ========== LEFT SIDEBAR ========== */}
           <div className="flex w-28 lg:w-[35%] bg-white border-r border-gray-300 px-2 lg:px-5 py-2 lg:py-3 flex-col h-full">
@@ -124,11 +124,16 @@ export default function SelectPlaceStep() {
             {/* Header: Choose Room + Save Changes */}
             <div className="flex items-center justify-between pb-2.5 lg:pb-3 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center gap-1.5 lg:gap-2">
-                <span className="text-sm lg:text-lg">🏠</span>
+                <svg className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
                 <h2 className="text-[10px] lg:text-base font-bold text-gray-900">Choose Room</h2>
               </div>
-              <button className="flex items-center gap-1 px-1.5 lg:px-2.5 py-0.5 lg:py-1 border border-[#4a6741] text-[#4a6741] rounded text-[7px] lg:text-xs font-semibold hover:bg-green-50 transition-colors cursor-pointer">
-                <span className="hidden lg:inline">💾</span> SAVE CHANGES
+              <button className="flex items-center gap-1 lg:gap-1.5 px-1.5 lg:px-3 py-0.5 lg:py-1.5 border border-gray-300 text-gray-600 rounded-md text-[7px] lg:text-[11px] font-semibold hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer tracking-wide">
+                <svg className="hidden lg:block w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3.75 3.75 0 013.572 5.345A4.5 4.5 0 0118.75 19.5H6.75z" />
+                </svg>
+                SAVE CHANGES
               </button>
             </div>
 
@@ -137,14 +142,14 @@ export default function SelectPlaceStep() {
               {/* Room Type Dropdown */}
               <div className="mb-3 lg:mb-4">
                 <label className="block text-[7px] lg:text-[11px] font-bold text-gray-400 tracking-widest mb-1 lg:mb-1.5">ROOM TYPE</label>
-                <div className="relative">
+                <div className="relative rounded-lg border border-gray-300 focus-within:border-[#4a6741] focus-within:border-2 bg-white transition-colors">
                   <select
                     value={selectedPlace?.id || ''}
                     onChange={(e) => {
                       const place = placeCategories.find(p => p.id === e.target.value)
                       setSelectedPlace(place || null)
                     }}
-                    className="w-full border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2.5 text-[9px] lg:text-sm font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4a6741] focus:border-transparent cursor-pointer appearance-none pr-7 lg:pr-8"
+                    className="w-full rounded-lg px-2 lg:px-3 py-1.5 lg:py-2.5 text-[9px] lg:text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer appearance-none pr-7 lg:pr-8"
                   >
                     <option value="">Select a room...</option>
                     {placeCategories.map(place => (
@@ -197,16 +202,30 @@ export default function SelectPlaceStep() {
               </div>
             </div>
 
-            {/* Bottom Button */}
-            <div className="px-0 py-1.5 lg:py-3 border-t border-gray-200 flex-shrink-0">
+            {/* Bottom: Previous Step (left) + Customize Your Prints (right) */}
+            <div className="pt-2 lg:pt-3 border-t border-gray-200 flex-shrink-0 flex items-center justify-between gap-2">
+              <button
+                disabled
+                className="flex items-center gap-1 text-gray-400 text-[7px] lg:text-[10px] font-bold tracking-widest uppercase cursor-not-allowed flex-shrink-0"
+              >
+                <svg className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span className="hidden lg:inline">Previous Step</span>
+              </button>
               <button
                 disabled={!selectedPlace || !selectedBackground}
-                onClick={() => setCurrentStep("step2")}
-                className="w-full bg-[#4a6741] text-white py-2 lg:py-3 font-bold text-[8px] lg:text-xs tracking-wide rounded-lg hover:bg-[#3d5636] transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+                onClick={() => setCurrentStep('step2')}
+                className="flex items-center gap-1 lg:gap-1.5 bg-[#4a6741] text-white px-2 lg:px-5 py-1.5 lg:py-2.5 font-bold text-[7px] lg:text-[11px] tracking-widest uppercase rounded-md hover:bg-[#3d5636] transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
               >
-                CUSTOMIZE YOUR PRINTS &gt;
+                <span className="hidden lg:inline">Customize Your Prints</span>
+                <span className="lg:hidden">Next</span>
+                <svg className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
               </button>
             </div>
+
           </div>
 
           {/* ========== RIGHT SECTION ========== */}
