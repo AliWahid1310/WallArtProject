@@ -61,6 +61,10 @@ export default function SelectLayoutStep() {
     wasDraggingRef,
     canvasRef,
     selectedPlace,
+    isLocked, setIsLocked,
+    individualOffsets, activeDragFrameIdx, individualDragLive,
+    handleIndividualDragStart,
+    resetPositions,
     measurementUnit, setMeasurementUnit,
     printOrientation, setPrintOrientation,
     printStyle, setPrintStyle,
@@ -718,11 +722,11 @@ export default function SelectLayoutStep() {
                 {selectedLayout && dynamicFrames ? (
                   <div
                     className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
-                    onMouseDown={handleDragStart}
-                    onTouchStart={handleDragStart}
+                    onMouseDown={isLocked ? handleDragStart : undefined}
+                    onTouchStart={isLocked ? handleDragStart : undefined}
                     onClick={() => setSelectedFrameIdx(null)}
                     style={{
-                      cursor: isDragging ? 'grabbing' : 'default',
+                      cursor: isLocked ? (isDragging ? 'grabbing' : 'grab') : 'default',
                       transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
                       transformOrigin: 'center center',
                       transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
@@ -739,7 +743,7 @@ export default function SelectLayoutStep() {
                               top: `${frame.calcTop * scale + centerOffsetY}%`,
                             }}>
                               <div
-                                className="relative bg-white flex items-center justify-center overflow-hidden"
+                                className="relative bg-white flex items-center justify-center"
                                 style={{
                                   width: `${frame.width * scale}vw`,
                                   height: `${frame.height * scale}vw`,
@@ -752,8 +756,8 @@ export default function SelectLayoutStep() {
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                 </svg>
                               </div>
-                              <div className="mt-0.5 text-center">
-                                <span className="bg-white/90 text-gray-600 text-[6px] font-bold tracking-wider px-1.5 py-0.5 rounded whitespace-nowrap uppercase">
+                              <div className="absolute bottom-[-14px] left-0 right-0 flex justify-center pointer-events-none">
+                                <span className="bg-white/90 text-gray-600 text-[5px] font-bold tracking-wider px-1 py-0.5 rounded whitespace-nowrap uppercase">
                                   {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
                                 </span>
                               </div>
@@ -766,17 +770,26 @@ export default function SelectLayoutStep() {
                         const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
                         return dynamicFrames.map((frame, idx) => {
                           const isSelected = selectedFrameIdx === idx
+                          const indivBase = individualOffsets[idx] || { x: 0, y: 0 }
+                          const indivLive = (!isLocked && activeDragFrameIdx === idx) ? individualDragLive : { x: 0, y: 0 }
+                          const indivX = indivBase.x + indivLive.x
+                          const indivY = indivBase.y + indivLive.y
                           return (
                             <div
                               key={idx}
-                              className="absolute select-none cursor-pointer"
+                              className="absolute select-none"
                               onClick={(e) => { e.stopPropagation(); if (!wasDraggingRef.current) setSelectedFrameIdx(idx) }}
+                              onMouseDown={!isLocked ? (e) => { e.stopPropagation(); handleIndividualDragStart(e, idx) } : undefined}
+                              onTouchStart={!isLocked ? (e) => { e.stopPropagation(); handleIndividualDragStart(e, idx) } : undefined}
                               style={{
                                 top: `${frame.centerY}%`,
                                 left: `${frame.centerX}%`,
                                 width: frame.width,
                                 aspectRatio: `${frame.aspectRatio}`,
-                                transform: 'translate(-50%, -50%)',
+                                transform: `translate(calc(-50% + ${indivX}px), calc(-50% + ${indivY}px))`,
+                                zIndex: activeDragFrameIdx === idx ? 999 : Math.round(100 - frame.centerY),
+                                cursor: !isLocked ? (activeDragFrameIdx === idx ? 'grabbing' : 'grab') : 'pointer',
+                                transition: activeDragFrameIdx === idx ? 'none' : 'transform 0.2s ease',
                               }}
                             >
                               <div
@@ -805,8 +818,8 @@ export default function SelectLayoutStep() {
                                   </svg>
                                 </button>
                               </div>
-                              <div className="absolute left-0 right-0 flex justify-center" style={{ top: '100%', paddingTop: '4px' }}>
-                                <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                              <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
+                                <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[7px] font-bold tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
                                   {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
                                 </span>
                               </div>
@@ -884,15 +897,33 @@ export default function SelectLayoutStep() {
                   </button>
                 </div>
                 <div className="hidden lg:flex absolute bottom-4 right-4 z-20 items-center gap-2">
-                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                  {/* Restore: resets all frames to original centred position */}
+                  <button
+                    onClick={resetPositions}
+                    title="Restore original positions"
+                    className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h13a5 5 0 010 10h-3" />
                     </svg>
                   </button>
-                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
+                  {/* Lock: locked = collective drag, unlocked = individual drag */}
+                  <button
+                    onClick={() => setIsLocked(l => !l)}
+                    title={isLocked ? 'Unlock to drag frames individually' : 'Lock to drag all frames together'}
+                    className={`w-8 h-8 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center transition-colors cursor-pointer ${
+                      isLocked ? 'bg-white/90 hover:bg-gray-100' : 'bg-[#4a6741]/10 hover:bg-[#4a6741]/20'
+                    }`}
+                  >
+                    {isLocked ? (
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 text-[#4a6741]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>

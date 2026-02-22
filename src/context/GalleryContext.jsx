@@ -111,6 +111,13 @@ export function GalleryProvider({ children }) {
   const wasDraggingRef = useRef(false)
   const canvasRef = useRef(null)
 
+  // Lock / individual-drag state
+  const [isLocked, setIsLocked] = useState(true)   // true = collective drag, false = individual
+  const [individualOffsets, setIndividualOffsets] = useState({}) // { frameIdx: {x,y} }
+  const [activeDragFrameIdx, setActiveDragFrameIdx] = useState(null)
+  const [individualDragStart, setIndividualDragStart] = useState({ x: 0, y: 0 })
+  const [individualDragLive, setIndividualDragLive] = useState({ x: 0, y: 0 })
+
   // ===== UNDO / REDO HISTORY =====
   const historyRef = useRef([])
   const futureRef = useRef([])
@@ -565,8 +572,63 @@ export function GalleryProvider({ children }) {
   useEffect(() => {
     if (selectedLayout) {
       setGroupOffset({ x: 0, y: 0 })
+      setIndividualOffsets({})
     }
   }, [selectedLayout?.id])
+
+  // ===== INDIVIDUAL FRAME DRAG (unlocked mode) =====
+  const handleIndividualDragStart = useCallback((e, idx) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY
+    setActiveDragFrameIdx(idx)
+    setIndividualDragStart({ x: clientX, y: clientY })
+    setIndividualDragLive({ x: 0, y: 0 })
+    wasDraggingRef.current = false
+  }, [])
+
+  const handleIndividualDragMove = useCallback((e) => {
+    if (activeDragFrameIdx === null) return
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY
+    const deltaX = clientX - individualDragStart.x
+    const deltaY = clientY - individualDragStart.y
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) wasDraggingRef.current = true
+    setIndividualDragLive({ x: deltaX, y: deltaY })
+  }, [activeDragFrameIdx, individualDragStart])
+
+  const handleIndividualDragEnd = useCallback(() => {
+    if (activeDragFrameIdx === null) return
+    const prev = individualOffsets[activeDragFrameIdx] || { x: 0, y: 0 }
+    setIndividualOffsets(o => ({
+      ...o,
+      [activeDragFrameIdx]: { x: prev.x + individualDragLive.x, y: prev.y + individualDragLive.y }
+    }))
+    setActiveDragFrameIdx(null)
+    setIndividualDragLive({ x: 0, y: 0 })
+  }, [activeDragFrameIdx, individualOffsets, individualDragLive])
+
+  useEffect(() => {
+    if (activeDragFrameIdx !== null) {
+      window.addEventListener('mousemove', handleIndividualDragMove)
+      window.addEventListener('mouseup', handleIndividualDragEnd)
+      window.addEventListener('touchmove', handleIndividualDragMove, { passive: false })
+      window.addEventListener('touchend', handleIndividualDragEnd)
+      return () => {
+        window.removeEventListener('mousemove', handleIndividualDragMove)
+        window.removeEventListener('mouseup', handleIndividualDragEnd)
+        window.removeEventListener('touchmove', handleIndividualDragMove)
+        window.removeEventListener('touchend', handleIndividualDragEnd)
+      }
+    }
+  }, [activeDragFrameIdx, handleIndividualDragMove, handleIndividualDragEnd])
+
+  // Reset both group and individual positions to centre
+  const resetPositions = useCallback(() => {
+    setGroupOffset({ x: 0, y: 0 })
+    setIndividualOffsets({})
+  }, [])
 
   // Add global event listeners for drag
   useEffect(() => {
@@ -801,6 +863,11 @@ export function GalleryProvider({ children }) {
     isDragging, dragOffset,
     wasDraggingRef, canvasRef,
     handleDragStart,
+    // Lock / individual drag
+    isLocked, setIsLocked,
+    individualOffsets, activeDragFrameIdx, individualDragLive,
+    handleIndividualDragStart,
+    resetPositions,
     // Handlers
     handleQuantityChange,
     handleAddToCart,

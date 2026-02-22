@@ -179,7 +179,7 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   const CANVAS_AR = 1.6
 
   // Safe inset — frames must stay within this margin (%)
-  const MARGIN = 4
+  const MARGIN = 2
 
   // ---------- Pass 1: compute raw sizes & centres ----------
   const scaleFactor = (wallScale + 50) / 50
@@ -283,7 +283,6 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   }
 
   // ---------- Pass 2: compute bounding box & shrink factor ----------
-  // Bounding box in %-of-width (horizontal) and %-of-height (vertical)
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
   for (const r of raw) {
     const l = r.cx - r.wPct / 2
@@ -315,21 +314,66 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   const groupCX = (minX + maxX) / 2
   const groupCY = (minY + maxY) / 2
 
-  // ---------- Pass 2b: iterative frame separation ----------
-  // Since CSS renders frames with aspectRatio (height derived from width),
-  // frame height in pixels = wPct * canvasW / aspectRatio.
-  // Work entirely in "% of canvas width" space for both X and Y:
-  //   - X: already in width-%
-  //   - Y: convert from height-% to width-% by dividing by CANVAS_AR
-  // MIN_GAP_W = minimum clear gap between frame edges in width-% units
-  const MIN_GAP_W = 0  // overlap prevention only; spacing is fully controlled by Pass 1b
+  // ---------- Pass 2b: axis-aware ROW-GROUP separation ----------
+  // Axis is inferred from ORIGINAL layout centres so the visual pattern is preserved.
+  //   • Vertically dominant pair  (oDy_w ≥ AXIS_RATIO × oDx, or oDx ≈ 0)
+  //       → push the ENTIRE ROW GROUP of both frames vertically.
+  //         This keeps every frame in a row at the same height (prevents
+  //         "2 Over 3"-style stagger where middle frames get double-pushed).
+  //   • Horizontally dominant pair (oDx ≥ AXIS_RATIO × oDy_w, or oDy_w ≈ 0)
+  //       → push these two frames horizontally only.
+  //   • Diagonal pair (neither axis dominates)
+  //       → skip entirely (preserves step / triangle / pyramid layouts).
+  const LABEL_PAD  = 14.0  // vertical clearance in width-% (clears 18px+16px external label)
+  const HORIZ_GAP  = 1.5   // horizontal gap between side-by-side frames (width-%)
+  const AXIS_RATIO = 2.0   // dominance threshold: catches grid rows (≈2.5) but skips triangle apex (≈1.96)
 
-  // Build mutable position array, all in width-% space
+  // Pre-compute original centres for axis classification
+  const origCX = frames.map(frame => {
+    const w = parseFloat(frame.width)
+    const hasT = frame.transform?.includes('translateX(-50%)')
+    let left = frame.left
+      ? parseFloat(frame.left)
+      : frame.right
+        ? 100 - parseFloat(frame.right) - w
+        : 50
+    if (hasT) left -= w / 2
+    return left + w / 2
+  })
+  const origCY = frames.map(frame => {
+    const h = parseFloat(frame.height)
+    const top = frame.top
+      ? parseFloat(frame.top)
+      : frame.bottom
+        ? 100 - parseFloat(frame.bottom) - h
+        : 50
+    return top + h / 2
+  })
+
+  // Group frames that share the same original cy into row groups.
+  // Frames in the same group always move together vertically.
+  const ROW_TOL   = 2  // height-% — frames within this are the "same row"
+  const rowOf     = new Array(raw.length).fill(-1)
+  const rowGroups = []
+  for (let i = 0; i < raw.length; i++) {
+    if (rowOf[i] !== -1) continue
+    const group = [i]
+    for (let j = i + 1; j < raw.length; j++) {
+      if (rowOf[j] === -1 && Math.abs(origCY[j] - origCY[i]) < ROW_TOL) {
+        group.push(j)
+      }
+    }
+    const gid = rowGroups.length
+    rowGroups.push(group)
+    for (const idx of group) rowOf[idx] = gid
+  }
+
+  // Work in width-% space so horizontal and vertical distances are comparable
   const pos = raw.map(r => ({
-    cx: groupCX + (r.cx - groupCX) * shrink,                    // width-%
-    cy: (groupCY + (r.cy - groupCY) * shrink) / CANVAS_AR,      // convert to width-%
-    hw: (r.wPct * shrink) / 2,                                   // half-width in width-%
-    hh: (r.wPct * shrink) / 2 / (r.fwCm / r.fhCm),             // half-height in width-% (via aspectRatio)
+    cx: groupCX + (r.cx - groupCX) * shrink,
+    cy: (groupCY + (r.cy - groupCY) * shrink) / CANVAS_AR,  // height-% → width-%
+    hw: (r.wPct * shrink) / 2,
+    hh: (r.wPct * shrink) / 2 / (r.fwCm / r.fhCm),
   }))
 
   for (let iter = 0; iter < 60; iter++) {
@@ -337,37 +381,44 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
     for (let i = 0; i < pos.length; i++) {
       for (let j = i + 1; j < pos.length; j++) {
         const a = pos[i], b = pos[j]
-        const dx = Math.abs(b.cx - a.cx)
-        const dy = Math.abs(b.cy - a.cy)
-        const minSepX = a.hw + b.hw + MIN_GAP_W
-        const minSepY = a.hh + b.hh + MIN_GAP_W
-        const ovX = minSepX - dx
-        const ovY = minSepY - dy
-        if (ovX > 0 && ovY > 0) {
-          // Push apart on the axis requiring less movement
-          if (ovX <= ovY) {
-            const push = ovX / 2
+        const oDx   = Math.abs(origCX[j] - origCX[i])
+        const oDy_w = Math.abs(origCY[j] - origCY[i]) / CANVAS_AR
+
+        if (oDx < 0.5 || oDy_w >= AXIS_RATIO * oDx) {
+          // Vertically dominant — push entire row groups apart uniformly
+          const dy   = Math.abs(b.cy - a.cy)
+          const need = a.hh + b.hh + LABEL_PAD
+          const ov   = need - dy
+          if (ov > 0) {
+            const push  = ov / 2
+            const pushI = a.cy <= b.cy ? -push : push  // i goes up if it's above j
+            for (const idx of rowGroups[rowOf[i]]) pos[idx].cy += pushI
+            for (const idx of rowGroups[rowOf[j]]) pos[idx].cy -= pushI
+            moved = true
+          }
+        } else if (oDy_w < 0.5 || oDx >= AXIS_RATIO * oDy_w) {
+          // Horizontally dominant — push only these two frames apart horizontally
+          const dx   = Math.abs(b.cx - a.cx)
+          const need = a.hw + b.hw + HORIZ_GAP
+          const ov   = need - dx
+          if (ov > 0) {
+            const push = ov / 2
             if (a.cx <= b.cx) { a.cx -= push; b.cx += push }
             else               { a.cx += push; b.cx -= push }
-          } else {
-            const push = ovY / 2
-            if (a.cy <= b.cy) { a.cy -= push; b.cy += push }
-            else               { a.cy += push; b.cy -= push }
+            moved = true
           }
-          moved = true
         }
+        // else: diagonal pair — skip to preserve step/triangle/pyramid layouts
       }
     }
     if (!moved) break
   }
 
-  // Convert cy back to height-% and clamp within safe area
+  // Convert cy back to height-% — clamp horizontally only so frames
+  // can extend off-screen top/bottom to maintain label clearance
   for (const p of pos) {
-    p.cy = p.cy * CANVAS_AR // back to height-%
-    const finalW = p.hw * 2
-    const finalH = p.hh * 2 * CANVAS_AR // height in height-%
-    p.cx = Math.max(MARGIN + p.hw,          Math.min(100 - MARGIN - p.hw,          p.cx))
-    p.cy = Math.max(MARGIN + finalH / 2,    Math.min(100 - MARGIN - finalH / 2,    p.cy))
+    p.cy = p.cy * CANVAS_AR
+    p.cx = Math.max(MARGIN + p.hw, Math.min(100 - MARGIN - p.hw, p.cx))
   }
 
   // ---------- Pass 3: emit final frame objects using separated positions ----------

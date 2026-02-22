@@ -8,15 +8,23 @@ export function processMobileFrames(frames, scale = 0.6) {
   const processedFrames = frames.map((frame, idx) => {
     const width = parseFloat(frame.width)
     const height = parseFloat(frame.height)
-    const hasTranslateX = frame.transform && frame.transform.includes('translateX(-50%)')
-    
-    let leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
-    
-    if (hasTranslateX) {
-      leftPos = leftPos - width / 2
+
+    let leftPos, topPos
+
+    // getDynamicFrames outputs centerX / centerY and sets left/top to undefined,
+    // so prefer those when available.
+    if (frame.centerX != null && frame.centerY != null) {
+      leftPos = frame.centerX - width / 2
+      topPos  = frame.centerY - height / 2
+    } else {
+      const hasTranslateX = frame.transform && frame.transform.includes('translateX(-50%)')
+      leftPos = frame.left ? parseFloat(frame.left) : (frame.right ? 100 - parseFloat(frame.right) - width : 50 - width/2)
+      if (hasTranslateX) {
+        leftPos = leftPos - width / 2
+      }
+      topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
     }
-    
-    let topPos = frame.top ? parseFloat(frame.top) : (frame.bottom ? 100 - parseFloat(frame.bottom) - height : 50 - height/2)
+
     return { ...frame, calcLeft: leftPos, calcTop: topPos, width, height, idx }
   })
   

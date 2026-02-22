@@ -603,8 +603,8 @@ const PRINT_SIZES = {
                                   </svg>
                                 )}
                               </div>
-                              <div className="mt-0.5 text-center">
-                                <span className="bg-white/90 text-gray-600 text-[6px] font-bold tracking-wider px-1.5 py-0.5 rounded whitespace-nowrap uppercase">
+                              <div className="absolute bottom-[-14px] left-0 right-0 flex justify-center pointer-events-none">
+                                <span className="bg-white/90 text-gray-600 text-[5px] font-bold tracking-wider px-1 py-0.5 rounded whitespace-nowrap uppercase">
                                   {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
                                 </span>
                               </div>
@@ -627,6 +627,7 @@ const PRINT_SIZES = {
                                 width: frame.width,
                                 aspectRatio: frame.aspectRatio,
                                 transform: 'translate(-50%, -50%)',
+                                zIndex: activeFrameIndex === idx ? 200 : Math.round(100 - frame.centerY),
                               }}
                             >
                               <div
@@ -672,8 +673,8 @@ const PRINT_SIZES = {
                                   </svg>
                                 )}
                               </div>
-                              <div className="mt-1 flex justify-center">
-                                <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                              <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
+                                <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[7px] font-bold tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
                                   {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
                                 </span>
                               </div>
