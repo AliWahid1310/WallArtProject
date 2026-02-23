@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 import { useMobileDetection, useFullscreen } from '../hooks'
-import { portraitLayoutOptions } from '../data'
+import { portraitLayoutOptions, placeCategories, roomImages } from '../data'
 
 const DEFAULT_LAYOUT = portraitLayoutOptions[0] // Single Portrait
 
@@ -20,13 +20,19 @@ export function GalleryProvider({ children }) {
     if (savedStep === 'intro') return "step1"
     return savedStep || "step1"
   })
+  const _defaultPlace = placeCategories.find(p => p.id === 'living-room') || placeCategories[0]
+  const _defaultBgUrl  = (roomImages['living-room'] || [])[0] || null
+  const _defaultBg     = _defaultBgUrl
+    ? { id: 'living-room-local-0', image: _defaultBgUrl, name: 'Living Room 1' }
+    : null
+
   const [selectedPlace, setSelectedPlace] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedPlace')
-    return saved ? JSON.parse(saved) : null
+    return saved ? JSON.parse(saved) : _defaultPlace
   })
   const [selectedBackground, setSelectedBackground] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedBackground')
-    return saved ? JSON.parse(saved) : null
+    return saved ? JSON.parse(saved) : _defaultBg
   })
   const [selectedLayout, setSelectedLayout] = useState(() => {
     const saved = localStorage.getItem('gallerySelectedLayout')
@@ -75,6 +81,7 @@ export function GalleryProvider({ children }) {
   const [pendingLayout, setPendingLayout] = useState(null)
   const [showEmptyArtworkModal, setShowEmptyArtworkModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [showResetToast, setShowResetToast] = useState(false)
   const [savedGalleryWalls, setSavedGalleryWalls] = useState([])
   const [showCartDropdown, setShowCartDropdown] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
@@ -298,9 +305,18 @@ export function GalleryProvider({ children }) {
 
     // Apply color filters
     if (selectedColorFilters.length > 0) {
+      // Map 'neutral' to a family of neutral tones
+      const NEUTRAL_SYNONYMS = ['neutral', 'beige', 'grey', 'gray', 'brown', 'cream', 'tan', 'ivory', 'taupe', 'sand', 'khaki', 'earthy', 'natural', 'warm', 'muted', 'earth']
+
+      const expandedColorFilters = selectedColorFilters.flatMap(f => {
+        if (f.toLowerCase().trim() === 'neutral') return NEUTRAL_SYNONYMS
+        return [f]
+      })
+
       filtered = filtered.filter(artwork => {
-        return selectedColorFilters.some(colorFilter => {
+        return expandedColorFilters.some(colorFilter => {
           const normalizedFilter = colorFilter.toLowerCase().trim()
+          // Match against colors metafield
           if (artwork.colors && Array.isArray(artwork.colors) && artwork.colors.length > 0) {
             const matchesColor = artwork.colors.some(color => {
               const normalizedColor = color.toLowerCase().trim()
@@ -308,6 +324,7 @@ export function GalleryProvider({ children }) {
             })
             if (matchesColor) return true
           }
+          // Match against tags
           if (artwork.tags && Array.isArray(artwork.tags)) {
             const matchesTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
@@ -315,8 +332,10 @@ export function GalleryProvider({ children }) {
             })
             if (matchesTag) return true
           }
-          const searchText = `${artwork.category || ''} ${artwork.title || ''}`.toLowerCase()
-          return searchText.includes(normalizedFilter)
+          // Match against category and title
+          const searchText = `${artwork.category || ''} ${artwork.title || ''} ${artwork.productType || ''}`.toLowerCase()
+          if (searchText.includes(normalizedFilter)) return true
+          return false
         })
       })
     }
@@ -340,15 +359,9 @@ export function GalleryProvider({ children }) {
     // Apply style filters
     if (selectedStyleFilters.length > 0) {
       filtered = filtered.filter(artwork => {
-        const hasStyleData = artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0
-        const hasStyleTags = artwork.tags && Array.isArray(artwork.tags) && artwork.tags.some(tag =>
-          selectedStyleFilters.some(style => tag.toLowerCase().includes(style.toLowerCase()))
-        )
-        if (!hasStyleData && !hasStyleTags) {
-          return true
-        }
         return selectedStyleFilters.some(style => {
           const normalizedStyle = style.toLowerCase().trim()
+          // Match against styles metafield
           if (artwork.styles && Array.isArray(artwork.styles) && artwork.styles.length > 0) {
             const hasStyle = artwork.styles.some(artworkStyle => {
               const normalized = artworkStyle.toLowerCase().trim()
@@ -356,27 +369,68 @@ export function GalleryProvider({ children }) {
             })
             if (hasStyle) return true
           }
+          // Match against tags
           if (artwork.tags && Array.isArray(artwork.tags)) {
-            return artwork.tags.some(tag => {
+            const matchesTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
               return normalizedTag.includes(normalizedStyle) || normalizedStyle.includes(normalizedTag)
             })
+            if (matchesTag) return true
+          }
+          // Match against productType
+          if (artwork.productType) {
+            const pt = artwork.productType.toLowerCase().trim()
+            if (pt.includes(normalizedStyle) || normalizedStyle.includes(pt)) return true
+          }
+          // Match against category
+          if (artwork.category) {
+            const cat = artwork.category.toLowerCase().trim()
+            if (cat.includes(normalizedStyle) || normalizedStyle.includes(cat)) return true
+          }
+          // Match against title
+          if (artwork.title) {
+            const t = artwork.title.toLowerCase().trim()
+            if (t.includes(normalizedStyle)) return true
           }
           return false
         })
       })
     }
 
-    // Apply collection filters (matches against productType)
+    // Apply category filters (matches against category, productType, tags, and title)
     if (selectedCollectionFilters.length > 0) {
       filtered = filtered.filter(artwork => {
-        if (!artwork.productType || artwork.productType.trim() === '') {
-          return false // Products without a productType should NOT pass collection filter
-        }
-        return selectedCollectionFilters.some(collection => {
-          const normalizedCollection = collection.toLowerCase().trim()
-          const productType = artwork.productType.toLowerCase().trim()
-          return productType === normalizedCollection || productType.includes(normalizedCollection) || normalizedCollection.includes(productType)
+        return selectedCollectionFilters.some(cat => {
+          const normalizedCat = cat.toLowerCase().trim()
+
+          // Match against the category field
+          if (artwork.category) {
+            const normalizedCategory = artwork.category.toLowerCase().trim()
+            if (normalizedCategory === normalizedCat || normalizedCategory.includes(normalizedCat) || normalizedCat.includes(normalizedCategory)) return true
+          }
+
+          // Match against productType
+          if (artwork.productType) {
+            const productType = artwork.productType.toLowerCase().trim()
+            if (productType === normalizedCat || productType.includes(normalizedCat) || normalizedCat.includes(productType)) return true
+          }
+
+          // Match against tags
+          if (artwork.tags && Array.isArray(artwork.tags)) {
+            const matchesTag = artwork.tags.some(tag => {
+              const normalizedTag = tag.toLowerCase().trim()
+              return normalizedTag === normalizedCat || normalizedTag.includes(normalizedCat) || normalizedCat.includes(normalizedTag)
+            })
+            if (matchesTag) return true
+          }
+
+          // Match against title
+          if (artwork.title) {
+            const normalizedTitle = artwork.title.toLowerCase().trim()
+            if (normalizedTitle.includes(normalizedCat)) return true
+          }
+
+          return false
         })
       })
     }
@@ -384,27 +438,33 @@ export function GalleryProvider({ children }) {
     // Apply artist filters
     if (selectedArtistFilters.length > 0) {
       filtered = filtered.filter(artwork => {
-        const hasArtistData = artwork.artists && Array.isArray(artwork.artists) && artwork.artists.length > 0
-        if (!hasArtistData) {
-          return true
-        }
         return selectedArtistFilters.some(artist => {
           const normalizedArtist = artist.toLowerCase().trim()
-          const hasArtist = artwork.artists.some(artworkArtist => {
-            const normalized = artworkArtist.toLowerCase().trim()
-            return normalized.includes(normalizedArtist) || normalizedArtist.includes(normalized)
-          })
-          if (hasArtist) return true
+          // Match against artists metafield
+          if (artwork.artists && Array.isArray(artwork.artists) && artwork.artists.length > 0) {
+            const hasArtist = artwork.artists.some(artworkArtist => {
+              const normalized = artworkArtist.toLowerCase().trim()
+              return normalized.includes(normalizedArtist) || normalizedArtist.includes(normalized)
+            })
+            if (hasArtist) return true
+          }
+          // Match against vendor
           if (artwork.vendor) {
             const normalizedVendor = artwork.vendor.toLowerCase().trim()
             if (normalizedVendor.includes(normalizedArtist) || normalizedArtist.includes(normalizedVendor)) return true
           }
+          // Match against tags
           if (artwork.tags && Array.isArray(artwork.tags)) {
             const hasTag = artwork.tags.some(tag => {
               const normalizedTag = tag.toLowerCase().trim()
               return normalizedTag.includes(normalizedArtist) || normalizedArtist.includes(normalizedTag)
             })
             if (hasTag) return true
+          }
+          // Match against title
+          if (artwork.title) {
+            const t = artwork.title.toLowerCase().trim()
+            if (t.includes(normalizedArtist)) return true
           }
           return false
         })
@@ -447,8 +507,36 @@ export function GalleryProvider({ children }) {
     return filtered
   }, [artworkProducts, searchQuery, selectedSizeFilters, selectedColorFilters, selectedOrientationFilters, selectedStyleFilters, selectedCollectionFilters, selectedArtistFilters, selectedRoomFilters])
 
-  // Keep getArtworksForFrameSize as a simple wrapper for backward compat
-  const getArtworksForFrameSize = (frameSize) => filteredArtworks
+  // Filter artworks by the active frame's orientation so only matching
+  // products are shown (portrait frame → portrait products, etc.).
+  const getArtworksForFrameSize = (frameSize, frameOrientation) => {
+    if (!frameOrientation) return filteredArtworks
+
+    const orient = frameOrientation.toLowerCase() // "portrait" | "landscape" | "square"
+
+    // Build the set of orientation keywords that should match
+    const matchKeywords = orient === 'landscape'
+      ? ['landscape', 'horizontal']
+      : orient === 'portrait'
+        ? ['portrait', 'vertical']
+        : ['square']
+
+    return filteredArtworks.filter(artwork => {
+      const tags = artwork.tags
+      if (!tags || !Array.isArray(tags) || tags.length === 0) return true
+
+      // Check if the product has ANY orientation tag at all
+      const orientationTags = tags.filter(tag =>
+        ['portrait', 'landscape', 'square', 'horizontal', 'vertical'].includes(tag.toLowerCase())
+      )
+
+      // If the product has no orientation tags, show it in every orientation
+      if (orientationTags.length === 0) return true
+
+      // If it does have orientation tags, it must match the active frame's orientation
+      return orientationTags.some(tag => matchKeywords.includes(tag.toLowerCase()))
+    })
+  }
 
   // ===== INFINITE SCROLL =====
 
@@ -771,8 +859,8 @@ export function GalleryProvider({ children }) {
     localStorage.removeItem('galleryCart')
     localStorage.removeItem('galleryQuantities')
     setCurrentStep('step1')
-    setSelectedPlace(null)
-    setSelectedBackground(null)
+    setSelectedPlace(_defaultPlace)
+    setSelectedBackground(_defaultBg)
     setSelectedLayout(DEFAULT_LAYOUT)
     setActiveVariants({})
     setSelectedArtworks({})
@@ -787,6 +875,8 @@ export function GalleryProvider({ children }) {
     setSelectedColorFilters([])
     setShowCart(false)
     setShowResetModal(false)
+    setShowResetToast(true)
+    setTimeout(() => setShowResetToast(false), 4000)
     setPrintOrientation('Portrait')
     setPrintSize('13 × 18')
     setPrintStyle('Black')
@@ -840,6 +930,7 @@ export function GalleryProvider({ children }) {
     pendingLayout, setPendingLayout,
     showEmptyArtworkModal, setShowEmptyArtworkModal,
     showResetModal, setShowResetModal,
+    showResetToast, setShowResetToast,
     showMobileMenu, setShowMobileMenu,
     // Customize prints settings
     measurementUnit, setMeasurementUnit,

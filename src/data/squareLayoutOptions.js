@@ -19,7 +19,7 @@ export const squareLayoutOptions = [
   // ===== 2 PRINTS =====
   {
     id: "sq-2a",
-    name: "2 × 1",
+    name: "1 × 2",
     frameCount: 2,
     frames: [
       { width: "14%", height: "28%", size: S, top: "30%", left: "34%" },
@@ -28,7 +28,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-2b",
-    name: "1 × 2",
+    name: "2 × 1",
     frameCount: 2,
     frames: [
       { width: "14%", height: "28%", size: S, top: "14%", left: "43%" },
@@ -49,7 +49,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-3b",
-    name: "1 × 3 Vertical Stack",
+    name: "3 × 1 Vertical Stack",
     frameCount: 3,
     frames: [
       { width: "12%", height: "24%", size: S, top: "6%", left: "44%" },
@@ -138,7 +138,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6b",
-    name: "2 × 3 Grid",
+    name: "3 × 2 Grid",
     frameCount: 6,
     frames: [
       { width: "10%", height: "20%", size: S, top: "8%", left: "36%" },
@@ -151,7 +151,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6c",
-    name: "3 × 2 Grid",
+    name: "2 × 3 Grid",
     frameCount: 6,
     frames: [
       { width: "10%", height: "20%", size: S, top: "22%", left: "26%" },
@@ -219,7 +219,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6h",
-    name: "3 × 4 Grid",
+    name: "4 × 3 Grid",
     frameCount: 12,
     frames: (() => {
       const f = []
@@ -233,7 +233,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6i",
-    name: "4 × 3 Grid",
+    name: "3 × 4 Grid",
     frameCount: 12,
     frames: (() => {
       const f = []
@@ -247,7 +247,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6j",
-    name: "2 × 5 Grid",
+    name: "5 × 2 Grid",
     frameCount: 10,
     frames: (() => {
       const f = []
@@ -261,7 +261,7 @@ export const squareLayoutOptions = [
   },
   {
     id: "sq-6k",
-    name: "5 × 2 Grid",
+    name: "2 × 5 Grid",
     frameCount: 10,
     frames: (() => {
       const f = []

@@ -62,6 +62,8 @@ const PRINT_SIZES = {
     selectedPlace,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
+    perFrameSizes,
+    spacingValue,
     measurementUnit, setMeasurementUnit,
     printOrientation,
     innerShadow,
@@ -73,8 +75,8 @@ const PRINT_SIZES = {
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
-    getDynamicFrames(selectedLayout?.frames, printSize, measurementUnit, printOrientation, wallScale),
-    [selectedLayout, printSize, measurementUnit, printOrientation, wallScale]
+    getDynamicFrames(selectedLayout?.frames, perFrameSizes.length > 0 ? perFrameSizes : printSize, measurementUnit, printOrientation, wallScale, spacingValue),
+    [selectedLayout, perFrameSizes, printSize, measurementUnit, printOrientation, wallScale, spacingValue]
   )
 
   const totalPrice = calculateTotalPrice()

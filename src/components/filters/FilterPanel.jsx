@@ -3,7 +3,7 @@ import {
   colorOptions,
   orientationOptions,
   styleOptions,
-  collectionOptions,
+  categoryOptions,
   artistOptions,
   roomOptions
 } from '../../data'
@@ -145,11 +145,11 @@ export function DesktopFilterPanel() {
         </div>
       </FilterSection>
 
-      {/* Collection */}
-      {collectionOptions.length > 0 && (
-        <FilterSection title="Collection" sectionKey="collection">
+      {/* Category */}
+      {categoryOptions.length > 0 && (
+        <FilterSection title="Category" sectionKey="collection">
           <div className="space-y-2">
-            {collectionOptions.map((option) => (
+            {categoryOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => toggleFilter('collection', option.value)}
@@ -321,11 +321,11 @@ export function MobileFilterPanel() {
           </div>
         </FilterSection>
 
-        {/* Collection */}
-        {collectionOptions.length > 0 && (
-          <FilterSection title="Collection" sectionKey="collection" isMobile>
+        {/* Category */}
+        {categoryOptions.length > 0 && (
+          <FilterSection title="Category" sectionKey="collection" isMobile>
             <div className="space-y-1">
-              {collectionOptions.map((option) => (
+              {categoryOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => toggleFilter('collection', option.value)}

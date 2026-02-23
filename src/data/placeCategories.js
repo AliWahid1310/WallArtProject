@@ -35,5 +35,17 @@ export const placeCategories = [
     name: "Kids Room",
     image: "https://plus.unsplash.com/premium_photo-1684980181424-97bd193d2926?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8a2lkcyUyMHJvb218ZW58MHx8MHx8fDA%3D",
     description: "Fun and playful children's rooms"
+  },
+  {
+    id: "kitchen",
+    name: "Kitchen",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&auto=format&fit=crop&q=60",
+    description: "Stylish kitchen spaces"
+  },
+  {
+    id: "teen-bedroom",
+    name: "Teen Bedroom",
+    image: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=600&auto=format&fit=crop&q=60",
+    description: "Cool and modern teen bedrooms"
   }
 ]

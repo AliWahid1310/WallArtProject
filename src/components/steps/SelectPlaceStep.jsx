@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
-import { placeCategories, backgroundOptions } from '../../data'
+import { placeCategories, backgroundOptions, roomImages } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
 import { processMobileFrames } from '../canvas'
 import { getDynamicFrames } from '../../utils/helpers'
@@ -51,6 +51,8 @@ export default function SelectPlaceStep() {
     printOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
+    perFrameSizes,
+    spacingValue,
     innerShadow,
     wallScale, setWallScale,
     showGrid, setShowGrid,
@@ -60,8 +62,8 @@ export default function SelectPlaceStep() {
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
-    getDynamicFrames(selectedLayout?.frames, printSize, measurementUnit, printOrientation, wallScale),
-    [selectedLayout, printSize, measurementUnit, printOrientation, wallScale]
+    getDynamicFrames(selectedLayout?.frames, perFrameSizes.length > 0 ? perFrameSizes : printSize, measurementUnit, printOrientation, wallScale, spacingValue),
+    [selectedLayout, perFrameSizes, printSize, measurementUnit, printOrientation, wallScale, spacingValue]
   )
 
   const innerShadowCSS = `inset ${innerShadow.xOffset}px ${innerShadow.yOffset}px ${innerShadow.blur}px ${innerShadow.spread}px rgba(0,0,0,${(innerShadow.opacity / 100).toFixed(1)})`
@@ -75,21 +77,56 @@ export default function SelectPlaceStep() {
     if (sizes?.length) setPrintSize(sizes[0])
   }
 
-  // Build background grid items from sections
-  const backgroundItems = backgroundOptions.map((section, idx) => {
-    const activeVariant = activeVariants[idx] || section.variants[0]
-    return {
-      sectionIdx: idx,
-      label: section.label || section.section,
-      image: activeVariant.image,
-      variant: activeVariant,
-      isSelected: selectedBackground?.id === activeVariant.id
+  // Auto-select the first local image whenever the room changes and nothing is selected
+  useEffect(() => {
+    if (!selectedPlace) return
+    const imgs = roomImages[selectedPlace.id] || []
+    if (imgs.length === 0) return
+    const firstId = `${selectedPlace.id}-local-0`
+    if (!selectedBackground || !selectedBackground.id?.startsWith(selectedPlace.id)) {
+      setSelectedBackground({ id: firstId, image: imgs[0], name: `${selectedPlace.name} 1` })
     }
-  })
+  }, [selectedPlace])
+
+  // Build background grid items:
+  // - If a room is selected AND has local images → show those images
+  // - Otherwise fall back to the static backgroundOptions list
+  const backgroundItems = useMemo(() => {
+    if (selectedPlace) {
+      const imgs = roomImages[selectedPlace.id] || []
+      if (imgs.length > 0) {
+        return imgs.map((url, idx) => {
+          const id = `${selectedPlace.id}-local-${idx}`
+          return {
+            sectionIdx: idx,
+            label: `${selectedPlace.name} ${idx + 1}`,
+            image: url,
+            variant: { id, image: url, name: `${selectedPlace.name} ${idx + 1}` },
+            isSelected: selectedBackground?.id === id,
+          }
+        })
+      }
+    }
+    // Fallback: static backgroundOptions
+    return backgroundOptions.map((section, idx) => {
+      const activeVariant = activeVariants[idx] || section.variants[0]
+      return {
+        sectionIdx: idx,
+        label: section.label || section.section,
+        image: activeVariant.image,
+        variant: activeVariant,
+        isSelected: selectedBackground?.id === activeVariant.id,
+      }
+    })
+  }, [selectedPlace, selectedBackground, activeVariants])
 
   // Resolve the human-readable background label
   const getBackgroundLabel = () => {
     if (!selectedBackground) return ''
+    // Local room image: id is "{roomId}-local-{idx}"
+    if (selectedBackground.id?.includes('-local-')) {
+      return selectedBackground.name?.toUpperCase() || ''
+    }
     for (const section of backgroundOptions) {
       for (const v of section.variants) {
         if (v.id === selectedBackground.id) return (section.label || section.section).toUpperCase()
@@ -148,10 +185,10 @@ export default function SelectPlaceStep() {
                     onChange={(e) => {
                       const place = placeCategories.find(p => p.id === e.target.value)
                       setSelectedPlace(place || null)
+                      setSelectedBackground(null)  // clear old background when room changes
                     }}
                     className="w-full rounded-lg px-2 lg:px-3 py-1.5 lg:py-2.5 text-[9px] lg:text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer appearance-none pr-7 lg:pr-8"
                   >
-                    <option value="">Select a room...</option>
                     {placeCategories.map(place => (
                       <option key={place.id} value={place.id}>{place.name}</option>
                     ))}

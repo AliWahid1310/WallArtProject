@@ -46,16 +46,25 @@ export const mixLayoutOptions = [
   // =====================================================================
   {
     id: "mx-2a",
-    name: "Portrait Stack",
+    name: "Portrait Stack (Vertical)",
     frameCount: 2,
     frames: [
-      { width: "9%", height: "27%", size: M, top: "8%", left: "45.5%" },
-      { width: "9%", height: "27%", size: M, top: "42%", left: "45.5%" },
+      { width: "9%", height: "27%", size: M, top: "10%", left: "45.5%" },
+      { width: "9%", height: "27%", size: M, top: "44%", left: "45.5%" },
     ]
   },
   {
     id: "mx-2b",
-    name: "2 × 1",
+    name: "Staggered Pair (Offset / Step)",
+    frameCount: 2,
+    frames: [
+      { width: "9%", height: "27%", size: M, top: "10%", left: "34%" },
+      { width: "9%", height: "27%", size: M, top: "44%", left: "57%" },
+    ]
+  },
+  {
+    id: "mx-2c",
+    name: "1 × 2 (Pair)",
     frameCount: 2,
     frames: [
       { width: "9%", height: "27%", size: M, top: "30%", left: "36%" },
@@ -63,8 +72,8 @@ export const mixLayoutOptions = [
     ]
   },
   {
-    id: "mx-2c",
-    name: "1 × 2",
+    id: "mx-2d",
+    name: "2 × 1 (Vertical Pair)",
     frameCount: 2,
     frames: [
       { width: "14%", height: "18%", size: M, top: "16%", left: "43%" },
@@ -72,26 +81,26 @@ export const mixLayoutOptions = [
     ]
   },
   {
-    id: "mx-2d",
+    id: "mx-2e",
     name: "Symmetry Duo",
     frameCount: 2,
     frames: [
-      { width: "9%", height: "27%", size: M, top: "28%", left: "36%" },
-      { width: "9%", height: "27%", size: M, top: "28%", left: "55%" },
-    ]
-  },
-  {
-    id: "mx-2e",
-    name: "Staggered Duo",
-    frameCount: 2,
-    frames: [
-      { width: "9%", height: "27%", size: M, top: "14%", left: "36%" },
-      { width: "9%", height: "27%", size: M, top: "38%", left: "55%" },
+      { width: "10%", height: "30%", size: M, top: "24%", left: "34%" },
+      { width: "10%", height: "30%", size: M, top: "24%", left: "55%" },
     ]
   },
   {
     id: "mx-2f",
-    name: "2 × 1 Landscape Pair",
+    name: "Staggered Duo",
+    frameCount: 2,
+    frames: [
+      { width: "9%", height: "27%", size: M, top: "18%", left: "36%" },
+      { width: "9%", height: "27%", size: M, top: "38%", left: "55%" },
+    ]
+  },
+  {
+    id: "mx-2g",
+    name: "1 × 2 Landscape Pair",
     frameCount: 2,
     frames: [
       { width: "16%", height: "20%", size: M, top: "34%", left: "28%" },
@@ -99,8 +108,8 @@ export const mixLayoutOptions = [
     ]
   },
   {
-    id: "mx-2g",
-    name: "1 × 2 Landscape Stack",
+    id: "mx-2h",
+    name: "2 × 1 Landscape Stack",
     frameCount: 2,
     frames: [
       { width: "16%", height: "20%", size: M, top: "14%", left: "42%" },
@@ -108,7 +117,7 @@ export const mixLayoutOptions = [
     ]
   },
   {
-    id: "mx-2h",
+    id: "mx-2i",
     name: "Perfect Pair",
     frameCount: 2,
     frames: [
@@ -165,14 +174,14 @@ export const mixLayoutOptions = [
     name: "1 × 3 Horizontal Row",
     frameCount: 3,
     frames: [
-      { width: "14%", height: "18%", size: M, top: "34%", left: "20%" },
-      { width: "14%", height: "18%", size: M, top: "34%", left: "43%" },
-      { width: "14%", height: "18%", size: M, top: "34%", left: "66%" },
+      { width: "11%", height: "18%", size: M, top: "34%", left: "23%" },
+      { width: "11%", height: "18%", size: M, top: "34%", left: "44.5%" },
+      { width: "11%", height: "18%", size: M, top: "34%", left: "66%" },
     ]
   },
   {
     id: "mx-3f",
-    name: "1 × 3 Vertical Stack",
+    name: "3 × 1 Vertical Stack",
     frameCount: 3,
     frames: [
       { width: "9%", height: "24%", size: M, top: "4%", left: "45.5%" },
@@ -222,7 +231,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-3k",
-    name: "3 × 1 Landscape Row",
+    name: "1 × 3 Landscape Row",
     frameCount: 3,
     frames: [
       { width: "14%", height: "18%", size: M, top: "34%", left: "20%" },
@@ -232,7 +241,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-3l",
-    name: "1 × 3 Landscape Stack",
+    name: "3 × 1 Landscape Stack",
     frameCount: 3,
     frames: [
       { width: "16%", height: "18%", size: M, top: "8%", left: "42%" },
@@ -256,7 +265,7 @@ export const mixLayoutOptions = [
   // =====================================================================
   {
     id: "mx-4a",
-    name: "2×2 Grid",
+    name: "2×2 Grid (Square Block)",
     frameCount: 4,
     frames: [
       { width: "9%", height: "27%", size: M, top: "10%", left: "36%" },
@@ -270,15 +279,15 @@ export const mixLayoutOptions = [
     name: "1×4 Horizontal Row",
     frameCount: 4,
     frames: [
-      { width: "8%", height: "10%", size: M, top: "40%", left: "22%" },
-      { width: "8%", height: "10%", size: M, top: "40%", left: "37%" },
-      { width: "8%", height: "10%", size: M, top: "40%", left: "52%" },
-      { width: "8%", height: "10%", size: M, top: "40%", left: "67%" },
+      { width: "7%", height: "22%", size: M, top: "28%", left: "22%" },
+      { width: "7%", height: "22%", size: M, top: "28%", left: "37%" },
+      { width: "7%", height: "22%", size: M, top: "28%", left: "52%" },
+      { width: "7%", height: "22%", size: M, top: "28%", left: "67%" },
     ]
   },
   {
     id: "mx-4c",
-    name: "2×2 Grid",
+    name: "2×2 Grid (Wide Center Gap)",
     frameCount: 4,
     frames: [
       { width: "10%", height: "20%", size: M, top: "14%", left: "36%" },
@@ -289,7 +298,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-4d",
-    name: "Vertical Column",
+    name: "Vertical Column (4×1 Stack)",
     frameCount: 4,
     frames: [
       { width: "8%", height: "20%", size: M, top: "2%", left: "46%" },
@@ -311,7 +320,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-4f",
-    name: "Staggered / Step Layout",
+    name: "Staggered / Step Layout (4)",
     frameCount: 4,
     frames: [
       { width: "7%", height: "21%", size: M, top: "6%", left: "30%" },
@@ -322,13 +331,13 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-4g",
-    name: "2 × 2 Grid",
+    name: "2 × 2 Grid (Quad)",
     frameCount: 4,
     frames: [
-      { width: "10%", height: "28%", size: M, top: "10%", left: "34%" },
-      { width: "10%", height: "28%", size: M, top: "10%", left: "56%" },
-      { width: "10%", height: "28%", size: M, top: "46%", left: "34%" },
-      { width: "10%", height: "28%", size: M, top: "46%", left: "56%" },
+      { width: "12%", height: "20%", size: M, top: "10%", left: "31%", forceSquare: true },
+      { width: "12%", height: "20%", size: M, top: "10%", left: "55%", forceSquare: true },
+      { width: "12%", height: "20%", size: M, top: "52%", left: "31%", forceSquare: true },
+      { width: "12%", height: "20%", size: M, top: "52%", left: "55%", forceSquare: true },
     ]
   },
   {
@@ -336,21 +345,21 @@ export const mixLayoutOptions = [
     name: "1 × 4 Horizontal Row",
     frameCount: 4,
     frames: [
-      { width: "10%", height: "12%", size: M, top: "38%", left: "18%" },
-      { width: "10%", height: "12%", size: M, top: "38%", left: "34%" },
-      { width: "10%", height: "12%", size: M, top: "38%", left: "50%" },
-      { width: "10%", height: "12%", size: M, top: "38%", left: "66%" },
+      { width: "9%", height: "15%", size: M, top: "38%", left: "26%", forceSquare: true },
+      { width: "9%", height: "15%", size: M, top: "38%", left: "39%", forceSquare: true },
+      { width: "9%", height: "15%", size: M, top: "38%", left: "52%", forceSquare: true },
+      { width: "9%", height: "15%", size: M, top: "38%", left: "65%", forceSquare: true },
     ]
   },
   {
     id: "mx-4i",
-    name: "Stair Step",
+    name: "Stair Step (Diagonal 1-1-1-1)",
     frameCount: 4,
     frames: [
-      { width: "8%", height: "16%", size: M, top: "10%", left: "30%" },
-      { width: "8%", height: "16%", size: M, top: "28%", left: "42%" },
-      { width: "8%", height: "16%", size: M, top: "46%", left: "54%" },
-      { width: "8%", height: "16%", size: M, top: "64%", left: "66%" },
+      { width: "8%", height: "16%", size: M, top: "10%", left: "30%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "28%", left: "42%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "46%", left: "54%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "64%", left: "66%", forceSquare: true },
     ]
   },
   {
@@ -391,10 +400,10 @@ export const mixLayoutOptions = [
     name: "2 × 2 Landscape Grid",
     frameCount: 4,
     frames: [
-      { width: "14%", height: "18%", size: M, top: "14%", left: "30%" },
-      { width: "14%", height: "18%", size: M, top: "14%", left: "56%" },
-      { width: "14%", height: "18%", size: M, top: "42%", left: "30%" },
-      { width: "14%", height: "18%", size: M, top: "42%", left: "56%" },
+      { width: "16%", height: "10%", size: M, top: "20%", left: "28%" },
+      { width: "16%", height: "10%", size: M, top: "20%", left: "54%" },
+      { width: "16%", height: "10%", size: M, top: "52%", left: "28%" },
+      { width: "16%", height: "10%", size: M, top: "52%", left: "54%" },
     ]
   },
   {
@@ -437,7 +446,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5b",
-    name: "Vertical Column",
+    name: "Vertical Column (5×1 Stack)",
     frameCount: 5,
     frames: [
       { width: "7%", height: "16%", size: M, top: "2%", left: "46.5%" },
@@ -449,7 +458,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5c",
-    name: "3 Over 2",
+    name: "3 Over 2 (Stacked Rows)",
     frameCount: 5,
     frames: [
       { width: "8%", height: "24%", size: M, top: "8%", left: "30%" },
@@ -461,7 +470,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5d",
-    name: "2 Over 3",
+    name: "2 Over 3 (Inverse Stack)",
     frameCount: 5,
     frames: [
       { width: "8%", height: "24%", size: M, top: "8%", left: "38%" },
@@ -473,7 +482,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5e",
-    name: "Cross / Plus",
+    name: "Cross / Plus (Center Hero)",
     frameCount: 5,
     frames: [
       { width: "7%", height: "21%", size: M, top: "6%", left: "46.5%" },
@@ -485,7 +494,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5f",
-    name: "Diagonal / Step",
+    name: "Diagonal / Step (5)",
     frameCount: 5,
     frames: [
       { width: "6%", height: "18%", size: M, top: "4%", left: "28%" },
@@ -497,14 +506,14 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-5g",
-    name: "Centered Diamond",
+    name: "Centered Diamond (5)",
     frameCount: 5,
     frames: [
-      { width: "8%", height: "16%", size: M, top: "8%", left: "46%" },
-      { width: "8%", height: "16%", size: M, top: "30%", left: "33%" },
-      { width: "8%", height: "16%", size: M, top: "30%", left: "46%" },
-      { width: "8%", height: "16%", size: M, top: "30%", left: "59%" },
-      { width: "8%", height: "16%", size: M, top: "52%", left: "46%" },
+      { width: "8%", height: "16%", size: M, top: "8%", left: "46%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "30%", left: "33%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "30%", left: "46%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "30%", left: "59%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "52%", left: "46%", forceSquare: true },
     ]
   },
   {
@@ -512,11 +521,11 @@ export const mixLayoutOptions = [
     name: "Plus Grid (5)",
     frameCount: 5,
     frames: [
-      { width: "8%", height: "16%", size: M, top: "10%", left: "46%" },
-      { width: "8%", height: "16%", size: M, top: "32%", left: "33%" },
-      { width: "8%", height: "16%", size: M, top: "32%", left: "46%" },
-      { width: "8%", height: "16%", size: M, top: "32%", left: "59%" },
-      { width: "8%", height: "16%", size: M, top: "54%", left: "46%" },
+      { width: "8%", height: "16%", size: M, top: "10%", left: "46%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "32%", left: "33%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "32%", left: "46%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "32%", left: "59%", forceSquare: true },
+      { width: "8%", height: "16%", size: M, top: "54%", left: "46%", forceSquare: true },
     ]
   },
   {
@@ -524,11 +533,11 @@ export const mixLayoutOptions = [
     name: "Gallery Wall",
     frameCount: 5,
     frames: [
-      { width: "14%", height: "18%", size: M, top: "20%", left: "26%" },
-      { width: "14%", height: "34%", size: M, top: "12%", left: "44%" },
-      { width: "14%", height: "18%", size: M, top: "20%", left: "62%" },
-      { width: "10%", height: "14%", size: M, top: "50%", left: "30%" },
-      { width: "10%", height: "14%", size: M, top: "50%", left: "58%" },
+      { width: "9%", height: "26%", size: M, top: "18%", left: "26%" },
+      { width: "10%", height: "34%", size: M, top: "10%", left: "44%" },
+      { width: "9%", height: "26%", size: M, top: "18%", left: "62%" },
+      { width: "8%", height: "22%", size: M, top: "52%", left: "30%" },
+      { width: "8%", height: "22%", size: M, top: "52%", left: "60%" },
     ]
   },
   {
@@ -573,10 +582,10 @@ export const mixLayoutOptions = [
     frameCount: 5,
     frames: [
       { width: "8%", height: "24%", size: M, top: "8%", left: "30%" },
-      { width: "12%", height: "16%", size: M, top: "12%", left: "44%" },
+      { width: "8%", height: "22%", size: M, top: "10%", left: "46%" },
       { width: "8%", height: "24%", size: M, top: "8%", left: "62%" },
-      { width: "12%", height: "16%", size: M, top: "40%", left: "36%" },
-      { width: "12%", height: "16%", size: M, top: "40%", left: "54%" },
+      { width: "8%", height: "22%", size: M, top: "40%", left: "36%" },
+      { width: "8%", height: "22%", size: M, top: "40%", left: "54%" },
     ]
   },
   {
@@ -597,7 +606,7 @@ export const mixLayoutOptions = [
   // =====================================================================
   {
     id: "mx-6a",
-    name: "3×2 Grid",
+    name: "2×3 Grid (Symmetrical Block)",
     frameCount: 6,
     frames: [
       { width: "8%", height: "24%", size: M, top: "16%", left: "28%" },
@@ -610,7 +619,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6b",
-    name: "2×3 Grid",
+    name: "3×2 Grid (Vertical Grid)",
     frameCount: 6,
     frames: [
       { width: "9%", height: "22%", size: M, top: "4%", left: "38%" },
@@ -636,7 +645,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6d",
-    name: "Paired Triptychs",
+    name: "Paired Triptychs (Wide Gap)",
     frameCount: 6,
     frames: [
       { width: "8%", height: "16%", size: M, top: "12%", left: "28%" },
@@ -649,7 +658,7 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6e",
-    name: "Stair-Step Diagonal",
+    name: "Stair-Step Diagonal (6)",
     frameCount: 6,
     frames: [
       { width: "6%", height: "18%", size: M, top: "2%", left: "26%" },
@@ -678,41 +687,41 @@ export const mixLayoutOptions = [
     name: "3 × 3 Grid",
     frameCount: 9,
     frames: [
-      { width: "8%", height: "20%", size: M, top: "6%", left: "30%" },
-      { width: "8%", height: "20%", size: M, top: "6%", left: "46%" },
-      { width: "8%", height: "20%", size: M, top: "6%", left: "62%" },
-      { width: "8%", height: "20%", size: M, top: "30%", left: "30%" },
-      { width: "8%", height: "20%", size: M, top: "30%", left: "46%" },
-      { width: "8%", height: "20%", size: M, top: "30%", left: "62%" },
-      { width: "8%", height: "20%", size: M, top: "54%", left: "30%" },
-      { width: "8%", height: "20%", size: M, top: "54%", left: "46%" },
-      { width: "8%", height: "20%", size: M, top: "54%", left: "62%" },
+      { width: "8%", height: "20%", size: M, top: "6%", left: "30%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "6%", left: "46%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "6%", left: "62%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "30%", left: "30%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "30%", left: "46%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "30%", left: "62%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "54%", left: "30%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "54%", left: "46%", forceSquare: true },
+      { width: "8%", height: "20%", size: M, top: "54%", left: "62%", forceSquare: true },
     ]
   },
   {
     id: "mx-6h",
-    name: "2 × 3 Grid",
+    name: "3 × 2 Grid (Tall Six)",
     frameCount: 6,
     frames: [
-      { width: "9%", height: "22%", size: M, top: "6%", left: "36%" },
-      { width: "9%", height: "22%", size: M, top: "6%", left: "55%" },
-      { width: "9%", height: "22%", size: M, top: "32%", left: "36%" },
-      { width: "9%", height: "22%", size: M, top: "32%", left: "55%" },
-      { width: "9%", height: "22%", size: M, top: "58%", left: "36%" },
-      { width: "9%", height: "22%", size: M, top: "58%", left: "55%" },
+      { width: "9%", height: "22%", size: M, top: "6%", left: "36%", forceSquare: true },
+      { width: "9%", height: "22%", size: M, top: "6%", left: "55%", forceSquare: true },
+      { width: "9%", height: "22%", size: M, top: "32%", left: "36%", forceSquare: true },
+      { width: "9%", height: "22%", size: M, top: "32%", left: "55%", forceSquare: true },
+      { width: "9%", height: "22%", size: M, top: "58%", left: "36%", forceSquare: true },
+      { width: "9%", height: "22%", size: M, top: "58%", left: "55%", forceSquare: true },
     ]
   },
   {
     id: "mx-6i",
-    name: "3 × 2 Grid",
+    name: "2 × 3 Grid (Wide Six)",
     frameCount: 6,
     frames: [
-      { width: "8%", height: "24%", size: M, top: "18%", left: "26%" },
-      { width: "8%", height: "24%", size: M, top: "18%", left: "46%" },
-      { width: "8%", height: "24%", size: M, top: "18%", left: "66%" },
-      { width: "8%", height: "24%", size: M, top: "48%", left: "26%" },
-      { width: "8%", height: "24%", size: M, top: "48%", left: "46%" },
-      { width: "8%", height: "24%", size: M, top: "48%", left: "66%" },
+      { width: "8%", height: "24%", size: M, top: "18%", left: "26%", forceSquare: true },
+      { width: "8%", height: "24%", size: M, top: "18%", left: "46%", forceSquare: true },
+      { width: "8%", height: "24%", size: M, top: "18%", left: "66%", forceSquare: true },
+      { width: "8%", height: "24%", size: M, top: "48%", left: "26%", forceSquare: true },
+      { width: "8%", height: "24%", size: M, top: "48%", left: "46%", forceSquare: true },
+      { width: "8%", height: "24%", size: M, top: "48%", left: "66%", forceSquare: true },
     ]
   },
   {
@@ -723,7 +732,7 @@ export const mixLayoutOptions = [
       const f = []
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
-          f.push({ width: "6%", height: "14%", size: M, top: `${8 + r * 20}%`, left: `${28 + c * 12}%` })
+          f.push({ width: "6%", height: "14%", size: M, top: `${8 + r * 20}%`, left: `${28 + c * 12}%`, forceSquare: true })
         }
       }
       return f
@@ -731,15 +740,15 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6k",
-    name: "Offset Grid",
+    name: "Offset Grid (2-3-2)",
     frameCount: 6,
     frames: [
-      { width: "9%", height: "20%", size: M, top: "10%", left: "32%" },
-      { width: "9%", height: "20%", size: M, top: "10%", left: "52%" },
-      { width: "9%", height: "20%", size: M, top: "36%", left: "42%" },
-      { width: "9%", height: "20%", size: M, top: "36%", left: "62%" },
-      { width: "9%", height: "20%", size: M, top: "62%", left: "32%" },
-      { width: "9%", height: "20%", size: M, top: "62%", left: "52%" },
+      { width: "9%", height: "20%", size: M, top: "10%", left: "32%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "10%", left: "52%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "36%", left: "42%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "36%", left: "62%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "62%", left: "32%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "62%", left: "52%", forceSquare: true },
     ]
   },
   {
@@ -750,7 +759,7 @@ export const mixLayoutOptions = [
       const f = []
       for (let r = 0; r < 2; r++) {
         for (let c = 0; c < 4; c++) {
-          f.push({ width: "7%", height: "16%", size: M, top: `${24 + r * 22}%`, left: `${24 + c * 14}%` })
+          f.push({ width: "7%", height: "16%", size: M, top: `${24 + r * 22}%`, left: `${24 + c * 14}%`, forceSquare: true })
         }
       }
       return f
@@ -764,7 +773,7 @@ export const mixLayoutOptions = [
       const f = []
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 2; c++) {
-          f.push({ width: "9%", height: "18%", size: M, top: `${4 + r * 22}%`, left: `${38 + c * 16}%` })
+          f.push({ width: "9%", height: "18%", size: M, top: `${4 + r * 22}%`, left: `${38 + c * 16}%`, forceSquare: true })
         }
       }
       return f
@@ -772,13 +781,13 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6n",
-    name: "3 × 4 Grid",
+    name: "4 × 3 Grid",
     frameCount: 12,
     frames: (() => {
       const f = []
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 3; c++) {
-          f.push({ width: "7%", height: "16%", size: M, top: `${6 + r * 22}%`, left: `${33 + c * 14}%` })
+          f.push({ width: "7%", height: "16%", size: M, top: `${6 + r * 22}%`, left: `${33 + c * 14}%`, forceSquare: true })
         }
       }
       return f
@@ -786,13 +795,13 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6o",
-    name: "4 × 3 Grid",
+    name: "3 × 4 Grid",
     frameCount: 12,
     frames: (() => {
       const f = []
       for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 4; c++) {
-          f.push({ width: "7%", height: "16%", size: M, top: `${14 + r * 22}%`, left: `${24 + c * 14}%` })
+          f.push({ width: "7%", height: "16%", size: M, top: `${14 + r * 22}%`, left: `${24 + c * 14}%`, forceSquare: true })
         }
       }
       return f
@@ -800,13 +809,13 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6p",
-    name: "2 × 5 Grid",
+    name: "5 × 2 Grid",
     frameCount: 10,
     frames: (() => {
       const f = []
       for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 2; c++) {
-          f.push({ width: "8%", height: "14%", size: M, top: `${4 + r * 18}%`, left: `${38 + c * 16}%` })
+          f.push({ width: "8%", height: "14%", size: M, top: `${4 + r * 18}%`, left: `${38 + c * 16}%`, forceSquare: true })
         }
       }
       return f
@@ -814,13 +823,13 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6q",
-    name: "5 × 2 Grid",
+    name: "2 × 5 Grid",
     frameCount: 10,
     frames: (() => {
       const f = []
       for (let r = 0; r < 2; r++) {
         for (let c = 0; c < 5; c++) {
-          f.push({ width: "7%", height: "14%", size: M, top: `${26 + r * 20}%`, left: `${22 + c * 12}%` })
+          f.push({ width: "7%", height: "14%", size: M, top: `${26 + r * 20}%`, left: `${22 + c * 12}%`, forceSquare: true })
         }
       }
       return f
@@ -828,35 +837,35 @@ export const mixLayoutOptions = [
   },
   {
     id: "mx-6r",
-    name: "Staggered Brick",
+    name: "Staggered Brick (3-3-3)",
     frameCount: 7,
     frames: [
       // Row 1 - 3
-      { width: "8%", height: "18%", size: M, top: "8%", left: "30%" },
-      { width: "8%", height: "18%", size: M, top: "8%", left: "46%" },
-      { width: "8%", height: "18%", size: M, top: "8%", left: "62%" },
+      { width: "8%", height: "18%", size: M, top: "8%", left: "30%", forceSquare: true },
+      { width: "8%", height: "18%", size: M, top: "8%", left: "46%", forceSquare: true },
+      { width: "8%", height: "18%", size: M, top: "8%", left: "62%", forceSquare: true },
       // Row 2 - 2 offset
-      { width: "8%", height: "18%", size: M, top: "32%", left: "38%" },
-      { width: "8%", height: "18%", size: M, top: "32%", left: "54%" },
+      { width: "8%", height: "18%", size: M, top: "32%", left: "38%", forceSquare: true },
+      { width: "8%", height: "18%", size: M, top: "32%", left: "54%", forceSquare: true },
       // Row 3 - 2
-      { width: "8%", height: "18%", size: M, top: "56%", left: "30%" },
-      { width: "8%", height: "18%", size: M, top: "56%", left: "62%" },
+      { width: "8%", height: "18%", size: M, top: "56%", left: "30%", forceSquare: true },
+      { width: "8%", height: "18%", size: M, top: "56%", left: "62%", forceSquare: true },
     ]
   },
   {
     id: "mx-6s",
-    name: "Pyramid",
+    name: "Pyramid (1-2-3)",
     frameCount: 6,
     frames: [
       // Row 1 - 1
-      { width: "9%", height: "20%", size: M, top: "6%", left: "45.5%" },
+      { width: "9%", height: "20%", size: M, top: "6%", left: "45.5%", forceSquare: true },
       // Row 2 - 2
-      { width: "9%", height: "20%", size: M, top: "32%", left: "36%" },
-      { width: "9%", height: "20%", size: M, top: "32%", left: "54%" },
+      { width: "9%", height: "20%", size: M, top: "32%", left: "36%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "32%", left: "54%", forceSquare: true },
       // Row 3 - 3
-      { width: "9%", height: "20%", size: M, top: "58%", left: "27%" },
-      { width: "9%", height: "20%", size: M, top: "58%", left: "45.5%" },
-      { width: "9%", height: "20%", size: M, top: "58%", left: "63%" },
+      { width: "9%", height: "20%", size: M, top: "58%", left: "27%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "58%", left: "45.5%", forceSquare: true },
+      { width: "9%", height: "20%", size: M, top: "58%", left: "63%", forceSquare: true },
     ]
   },
   {
@@ -864,28 +873,25 @@ export const mixLayoutOptions = [
     name: "Eclectic Mix",
     frameCount: 6,
     frames: [
-      { width: "10%", height: "14%", size: M, top: "14%", left: "32%" },
-      { width: "8%", height: "24%", size: M, top: "10%", left: "50%" },
-      { width: "6%", height: "10%", size: M, top: "18%", left: "64%" },
-      { width: "12%", height: "16%", size: M, top: "44%", left: "28%" },
-      { width: "8%", height: "24%", size: M, top: "40%", left: "48%" },
-      { width: "10%", height: "14%", size: M, top: "48%", left: "62%" },
+      { width: "9%", height: "28%", size: M, top: "8%", left: "24%" },
+      { width: "7%", height: "22%", size: M, top: "14%", left: "42%" },
+      { width: "9%", height: "26%", size: M, top: "10%", left: "58%" },
+      { width: "8%", height: "24%", size: M, top: "50%", left: "28%" },
+      { width: "9%", height: "28%", size: M, top: "46%", left: "48%" },
+      { width: "7%", height: "22%", size: M, top: "52%", left: "64%" },
     ]
   },
   {
     id: "mx-6u",
     name: "Studio Grid",
-    frameCount: 8,
+    frameCount: 6,
     frames: [
-      // 4 rows × 2 cols
-      { width: "8%", height: "20%", size: M, top: "2%", left: "38%" },
-      { width: "8%", height: "20%", size: M, top: "2%", left: "54%" },
-      { width: "8%", height: "20%", size: M, top: "26%", left: "38%" },
-      { width: "8%", height: "20%", size: M, top: "26%", left: "54%" },
-      { width: "8%", height: "20%", size: M, top: "50%", left: "38%" },
-      { width: "8%", height: "20%", size: M, top: "50%", left: "54%" },
-      { width: "8%", height: "20%", size: M, top: "74%", left: "38%" },
-      { width: "8%", height: "20%", size: M, top: "74%", left: "54%" },
+      { width: "9%", height: "26%", size: M, top: "8%", left: "26%" },
+      { width: "9%", height: "26%", size: M, top: "8%", left: "45%" },
+      { width: "9%", height: "26%", size: M, top: "8%", left: "64%" },
+      { width: "9%", height: "26%", size: M, top: "52%", left: "26%" },
+      { width: "9%", height: "26%", size: M, top: "52%", left: "45%" },
+      { width: "9%", height: "26%", size: M, top: "52%", left: "64%" },
     ]
   },
   {
@@ -893,12 +899,12 @@ export const mixLayoutOptions = [
     name: "Internal Axis",
     frameCount: 6,
     frames: [
-      { width: "8%", height: "22%", size: M, top: "8%", left: "32%" },
-      { width: "10%", height: "14%", size: M, top: "12%", left: "48%" },
-      { width: "6%", height: "10%", size: M, top: "14%", left: "64%" },
-      { width: "10%", height: "14%", size: M, top: "38%", left: "30%" },
-      { width: "8%", height: "22%", size: M, top: "34%", left: "48%" },
-      { width: "6%", height: "18%", size: M, top: "36%", left: "64%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "8%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "22%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "36%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "50%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "64%" },
+      { width: "7%", height: "24%", size: M, top: "32%", left: "78%" },
     ]
   },
 ]

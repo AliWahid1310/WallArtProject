@@ -6,7 +6,7 @@ export default function TopNavBar() {
   const {
     cartItems, quantities, showCart, setShowCart,
     handleCheckout, calculateCartTotal, handleQuantityChange,
-    setShowResetModal, setCartItems, currentStep
+    setShowResetModal, setCartItems, currentStep, handleReset
   } = useGallery()
 
   const cartCount = Object.keys(cartItems.artworks).length + Object.keys(cartItems.frames).length
@@ -53,7 +53,7 @@ export default function TopNavBar() {
 
         {/* Reset App */}
         <button
-          onClick={() => setShowResetModal(true)}
+          onClick={handleReset}
           className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">

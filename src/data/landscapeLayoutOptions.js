@@ -18,7 +18,7 @@ export const landscapeLayoutOptions = [
   // ===== 2 PRINTS =====
   {
     id: "ls-2a",
-    name: "2 × 1 Landscape Pair",
+    name: "1 × 2 Landscape Pair",
     frameCount: 2,
     frames: [
       { width: "20%", height: "14%", size: L, top: "36%", left: "26%" },
@@ -27,7 +27,7 @@ export const landscapeLayoutOptions = [
   },
   {
     id: "ls-2b",
-    name: "1 × 2 Landscape Stack",
+    name: "2 × 1 Landscape Stack",
     frameCount: 2,
     frames: [
       { width: "22%", height: "14%", size: L, top: "18%", left: "39%" },
@@ -38,7 +38,7 @@ export const landscapeLayoutOptions = [
   // ===== 3 PRINTS =====
   {
     id: "ls-3a",
-    name: "3 × 1 Landscape Row",
+    name: "1 × 3 Landscape Row",
     frameCount: 3,
     frames: [
       { width: "16%", height: "11%", size: L, top: "38%", left: "18%" },
@@ -48,7 +48,7 @@ export const landscapeLayoutOptions = [
   },
   {
     id: "ls-3b",
-    name: "1 × 3 Landscape Stack",
+    name: "3 × 1 Landscape Stack",
     frameCount: 3,
     frames: [
       { width: "22%", height: "12%", size: L, top: "10%", left: "39%" },

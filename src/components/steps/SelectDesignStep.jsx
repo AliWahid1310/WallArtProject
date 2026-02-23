@@ -1,16 +1,16 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import {
   colorOptions,
   styleOptions,
-  collectionOptions,
+  categoryOptions,
   artistOptions,
   backgroundOptions,
 } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
 import { MobileFilterPanel } from '../filters'
 import { processMobileFrames } from '../canvas'
-import { getDynamicFrames } from '../../utils/helpers'
+import { getDynamicFrames, getFrameOrientation } from '../../utils/helpers'
 import Ruler from '../Ruler'
 
 export default function SelectDesignStep() {
@@ -80,6 +80,8 @@ const PRINT_SIZES = {
     printOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
+    perFrameSizes,
+    spacingValue,
     measurementUnit, setMeasurementUnit,
     innerShadow,
     wallScale, setWallScale,
@@ -91,13 +93,36 @@ const PRINT_SIZES = {
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
-    getDynamicFrames(selectedLayout?.frames, printSize, measurementUnit, printOrientation, wallScale),
-    [selectedLayout, printSize, measurementUnit, printOrientation, wallScale]
+    getDynamicFrames(selectedLayout?.frames, perFrameSizes.length > 0 ? perFrameSizes : printSize, measurementUnit, printOrientation, wallScale, spacingValue),
+    [selectedLayout, perFrameSizes, printSize, measurementUnit, printOrientation, wallScale, spacingValue]
   )
 
   // Get available artworks for the currently active frame
   const activeFrame = activeFrameIndex !== null && selectedLayout ? selectedLayout.frames[activeFrameIndex] : null
-  const availableArtworks = activeFrame ? getArtworksForFrameSize(activeFrame.size) : []
+  const activeFrameOrientation = activeFrame ? getFrameOrientation(activeFrame, printOrientation) : null
+  const availableArtworks = activeFrame ? getArtworksForFrameSize(activeFrame.size, activeFrameOrientation) : []
+
+  // Auto-select frame 0 when entering the step (if nothing already active)
+  useEffect(() => {
+    if (selectedLayout?.frames?.length > 0 && activeFrameIndex === null) {
+      setActiveFrameIndex(0)
+    }
+  }, [selectedLayout])
+
+  // Advance to next unassigned frame after an artwork is picked
+  const advanceToNextFrame = (newArtworks, currentIdx) => {
+    const total = selectedLayout?.frames?.length || 0
+    // Find the next frame without an assigned artwork, starting after current
+    for (let i = 1; i < total; i++) {
+      const next = (currentIdx + i) % total
+      if (!newArtworks[next]) {
+        setActiveFrameIndex(next)
+        return
+      }
+    }
+    // All frames assigned — keep current selected
+    setActiveFrameIndex(currentIdx)
+  }
 
   const innerShadowCSS = `inset ${innerShadow.xOffset}px ${innerShadow.yOffset}px ${innerShadow.blur}px ${innerShadow.spread}px rgba(0,0,0,${(innerShadow.opacity / 100).toFixed(1)})`
 
@@ -126,11 +151,8 @@ const PRINT_SIZES = {
 
   // Determine orientation label from active frame
   const getOrientationLabel = () => {
-    if (!activeFrame) return ''
-    const [w, h] = activeFrame.size.split(/x/i).map(Number)
-    if (w > h) return 'LANDSCAPE'
-    if (h > w) return 'PORTRAIT'
-    return 'SQUARE'
+    if (!activeFrameOrientation) return ''
+    return activeFrameOrientation.toUpperCase()
   }
 
   // Dropdown arrow style for selects
@@ -193,7 +215,7 @@ const PRINT_SIZES = {
         {/* Mobile/Desktop Layout Container */}
         <div className="flex flex-row flex-1 overflow-hidden pb-12 lg:pb-0">
           {/* Left Sidebar */}
-          <div className="flex w-28 lg:w-80 bg-white border-r border-gray-300 flex-col h-full">
+          <div className="flex w-28 lg:w-[35%] bg-white border-r border-gray-300 flex-col h-full">
 
             {/* Mobile: Header */}
             <div className="lg:hidden flex-shrink-0 mb-1 border-b border-gray-200 pb-1 pt-1 px-1">
@@ -254,7 +276,7 @@ const PRINT_SIZES = {
                     style={selectArrowStyle}
                   >
                     <option value="All">All</option>
-                    {collectionOptions.map(c => <option key={c.value} value={c.value}>{c.name}</option>)}
+                    {categoryOptions.map(c => <option key={c.value} value={c.value}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -318,7 +340,7 @@ const PRINT_SIZES = {
                     </div>
                   ) : (
                     <div>
-                      <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
+                      <div className="grid grid-cols-2 gap-1.5 lg:gap-2">
                         {/* ADD ART placeholder card - first item */}
                         <div
                           onClick={() => {
@@ -329,9 +351,9 @@ const PRINT_SIZES = {
                           }}
                           className="cursor-pointer group"
                         >
-                          <div className="aspect-square lg:aspect-[3/4] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-[#4a6741] hover:bg-gray-50 transition-all duration-200">
-                            <span className="text-xl lg:text-3xl text-gray-300 group-hover:text-[#4a6741] transition-colors mb-1">+</span>
-                            <span className="text-[7px] lg:text-xs font-semibold text-gray-400 group-hover:text-[#4a6741] tracking-wide transition-colors">ADD ART</span>
+                          <div className="aspect-square lg:aspect-[5/6] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-[#4a6741] hover:bg-gray-50 transition-all duration-200">
+                            <span className="text-xl lg:text-2xl text-gray-300 group-hover:text-[#4a6741] transition-colors mb-0.5">+</span>
+                            <span className="text-[7px] lg:text-[10px] font-semibold text-gray-400 group-hover:text-[#4a6741] tracking-wide transition-colors">ADD ART</span>
                           </div>
                         </div>
 
@@ -340,19 +362,21 @@ const PRINT_SIZES = {
                           <div
                             key={artwork.id}
                             onClick={() => {
-                              setSelectedArtworks({
+                              const newArtworks = {
                                 ...selectedArtworks,
                                 [activeFrameIndex]: artwork
-                              })
+                              }
+                              setSelectedArtworks(newArtworks)
+                              advanceToNextFrame(newArtworks, activeFrameIndex)
                             }}
-                            className={`relative cursor-pointer transition-all duration-200 group rounded-xl overflow-hidden ${
+                            className={`relative cursor-pointer transition-all duration-200 group rounded-lg overflow-hidden ${
                               selectedArtworks[activeFrameIndex]?.id === artwork.id
                                 ? 'ring-2 ring-[#4a6741] ring-offset-1'
                                 : 'hover:shadow-lg'
                             }`}
                           >
                             {/* Artwork Image */}
-                            <div className="relative aspect-square lg:aspect-[3/4] bg-gray-100 overflow-hidden rounded-t-xl">
+                            <div className="relative aspect-square lg:aspect-[5/6] bg-gray-100 overflow-hidden rounded-t-lg">
                               <img 
                                 src={artwork.image}
                                 alt={artwork.title}
@@ -360,8 +384,8 @@ const PRINT_SIZES = {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                               {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
-                                <div className="absolute top-1.5 right-1.5 lg:top-2 lg:right-2 bg-[#4a6741] text-white rounded-full w-4 h-4 lg:w-6 lg:h-6 flex items-center justify-center">
-                                  <svg className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                <div className="absolute top-1 right-1 lg:top-1.5 lg:right-1.5 bg-[#4a6741] text-white rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
+                                  <svg className="w-2.5 h-2.5 lg:w-3 lg:h-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                   </svg>
                                 </div>
@@ -369,13 +393,13 @@ const PRINT_SIZES = {
                             </div>
 
                             {/* Artwork Info - artist + title */}
-                            <div className="p-1 lg:p-2.5 bg-white">
+                            <div className="p-1 lg:p-1.5 bg-white">
                               {artwork.artists && artwork.artists.length > 0 && (
-                                <p className="text-[6px] lg:text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-0.5 truncate">
+                                <p className="text-[6px] lg:text-[9px] font-bold tracking-widest text-gray-400 uppercase mb-0.5 truncate">
                                   {artwork.artists[0]}
                                 </p>
                               )}
-                              <h3 className="text-[7px] lg:text-xs font-semibold text-gray-800 line-clamp-1">{artwork.title}</h3>
+                              <h3 className="text-[7px] lg:text-[10px] font-semibold text-gray-800 line-clamp-1">{artwork.title}</h3>
                             </div>
                           </div>
                         ))}
@@ -405,29 +429,45 @@ const PRINT_SIZES = {
             </div>
 
             {/* Bottom Navigation Buttons - pinned */}
-            <div className="hidden lg:block flex-shrink-0 px-5 py-3 border-t border-gray-200">
-              <button 
-                onClick={() => {
-                  const hasArtworks = Object.keys(selectedArtworks).length > 0
-                  if (!hasArtworks) {
-                    setShowEmptyArtworkModal(true)
-                  } else {
-                    setCurrentStep("checkout")
-                  }
-                }}
-                className="w-full bg-[#4a6741] text-white py-2.5 font-bold text-xs tracking-widest rounded-lg hover:bg-[#3d5636] transition-all duration-200 cursor-pointer"
-              >
-                CHECKOUT &gt;
-              </button>
+            <div className="hidden lg:flex flex-shrink-0 px-5 py-3 border-t border-gray-200 items-center justify-between gap-2">
+              {/* Previous Step */}
               <button
                 onClick={() => {
                   setActiveFrameIndex(null)
                   setCurrentStep("step2")
                 }}
-                className="w-full text-gray-400 py-1.5 font-medium text-xs hover:text-gray-600 transition-colors cursor-pointer flex items-center justify-center gap-1 mt-1"
+                className="flex items-center gap-1 text-gray-400 text-[10px] font-bold tracking-widest uppercase hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
               >
-                ← PREVIOUS STEP
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Previous Step
               </button>
+
+              {/* Checkout */}
+              {(() => {
+                const totalFrames = selectedLayout?.frames?.length || 0
+                const assignedCount = Object.keys(selectedArtworks).length
+                const allAssigned = totalFrames > 0 && assignedCount >= totalFrames
+                return (
+                  <button
+                    disabled={!allAssigned}
+                    onClick={() => {
+                      if (allAssigned) setCurrentStep("checkout")
+                    }}
+                    className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-5 py-1.5 lg:py-2.5 font-bold text-[7px] lg:text-[11px] tracking-widest uppercase rounded-md transition-all duration-200 ${
+                      allAssigned
+                        ? 'bg-[#4a6741] text-white hover:bg-[#3d5636] cursor-pointer'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    CHECKOUT
+                    <svg className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                  </button>
+                )
+              })()}
             </div>
 
             {/* Mobile: Bottom buttons */}
@@ -602,6 +642,14 @@ const PRINT_SIZES = {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                   </svg>
                                 )}
+                                {/* Active frame tick badge — inside top-right */}
+                                {activeFrameIndex === frame.idx && (
+                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#4a6741]/90 rounded-full flex items-center justify-center z-30 pointer-events-none">
+                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
                               </div>
                               <div className="absolute bottom-[-14px] left-0 right-0 flex justify-center pointer-events-none">
                                 <span className="bg-white/90 text-gray-600 text-[5px] font-bold tracking-wider px-1 py-0.5 rounded whitespace-nowrap uppercase">
@@ -644,6 +692,14 @@ const PRINT_SIZES = {
                                   boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
                                 }}
                               >
+                                {/* Active frame tick badge — inside top-right */}
+                                {activeFrameIndex === idx && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-[#4a6741]/90 rounded-full flex items-center justify-center z-30 pointer-events-none">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
                                 {artwork ? (
                                   <>
                                     <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />

@@ -242,7 +242,7 @@ export const portraitLayoutOptions = [
   // ===== 6+ PRINTS =====
   {
     id: "pt-6a",
-    name: "3×2 Grid",
+    name: "2×3 Grid",
     frameCount: 6,
     frames: [
       { width: "8%", height: "24%", size: P, top: "16%", left: "28%" },
@@ -255,7 +255,7 @@ export const portraitLayoutOptions = [
   },
   {
     id: "pt-6b",
-    name: "2×3 Grid",
+    name: "3×2 Grid",
     frameCount: 6,
     frames: [
       { width: "9%", height: "22%", size: P, top: "4%", left: "38%" },

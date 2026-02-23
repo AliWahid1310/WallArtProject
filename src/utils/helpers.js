@@ -138,6 +138,43 @@ export const parsePrintSize = (printSize) => {
 }
 
 /**
+ * Determine the visual orientation of a single frame within a layout.
+ *
+ * For non-Mix orientations (Portrait / Landscape / Square) the answer is
+ * simply the printOrientation itself.
+ *
+ * For Mix layouts each frame can have a different orientation which is
+ * derived from the CSS-percentage width / height and the canvas aspect ratio
+ * (≈ 1.6 : 1).  We compare the *pixel-proportional* width to height:
+ *   pixelW = parseFloat(frame.width) × CANVAS_AR
+ *   pixelH = parseFloat(frame.height)
+ *   → landscape / portrait / square
+ *
+ * @param {Object} frame            – a layout frame { width, height, … }
+ * @param {string} printOrientation  – "Portrait" | "Landscape" | "Square" | "Mix"
+ * @returns {string} "portrait" | "landscape" | "square"
+ */
+export const getFrameOrientation = (frame, printOrientation) => {
+  if (!frame) return 'portrait'
+
+  // Non-Mix: every frame shares the chosen orientation
+  if (printOrientation !== 'Mix') {
+    return printOrientation.toLowerCase()  // "portrait" | "landscape" | "square"
+  }
+
+  // Mix: derive from the frame's CSS dimensions
+  const CANVAS_AR = 1.6
+  const w = parseFloat(frame.width) * CANVAS_AR
+  const h = parseFloat(frame.height)
+  const ratio = w / h
+
+  // Allow a ±15 % tolerance around 1.0 to count as square
+  if (ratio >= 0.85 && ratio <= 1.15) return 'square'
+  if (w > h) return 'landscape'
+  return 'portrait'
+}
+
+/**
  * Compute dynamically sized frames based on the selected print size.
  *
  * Scale approach:
@@ -206,6 +243,13 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
         fwCm = heightCm
         fhCm = widthCm
       }
+    }
+
+    // Force square aspect ratio when the layout explicitly marks frames as square
+    if (frame.forceSquare) {
+      const sq = Math.min(fwCm, fhCm)
+      fwCm = sq
+      fhCm = sq
     }
 
     const wPct = fwCm * CM_SCALE * scaleFactor
@@ -324,7 +368,7 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   //       → push these two frames horizontally only.
   //   • Diagonal pair (neither axis dominates)
   //       → skip entirely (preserves step / triangle / pyramid layouts).
-  const LABEL_PAD  = 14.0  // vertical clearance in width-% (clears 18px+16px external label)
+  const LABEL_PAD  = 2.0   // vertical clearance in width-% (minimal — lets user spacing control work)
   const HORIZ_GAP  = 1.5   // horizontal gap between side-by-side frames (width-%)
   const AXIS_RATIO = 2.0   // dominance threshold: catches grid rows (≈2.5) but skips triangle apex (≈1.96)
 

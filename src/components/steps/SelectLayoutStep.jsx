@@ -79,7 +79,7 @@ export default function SelectLayoutStep() {
     undo, redo, canUndo, canRedo,
   } = useGallery()
 
-  const [printsFilter, setPrintsFilter] = useState('All')
+  const [printsFilter, setPrintsFilter] = useState('2')
   const [selectedFrameIdx, setSelectedFrameIdx] = useState(null)
 
   const filteredLayouts = useMemo(() => {
@@ -355,7 +355,7 @@ export default function SelectLayoutStep() {
                   <label className="text-[10px] font-bold tracking-widest text-gray-500 mb-1.5 block">NUMBER OF PRINTS</label>
                   <select
                     onChange={e => handlePrintsDropdownChange(e.target.value)}
-                    defaultValue="2 Prints"
+                    value={printsFilter === '6+' ? '6+ Prints' : `${printsFilter} Prints`}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none"
                     style={selectArrowStyle}
                   >
@@ -413,6 +413,7 @@ export default function SelectLayoutStep() {
                             {layout.frames.map((frame, idx) => {
                               const isSquareLayout = typeof layout.id === 'string' && layout.id.startsWith('sq-')
                               const isPortraitLayout = typeof layout.id === 'string' && layout.id.startsWith('pt-')
+                              const isSquareFrame = frame.forceSquare === true
                               const thumbHeight = isPortraitLayout ? `${parseFloat(frame.height) * 0.85}%` : frame.height
                               return (
                                 <div
@@ -422,7 +423,7 @@ export default function SelectLayoutStep() {
                                   }`}
                                   style={{
                                     width: frame.width,
-                                    ...(isSquareLayout ? { aspectRatio: '1' } : { height: thumbHeight }),
+                                    ...(isSquareLayout || isSquareFrame ? { aspectRatio: '1' } : { height: thumbHeight }),
                                     top: frame.top || undefined,
                                     bottom: frame.bottom || undefined,
                                     left: frame.left || undefined,

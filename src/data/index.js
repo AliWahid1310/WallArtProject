@@ -11,8 +11,9 @@ export {
   orientationOptions, 
   sizeOptions, 
   styleOptions, 
-  collectionOptions, 
+  categoryOptions, 
   artistOptions, 
   roomOptions 
 } from './filterOptions'
 export { frameStyles } from './frameStyles'
+export { roomImages } from './roomImages'
