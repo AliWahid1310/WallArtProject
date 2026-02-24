@@ -88,7 +88,7 @@ export default function Ruler({ onClose }) {
   const cursor      = isDragging ? grabCursor : moveCursor
 
   return (
-    <div className="absolute z-30 select-none" style={{ left: position.x, top: position.y }}>
+    <div className="absolute z-[500] select-none" style={{ left: position.x, top: position.y }}>
 
       {/* Badge row */}
       <div

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import { placeCategories, backgroundOptions, roomImages } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
@@ -40,6 +40,8 @@ export default function SelectPlaceStep() {
     selectedPlace, setSelectedPlace,
     selectedBackground, setSelectedBackground,
     selectedLayout,
+    selectedArtworks,
+    activeFrameIndex, setActiveFrameIndex,
     activeVariants, setActiveVariants,
     isMobile,
     isDragging,
@@ -51,7 +53,7 @@ export default function SelectPlaceStep() {
     printOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
-    perFrameSizes,
+    perFrameSizes, setPerFrameSizes,
     spacingValue,
     innerShadow,
     wallScale, setWallScale,
@@ -137,6 +139,9 @@ export default function SelectPlaceStep() {
 
   // Layout name for the subtitle
   const layoutLabel = selectedLayout?.name || selectedLayout?.label || 'Single Portrait'
+
+  const [showEnlarge, setShowEnlarge] = useState(false)
+  const [enlargeRuler, setEnlargeRuler] = useState(false)
 
   // Dropdown arrow style
   const selectArrowStyle = {
@@ -323,7 +328,10 @@ export default function SelectPlaceStep() {
                 <div className="w-px h-8 bg-gray-200 mx-1" />
 
                 {/* Enlarge */}
-                <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer">
+                <button
+                  onClick={() => setShowEnlarge(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                   </svg>
@@ -365,10 +373,8 @@ export default function SelectPlaceStep() {
                 {selectedLayout && dynamicFrames ? (
                   <div
                     className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
-                    onMouseDown={handleDragStart}
-                    onTouchStart={handleDragStart}
                     style={{
-                      cursor: isDragging ? 'grabbing' : 'default',
+                      cursor: 'default',
                       transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
                       transformOrigin: 'center center',
                       transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
@@ -380,7 +386,9 @@ export default function SelectPlaceStep() {
                           const { processedFrames, centerOffsetX, centerOffsetY, scale } = processMobileFrames(dynamicFrames)
                           const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
                           return processedFrames.map((frame, idx) => (
-                            <div key={idx} className="absolute select-none" style={{
+                            <div key={idx} className="absolute select-none"
+                              onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                              style={{
                               left: `${frame.calcLeft * scale + centerOffsetX}%`,
                               top: `${frame.calcTop * scale + centerOffsetY}%`,
                             }}>
@@ -394,9 +402,13 @@ export default function SelectPlaceStep() {
                                   boxShadow: `0 4px 16px ${frameColor.shadow}, inset 0 0 0 1px rgba(255,255,255,0.1)`,
                                 }}
                               >
-                                <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
+                                {selectedArtworks[idx] ? (
+                                  <img src={selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                ) : (
+                                  <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                  </svg>
+                                )}
                               </div>
                               <div className="absolute bottom-[-14px] left-0 right-0 flex justify-center pointer-events-none">
                                 <span className="bg-white/90 text-gray-600 text-[5px] font-bold tracking-wider px-1 py-0.5 rounded whitespace-nowrap uppercase">
@@ -410,10 +422,14 @@ export default function SelectPlaceStep() {
                     ) : (
                       (() => {
                         const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
-                        return dynamicFrames.map((frame, idx) => (
+                        return dynamicFrames.map((frame, idx) => {
+                          const artwork = selectedArtworks[idx]
+                          return (
                           <div
                             key={idx}
                             className="absolute select-none"
+                            onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                            onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
                             style={{
                               top: `${frame.centerY}%`,
                               left: `${frame.centerX}%`,
@@ -421,20 +437,36 @@ export default function SelectPlaceStep() {
                               aspectRatio: frame.aspectRatio,
                               transform: 'translate(-50%, -50%)',
                               zIndex: Math.round(100 - frame.centerY),
+                              cursor: isDragging ? 'grabbing' : 'grab',
                             }}
                           >
                             {/* Frame with colored border */}
                             <div
-                              className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                              onClick={() => {
+                                if (!wasDraggingRef.current) setActiveFrameIndex(idx)
+                                wasDraggingRef.current = false
+                              }}
+                              className="w-full h-full bg-white flex items-center justify-center overflow-hidden cursor-pointer group relative"
                               style={{
                                 border: `${frame.borderWidth}px solid ${frameColor.border}`,
                                 borderRadius: '2px',
                                 boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
                               }}
                             >
-                              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                              </svg>
+                              {artwork ? (
+                                <img src={artwork.image} alt={artwork.title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                              ) : (
+                                <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                              )}
+                              {activeFrameIndex === idx && (
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-[#4a6741] rounded-full flex items-center justify-center shadow-md z-10 pointer-events-none">
+                                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
                             </div>
                             {/* Size label inside frame at bottom */}
                             <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
@@ -443,7 +475,8 @@ export default function SelectPlaceStep() {
                               </span>
                             </div>
                           </div>
-                        ))
+                          )
+                        })
                       })()
                     )}
                   </div>
@@ -539,15 +572,28 @@ export default function SelectPlaceStep() {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-6 px-6 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
               {/* Print Size */}
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">PRINT SIZE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">{activeFrameIndex !== null ? `PRINT SIZE — FRAME ${activeFrameIndex + 1}` : 'PRINT SIZE'}</label>
                 <div className="relative">
                   <select
-                    value={printSize}
-                    onChange={(e) => setPrintSize(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[140px]"
+                    value={activeFrameIndex !== null ? (perFrameSizes[activeFrameIndex] ?? printSize) : printSize}
+                    onChange={(e) => {
+                      const newSize = e.target.value
+                      const frameCount = selectedLayout?.frames?.length || 0
+                      if (activeFrameIndex !== null && frameCount > 0) {
+                        setPerFrameSizes(prev => {
+                          const sizes = prev.length >= frameCount ? [...prev] : new Array(frameCount).fill(printSize)
+                          sizes[activeFrameIndex] = newSize
+                          return sizes
+                        })
+                      } else {
+                        setPrintSize(newSize)
+                        setPerFrameSizes(prev => prev.length > 0 ? prev.map(() => newSize) : prev)
+                      }
+                    }}
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[130px]"
                     style={selectArrowStyle}
                   >
                     <option value="">Select size...</option>
@@ -558,12 +604,12 @@ export default function SelectPlaceStep() {
 
               {/* Frame Style */}
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">YOUR FRAME STYLE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">YOUR FRAME STYLE</label>
                 <div className="relative">
                   <select
                     value={printStyle}
                     onChange={(e) => setPrintStyle(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[120px]"
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[110px]"
                     style={selectArrowStyle}
                   >
                     {PRINT_STYLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -587,6 +633,111 @@ export default function SelectPlaceStep() {
       </div>
 
       <MobileMenuModal />
+
+      {/* ===== FULLSCREEN ENLARGE MODAL ===== */}
+      {showEnlarge && (
+        <div className="fixed inset-0 z-[9999] bg-[#1a1e2e] flex flex-col items-center overflow-hidden">
+          {/* Close button */}
+          <button
+            onClick={() => { setShowEnlarge(false); setEnlargeRuler(false) }}
+            className="absolute top-5 right-5 z-10 w-10 h-10 rounded-full bg-gray-700/60 hover:bg-gray-600 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Header */}
+          <div className="flex flex-col items-center pt-6 pb-2 flex-shrink-0">
+            <h1 className="text-white text-2xl lg:text-3xl font-extrabold tracking-[0.25em] uppercase mb-2">
+              {layoutLabel}
+            </h1>
+            <div className="w-10 h-[2px] bg-[#6b8f71] mb-1.5" />
+            <p className="text-gray-400 text-[10px] font-bold tracking-[0.3em] uppercase">
+              Full Screen Immersive View
+            </p>
+          </div>
+
+          {/* Show Measurement Ruler button */}
+          <button
+            onClick={() => setEnlargeRuler(!enlargeRuler)}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase transition-colors cursor-pointer mb-4 flex-shrink-0 ${
+              enlargeRuler
+                ? 'bg-[#4a6741] text-white'
+                : 'bg-gray-700/60 text-white hover:bg-gray-600'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+            </svg>
+            {enlargeRuler ? 'HIDE MEASUREMENT RULER' : 'SHOW MEASUREMENT RULER'}
+          </button>
+
+          {/* Canvas Preview */}
+          <div className="flex-1 w-full max-w-5xl px-8 pb-6 min-h-0 flex items-center justify-center">
+            <div
+              className="relative w-full h-full max-h-full bg-cover bg-center rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                backgroundImage: selectedBackground
+                  ? `url(${selectedBackground.image})`
+                  : selectedPlace
+                    ? `url(${selectedPlace.image})`
+                    : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                aspectRatio: '16 / 10',
+                maxWidth: '100%',
+                objectFit: 'contain',
+              }}
+            >
+              {enlargeRuler && (
+                <Ruler onClose={() => setEnlargeRuler(false)} />
+              )}
+
+              {selectedLayout && dynamicFrames && (() => {
+                const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
+                return dynamicFrames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute select-none"
+                      style={{
+                        top: `${frame.centerY}%`,
+                        left: `${frame.centerX}%`,
+                        width: frame.width,
+                        aspectRatio: frame.aspectRatio,
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: Math.round(100 - frame.centerY),
+                      }}
+                    >
+                      <div
+                        className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                        style={{
+                          border: `${frame.borderWidth}px solid ${frameColor.border}`,
+                          borderRadius: '2px',
+                          boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                        }}
+                      >
+                        {artwork ? (
+                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                        ) : (
+                          <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
+                        <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[7px] font-bold tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                          {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

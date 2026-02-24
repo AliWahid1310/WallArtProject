@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import { backgroundOptions } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
 import { processMobileFrames } from '../canvas'
-import { getDynamicFrames } from '../../utils/helpers'
+import { getDynamicFrames, getVariantForSize, getVariantPrice } from '../../utils/helpers'
+import { createCheckout } from '../../utils/shopify'
 import Ruler from '../Ruler'
 
 export default function CheckoutStep() {
@@ -62,7 +63,7 @@ const PRINT_SIZES = {
     selectedPlace,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
-    perFrameSizes,
+    perFrameSizes, setPerFrameSizes,
     spacingValue,
     measurementUnit, setMeasurementUnit,
     printOrientation,
@@ -71,7 +72,103 @@ const PRINT_SIZES = {
     showGrid, setShowGrid,
     showRuler, setShowRuler,
     undo, redo, canUndo, canRedo,
+    setSelectedArtworks,
   } = useGallery()
+
+  // Local quantities state for the sidebar (independent of cart)
+  const [sidebarQuantities, setSidebarQuantities] = useState(() => {
+    const init = {}
+    Object.keys(selectedArtworks).forEach(k => { init[k] = 1 })
+    return init
+  })
+  const [showEnlarge, setShowEnlarge] = useState(false)
+  const [enlargeRuler, setEnlargeRuler] = useState(false)
+
+  // Keep sidebar quantities in sync when artworks change
+  useEffect(() => {
+    setSidebarQuantities(prev => {
+      const next = {}
+      Object.keys(selectedArtworks).forEach(k => {
+        next[k] = prev[k] || 1
+      })
+      return next
+    })
+  }, [selectedArtworks])
+
+  // Helper: get resolved price for a frame index
+  const getFramePrice = (frameIdx) => {
+    const artwork = selectedArtworks[frameIdx]
+    if (!artwork) return 0
+    const framePrintSize = perFrameSizes.length > 0
+      ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+      : printSize
+    return parseFloat(getVariantPrice(artwork, framePrintSize)) || 0
+  }
+
+  // Helper: get size label for a frame index
+  const getFrameSize = (frameIdx) => {
+    const framePrintSize = perFrameSizes.length > 0
+      ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+      : printSize
+    return framePrintSize || ''
+  }
+
+  // Calculate sidebar total
+  const sidebarTotal = Object.entries(selectedArtworks).reduce((sum, [idx]) => {
+    const qty = sidebarQuantities[idx] || 1
+    return sum + getFramePrice(idx) * qty
+  }, 0)
+
+  // Handle checkout from sidebar: resolve variants directly and redirect to Shopify checkout
+  const handleSidebarCheckout = async () => {
+    try {
+      const lineItems = []
+
+      Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
+        if (!artwork) return
+
+        // Resolve per-frame print size
+        const framePrintSize = perFrameSizes.length > 0
+          ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+          : printSize
+
+        // Resolve variant for this artwork + size
+        const variant = getVariantForSize(artwork, framePrintSize)
+        if (variant && variant.variantId) {
+          lineItems.push({
+            variantId: variant.variantId,
+            quantity: sidebarQuantities[frameIdx] || 1
+          })
+        } else {
+          console.warn(`No variant found for frame ${frameIdx}, artwork: ${artwork.title}, size: ${framePrintSize}`)
+        }
+      })
+
+      if (lineItems.length === 0) {
+        alert('No valid items to checkout. Please make sure artworks have valid sizes selected.')
+        return
+      }
+
+      console.log('Checkout line items:', lineItems)
+      const cart = await createCheckout(lineItems)
+
+      if (cart && cart.checkoutUrl) {
+        window.open(cart.checkoutUrl, '_blank')
+      } else {
+        alert('Failed to create checkout. Please try again.')
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('Something went wrong during checkout. Please try again.')
+    }
+  }
+
+  // Remove artwork from sidebar
+  const handleRemoveArtwork = (frameIdx) => {
+    const newArtworks = { ...selectedArtworks }
+    delete newArtworks[frameIdx]
+    setSelectedArtworks(newArtworks)
+  }
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
@@ -123,85 +220,134 @@ const PRINT_SIZES = {
         <TopNavBar />
         <Breadcrumb />
         <div className="flex flex-row flex-1 overflow-hidden">
-        {/* Left Sidebar - Summary */}
-        <div className="w-28 lg:w-80 border-r border-gray-200 flex flex-col h-full">
+        {/* Left Sidebar - Order Summary */}
+        <div className="w-28 lg:w-[35%] bg-white border-r border-gray-300 flex flex-col h-full">
 
-          {/* Completed Steps */}
-          <div className="flex-1 overflow-y-auto px-1 lg:px-6 py-2 lg:py-6">
-            <div className="space-y-2 lg:space-y-8">
-              {/* Step 1 - Choose Room */}
-              <button
-                onClick={() => setCurrentStep("step1")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
-              >
-                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
-                  ✓
-                </div>
-                <div className="flex justify-center mb-2 lg:mb-4">
-                  <img 
-                    src="https://cdn2.iconfinder.com/data/icons/travel-locations/24/house-512.png" 
-                    alt="Choose Room" 
-                    className="w-6 h-6 lg:w-8 lg:h-8 object-contain opacity-40 group-hover:opacity-100 transition-opacity"
-                  />
-                </div>
-                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">1</p>
-                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">CHOOSE ROOM</p>
-              </button>
+          {/* Header */}
+          <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-5 py-4 border-b border-gray-200">
+            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+            <h2 className="text-base font-bold text-gray-900">Checkout</h2>
+          </div>
 
-              {/* Step 2 - Customize Your Prints */}
-              <button
-                onClick={() => setCurrentStep("step2")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
-              >
-                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
-                  ✓
-                </div>
-                <div className="flex justify-center mb-2 lg:mb-4">
-                  <div className="flex gap-0.5 lg:gap-1 items-start">
-                    <div className="w-4 h-6 lg:w-5 lg:h-8 bg-gray-400 group-hover:bg-black transition-colors"></div>
-                    <div className="flex flex-col gap-0.5 lg:gap-1">
-                      <div className="w-1.5 h-2.5 lg:w-2 lg:h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
-                      <div className="w-1.5 h-2.5 lg:w-2 lg:h-3.5 bg-gray-400 group-hover:bg-black transition-colors"></div>
+          {/* Mobile Header */}
+          <div className="lg:hidden flex-shrink-0 mb-1 border-b border-gray-200 pb-1 pt-1 px-1">
+            <p className="text-[7px] font-bold tracking-wide text-gray-500">CHECKOUT</p>
+          </div>
+
+          {/* Artwork Items - Scrollable */}
+          <div className="flex-1 overflow-y-auto px-1 lg:px-5 py-1 lg:py-3">
+            <div className="space-y-2 lg:space-y-0">
+              {Object.entries(selectedArtworks).map(([frameIdx, artwork]) => {
+                const price = getFramePrice(frameIdx)
+                const size = getFrameSize(frameIdx)
+                const qty = sidebarQuantities[frameIdx] || 1
+                return (
+                  <div key={frameIdx} className="flex items-center gap-3 lg:gap-4 px-2 lg:px-4 py-3 lg:py-4 bg-[#f9faf9] lg:bg-white rounded-lg lg:rounded-none lg:border-b lg:border-gray-100">
+                    {/* Thumbnail */}
+                    <div className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center border border-gray-200">
+                      {artwork.image ? (
+                        <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" draggable={false} />
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                        </svg>
+                      )}
                     </div>
+                    {/* Title + Size */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-[11px] lg:text-sm text-gray-900 leading-tight truncate">{artwork.title}</h3>
+                      {size && (
+                        <p className="text-[9px] lg:text-xs text-gray-400 mt-0.5">{size} cm</p>
+                      )}
+                    </div>
+                    {/* Price */}
+                    <span className="text-[11px] lg:text-sm font-medium text-gray-700 flex-shrink-0">
+                      {currency}{(price * qty).toFixed(2)}
+                    </span>
                   </div>
-                </div>
-                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">2</p>
-                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">CUSTOMIZE YOUR PRINTS</p>
-              </button>
+                )
+              })}
 
-              {/* Step 3 - Select Art */}
-              <button
-                onClick={() => setCurrentStep("step3")}
-                className="w-full text-center cursor-pointer transition-all duration-200 py-2 lg:py-3 group relative"
-              >
-                <div className="absolute top-0 left-2 lg:left-12 text-gray-400 text-[10px] lg:text-sm">
-                  ✓
+              {/* Empty state */}
+              {Object.keys(selectedArtworks).length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400 px-4">
+                  <svg className="w-10 h-10 mb-3 opacity-30" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                  </svg>
+                  <p className="text-xs text-center">No artworks selected yet.<br/>Go back to select designs.</p>
                 </div>
-                <div className="flex justify-center mb-2 lg:mb-4">
-                  <div className="relative w-5 h-7 lg:w-6 lg:h-9 border lg:border-2 border-gray-400 group-hover:border-black flex items-center justify-center transition-colors">
-                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-400 group-hover:bg-black rounded-full transition-colors"></div>
-                  </div>
-                </div>
-                <p className="text-[10px] lg:text-sm font-semibold mb-0.5 lg:mb-1 text-gray-400 group-hover:text-black transition-colors">3</p>
-                <p className="text-[8px] lg:text-xs font-semibold tracking-wide text-gray-400 group-hover:text-black transition-colors">SELECT ART</p>
-              </button>
+              )}
             </div>
           </div>
 
-          {/* Price and Add to Cart - Desktop only */}
-          <div className="hidden lg:block px-6 py-6 border-t border-gray-200">
-            <div className="text-center mb-4">
-              <div className="text-3xl font-bold text-black">{currency} {totalPrice}</div>
+          {/* Total + Navigation - pinned to bottom */}
+          <div className="flex-shrink-0 border-t border-gray-200">
+            {/* Total Row */}
+            {Object.keys(selectedArtworks).length > 0 && (
+              <div className="hidden lg:flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <span className="text-sm font-bold text-gray-900 tracking-wide">TOTAL</span>
+                <span className="text-xl font-bold text-[#4a6741]">{currency}{sidebarTotal.toFixed(2)}</span>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="hidden lg:flex items-center justify-between px-5 py-3">
+              {/* Previous Step */}
+              <button
+                onClick={() => setCurrentStep("step3")}
+                className="flex items-center gap-1 text-gray-400 text-[10px] font-bold tracking-widest uppercase hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Previous Step
+              </button>
+
+              {/* Place Order */}
+              <button
+                onClick={handleSidebarCheckout}
+                disabled={Object.keys(selectedArtworks).length === 0}
+                className={`flex items-center gap-1.5 px-5 py-2.5 font-bold text-[11px] tracking-widest uppercase rounded-md transition-all duration-200 ${
+                  Object.keys(selectedArtworks).length > 0
+                    ? 'bg-[#4a6741] text-white hover:bg-[#3d5636] cursor-pointer'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                PLACE ORDER
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
             </div>
-            <button
-              onClick={handleAddToCart}
-              className="w-full bg-black text-white py-3 sm:py-4 font-bold text-xs sm:text-sm tracking-wider hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              ADD TO 
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </button>
+
+            {/* Mobile Navigation */}
+            <div className="lg:hidden flex items-center justify-between px-2 py-1.5">
+              <button
+                onClick={() => setCurrentStep("step3")}
+                className="flex items-center gap-0.5 text-gray-400 text-[7px] font-bold tracking-wide uppercase hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                PREVIOUS STEP
+              </button>
+              <button
+                onClick={handleSidebarCheckout}
+                disabled={Object.keys(selectedArtworks).length === 0}
+                className={`flex items-center gap-1 px-3 py-1.5 font-bold text-[7px] tracking-wide uppercase rounded-md transition-all duration-200 ${
+                  Object.keys(selectedArtworks).length > 0
+                    ? 'bg-[#4a6741] text-white hover:bg-[#3d5636] cursor-pointer'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                PLACE ORDER
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -250,7 +396,10 @@ const PRINT_SIZES = {
                   <span className="tracking-wide">RULER</span>
                 </button>
                 <div className="w-px h-8 bg-gray-200 mx-1" />
-                <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer">
+                <button
+                  onClick={() => setShowEnlarge(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                   </svg>
@@ -292,10 +441,8 @@ const PRINT_SIZES = {
                 {selectedLayout && dynamicFrames ? (
                   <div
                     className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
-                    onMouseDown={handleDragStart}
-                    onTouchStart={handleDragStart}
                     style={{
-                      cursor: isDragging ? 'grabbing' : 'default',
+                      cursor: 'default',
                       transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
                       transformOrigin: 'center center',
                       transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
@@ -309,7 +456,9 @@ const PRINT_SIZES = {
                           return processedFrames.map((frame, idx) => {
                             const artwork = selectedArtworks[frame.idx]
                             return (
-                              <div key={idx} className="absolute select-none" style={{
+                              <div key={idx} className="absolute select-none"
+                                onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                                style={{
                                 left: `${frame.calcLeft * scale + centerOffsetX}%`,
                                 top: `${frame.calcTop * scale + centerOffsetY}%`,
                               }}>
@@ -357,6 +506,8 @@ const PRINT_SIZES = {
                             <div
                               key={idx}
                               className="absolute select-none"
+                              onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                              onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
                               style={{
                                 top: `${frame.centerY}%`,
                                 left: `${frame.centerX}%`,
@@ -364,6 +515,7 @@ const PRINT_SIZES = {
                                 aspectRatio: frame.aspectRatio,
                                 transform: 'translate(-50%, -50%)',
                                 zIndex: Math.round(100 - frame.centerY),
+                                cursor: isDragging ? 'grabbing' : 'grab',
                               }}
                             >
                               <div
@@ -390,6 +542,13 @@ const PRINT_SIZES = {
                                   <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                   </svg>
+                                )}
+                                {activeFrameIndex === idx && (
+                                  <div className="absolute top-1 right-1 w-4 h-4 bg-[#4a6741] rounded-full flex items-center justify-center shadow-md z-10 pointer-events-none">
+                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
                                 )}
                               </div>
                               <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
@@ -486,14 +645,27 @@ const PRINT_SIZES = {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-6 px-6 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">PRINT SIZE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">{activeFrameIndex !== null ? `PRINT SIZE — FRAME ${activeFrameIndex + 1}` : 'PRINT SIZE'}</label>
                 <div className="relative">
                   <select
-                    value={printSize}
-                    onChange={(e) => setPrintSize(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[140px]"
+                    value={activeFrameIndex !== null ? (perFrameSizes[activeFrameIndex] ?? printSize) : printSize}
+                    onChange={(e) => {
+                      const newSize = e.target.value
+                      const frameCount = selectedLayout?.frames?.length || 0
+                      if (activeFrameIndex !== null && frameCount > 0) {
+                        setPerFrameSizes(prev => {
+                          const sizes = prev.length >= frameCount ? [...prev] : new Array(frameCount).fill(printSize)
+                          sizes[activeFrameIndex] = newSize
+                          return sizes
+                        })
+                      } else {
+                        setPrintSize(newSize)
+                        setPerFrameSizes(prev => prev.length > 0 ? prev.map(() => newSize) : prev)
+                      }
+                    }}
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[130px]"
                     style={selectArrowStyle}
                   >
                     <option value="">Select size...</option>
@@ -502,12 +674,12 @@ const PRINT_SIZES = {
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">YOUR FRAME STYLE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">YOUR FRAME STYLE</label>
                 <div className="relative">
                   <select
                     value={printStyle}
                     onChange={(e) => setPrintStyle(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[120px]"
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[110px]"
                     style={selectArrowStyle}
                   >
                     {PRINT_STYLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -601,7 +773,7 @@ const PRINT_SIZES = {
                         <h3 className="font-medium text-sm mb-2">{artwork.title}</h3>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-gray-400 line-through text-xs">{currency} {artwork.price}</span>
-                          <span className="text-red-600 font-bold text-sm">{currency} {artwork.price}</span>
+                          <span className="text-red-600 font-bold text-sm">{currency} {artwork.resolvedPrice || artwork.price}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <input 
@@ -727,6 +899,113 @@ const PRINT_SIZES = {
         </div>
       </div>
       </div>
+
+      {/* ===== FULLSCREEN ENLARGE MODAL ===== */}
+      {showEnlarge && (
+        <div className="fixed inset-0 z-[9999] bg-[#1a1e2e] flex flex-col items-center overflow-hidden">
+          {/* Close button */}
+          <button
+            onClick={() => { setShowEnlarge(false); setEnlargeRuler(false) }}
+            className="absolute top-5 right-5 z-10 w-10 h-10 rounded-full bg-gray-700/60 hover:bg-gray-600 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Header */}
+          <div className="flex flex-col items-center pt-6 pb-2 flex-shrink-0">
+            <h1 className="text-white text-2xl lg:text-3xl font-extrabold tracking-[0.25em] uppercase mb-2">
+              {layoutLabel}
+            </h1>
+            <div className="w-10 h-[2px] bg-[#6b8f71] mb-1.5" />
+            <p className="text-gray-400 text-[10px] font-bold tracking-[0.3em] uppercase">
+              Full Screen Immersive View
+            </p>
+          </div>
+
+          {/* Show Measurement Ruler button */}
+          <button
+            onClick={() => setEnlargeRuler(!enlargeRuler)}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase transition-colors cursor-pointer mb-4 flex-shrink-0 ${
+              enlargeRuler
+                ? 'bg-[#4a6741] text-white'
+                : 'bg-gray-700/60 text-white hover:bg-gray-600'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+            </svg>
+            {enlargeRuler ? 'HIDE MEASUREMENT RULER' : 'SHOW MEASUREMENT RULER'}
+          </button>
+
+          {/* Canvas Preview */}
+          <div className="flex-1 w-full max-w-5xl px-8 pb-6 min-h-0 flex items-center justify-center">
+            <div
+              className="relative w-full h-full max-h-full bg-cover bg-center rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                backgroundImage: selectedBackground
+                  ? `url(${selectedBackground.image})`
+                  : selectedPlace
+                    ? `url(${selectedPlace.image})`
+                    : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                aspectRatio: '16 / 10',
+                maxWidth: '100%',
+                objectFit: 'contain',
+              }}
+            >
+              {/* Ruler Overlay inside enlarged canvas */}
+              {enlargeRuler && (
+                <Ruler onClose={() => setEnlargeRuler(false)} />
+              )}
+
+              {/* Frames */}
+              {selectedLayout && dynamicFrames && (() => {
+                const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
+                return dynamicFrames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute select-none"
+                      style={{
+                        top: `${frame.centerY}%`,
+                        left: `${frame.centerX}%`,
+                        width: frame.width,
+                        aspectRatio: frame.aspectRatio,
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: Math.round(100 - frame.centerY),
+                      }}
+                    >
+                      <div
+                        className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                        style={{
+                          border: `${frame.borderWidth}px solid ${frameColor.border}`,
+                          borderRadius: '2px',
+                          boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                        }}
+                      >
+                        {artwork ? (
+                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                        ) : (
+                          <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
+                        <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[7px] font-bold tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                          {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

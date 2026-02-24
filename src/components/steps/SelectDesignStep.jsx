@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import {
   colorOptions,
@@ -10,7 +10,7 @@ import {
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
 import { MobileFilterPanel } from '../filters'
 import { processMobileFrames } from '../canvas'
-import { getDynamicFrames, getFrameOrientation } from '../../utils/helpers'
+import { getDynamicFrames, getFrameOrientation, getVariantPrice, getVariantForSize } from '../../utils/helpers'
 import Ruler from '../Ruler'
 
 export default function SelectDesignStep() {
@@ -80,7 +80,7 @@ const PRINT_SIZES = {
     printOrientation,
     printStyle, setPrintStyle,
     printSize, setPrintSize,
-    perFrameSizes,
+    perFrameSizes, setPerFrameSizes,
     spacingValue,
     measurementUnit, setMeasurementUnit,
     innerShadow,
@@ -90,6 +90,10 @@ const PRINT_SIZES = {
     undo, redo, canUndo, canRedo,
     selectedPlace,
   } = useGallery()
+
+  const [detailArtwork, setDetailArtwork] = useState(null)
+  const [showEnlarge, setShowEnlarge] = useState(false)
+  const [enlargeRuler, setEnlargeRuler] = useState(false)
 
   // Compute dynamically-sized frames when a print size is selected
   const dynamicFrames = useMemo(() =>
@@ -101,6 +105,11 @@ const PRINT_SIZES = {
   const activeFrame = activeFrameIndex !== null && selectedLayout ? selectedLayout.frames[activeFrameIndex] : null
   const activeFrameOrientation = activeFrame ? getFrameOrientation(activeFrame, printOrientation) : null
   const availableArtworks = activeFrame ? getArtworksForFrameSize(activeFrame.size, activeFrameOrientation) : []
+
+  // Resolve the print size for the currently active frame (used for variant price lookup)
+  const activeFramePrintSize = activeFrameIndex !== null
+    ? (perFrameSizes.length > 0 ? (perFrameSizes[activeFrameIndex] || printSize) : printSize)
+    : printSize
 
   // Auto-select frame 0 when entering the step (if nothing already active)
   useEffect(() => {
@@ -340,7 +349,7 @@ const PRINT_SIZES = {
                     </div>
                   ) : (
                     <div>
-                      <div className="grid grid-cols-2 gap-1.5 lg:gap-2">
+                      <div className="grid grid-cols-2 gap-x-1.5 gap-y-4 lg:gap-x-2 lg:gap-y-5">
                         {/* ADD ART placeholder card - first item */}
                         <div
                           onClick={() => {
@@ -383,13 +392,36 @@ const PRINT_SIZES = {
                                 loading="lazy"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
-                              {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
-                                <div className="absolute top-1 right-1 lg:top-1.5 lg:right-1.5 bg-[#4a6741] text-white rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
-                                  <svg className="w-2.5 h-2.5 lg:w-3 lg:h-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              {/* Enlarge + Cross buttons — top-right stack */}
+                              <div className="absolute top-1 right-1 lg:top-1.5 lg:right-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                {/* Enlarge button */}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDetailArtwork(artwork) }}
+                                  className="w-6 h-6 lg:w-7 lg:h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors cursor-pointer"
+                                  title="View details"
+                                >
+                                  <svg className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 14l0 6m0 0l6 0m-6 0l7-7m10-3V4m0 0h-6m6 0l-7 7" />
                                   </svg>
-                                </div>
-                              )}
+                                </button>
+                                {/* Cross / remove button */}
+                                {selectedArtworks[activeFrameIndex]?.id === artwork.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const newArtworks = { ...selectedArtworks }
+                                      delete newArtworks[activeFrameIndex]
+                                      setSelectedArtworks(newArtworks)
+                                    }}
+                                    className="w-6 h-6 lg:w-7 lg:h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                                    title="Remove from frame"
+                                  >
+                                    <svg className="w-3 h-3 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             {/* Artwork Info - artist + title */}
@@ -482,7 +514,17 @@ const PRINT_SIZES = {
                       const artworksWithSize = {}
                       Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
                         const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
-                        artworksWithSize[frameIdx] = { ...artwork, frameSize }
+                        const framePrintSize = perFrameSizes.length > 0
+                          ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+                          : printSize
+                        const resolved = getVariantForSize(artwork, framePrintSize)
+                        artworksWithSize[frameIdx] = {
+                          ...artwork,
+                          frameSize,
+                          resolvedVariantId: resolved?.variantId || artwork.variants?.[0]?.id || null,
+                          resolvedPrice: resolved?.variantPrice || artwork.price,
+                          resolvedVariantTitle: resolved?.variantTitle || '',
+                        }
                       })
                       setCartItems({ artworks: artworksWithSize, frames: { ...selectedFrames } })
                       const newQuantities = { ...quantities }
@@ -558,7 +600,10 @@ const PRINT_SIZES = {
                   <span className="tracking-wide">RULER</span>
                 </button>
                 <div className="w-px h-8 bg-gray-200 mx-1" />
-                <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer">
+                <button
+                  onClick={() => setShowEnlarge(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
                   </svg>
@@ -600,10 +645,8 @@ const PRINT_SIZES = {
                 {selectedLayout && dynamicFrames ? (
                   <div
                     className={`absolute inset-0 ${isMobile ? 'flex items-center justify-center' : ''}`}
-                    onMouseDown={handleDragStart}
-                    onTouchStart={handleDragStart}
                     style={{
-                      cursor: isDragging ? 'grabbing' : 'default',
+                      cursor: 'default',
                       transform: `translate(${groupOffset.x + dragOffset.x}px, ${groupOffset.y + dragOffset.y}px)`,
                       transformOrigin: 'center center',
                       transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 1.2)'
@@ -615,7 +658,9 @@ const PRINT_SIZES = {
                           const { processedFrames, centerOffsetX, centerOffsetY, scale } = processMobileFrames(dynamicFrames, 0.6)
                           const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
                           return processedFrames.map((frame, idx) => (
-                            <div key={idx} className="absolute select-none" style={{
+                            <div key={idx} className="absolute select-none"
+                              onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                              style={{
                               left: `${frame.calcLeft * scale + centerOffsetX}%`,
                               top: `${frame.calcTop * scale + centerOffsetY}%`,
                             }}>
@@ -624,9 +669,7 @@ const PRINT_SIZES = {
                                   if (!wasDraggingRef.current) setActiveFrameIndex(frame.idx)
                                   wasDraggingRef.current = false
                                 }}
-                                className={`bg-white flex items-center justify-center overflow-hidden cursor-pointer group ${
-                                  activeFrameIndex === frame.idx ? 'z-20' : 'z-10'
-                                }`}
+                                className="bg-white flex items-center justify-center overflow-hidden cursor-pointer group"
                                 style={{
                                   width: `${frame.width * scale}vw`,
                                   height: `${frame.height * scale}vw`,
@@ -641,14 +684,6 @@ const PRINT_SIZES = {
                                   <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                   </svg>
-                                )}
-                                {/* Active frame tick badge — inside top-right */}
-                                {activeFrameIndex === frame.idx && (
-                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#4a6741]/90 rounded-full flex items-center justify-center z-30 pointer-events-none">
-                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
                                 )}
                               </div>
                               <div className="absolute bottom-[-14px] left-0 right-0 flex justify-center pointer-events-none">
@@ -669,13 +704,16 @@ const PRINT_SIZES = {
                             <div
                               key={idx}
                               className="absolute select-none"
+                              onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                              onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
                               style={{
                                 top: `${frame.centerY}%`,
                                 left: `${frame.centerX}%`,
                                 width: frame.width,
                                 aspectRatio: frame.aspectRatio,
                                 transform: 'translate(-50%, -50%)',
-                                zIndex: activeFrameIndex === idx ? 200 : Math.round(100 - frame.centerY),
+                                zIndex: Math.round(100 - frame.centerY),
+                                cursor: isDragging ? 'grabbing' : 'grab',
                               }}
                             >
                               <div
@@ -683,50 +721,26 @@ const PRINT_SIZES = {
                                   if (!wasDraggingRef.current) setActiveFrameIndex(idx)
                                   wasDraggingRef.current = false
                                 }}
-                                className={`w-full h-full bg-white flex items-center justify-center overflow-hidden cursor-pointer group relative ${
-                                  activeFrameIndex === idx ? 'z-20' : 'z-10'
-                                }`}
+                                className="w-full h-full bg-white flex items-center justify-center overflow-hidden cursor-pointer group relative"
                                 style={{
                                   border: `${frame.borderWidth}px solid ${frameColor.border}`,
                                   borderRadius: '2px',
                                   boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
                                 }}
                               >
-                                {/* Active frame tick badge — inside top-right */}
-                                {activeFrameIndex === idx && (
-                                  <div className="absolute top-1 right-1 w-5 h-5 bg-[#4a6741]/90 rounded-full flex items-center justify-center z-30 pointer-events-none">
-                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                )}
                                 {artwork ? (
-                                  <>
-                                    <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
-                                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" />
-                                    <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                      CHANGE
-                                    </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        const newArtworks = { ...selectedArtworks }
-                                        delete newArtworks[idx]
-                                        setSelectedArtworks(newArtworks)
-                                      }}
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                      className="absolute top-2 left-2 bg-white text-black w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white shadow-lg cursor-pointer"
-                                      title="Remove design"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
-                                  </>
+                                  <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                                 ) : (
                                   <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                   </svg>
+                                )}
+                                {activeFrameIndex === idx && (
+                                  <div className="absolute top-1 right-1 w-4 h-4 bg-[#4a6741] rounded-full flex items-center justify-center shadow-md z-10 pointer-events-none">
+                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
                                 )}
                               </div>
                               <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
@@ -823,14 +837,27 @@ const PRINT_SIZES = {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-6 px-6 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">PRINT SIZE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">{activeFrameIndex !== null ? `PRINT SIZE — FRAME ${activeFrameIndex + 1}` : 'PRINT SIZE'}</label>
                 <div className="relative">
                   <select
-                    value={printSize}
-                    onChange={(e) => setPrintSize(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[140px]"
+                    value={activeFrameIndex !== null ? (perFrameSizes[activeFrameIndex] ?? printSize) : printSize}
+                    onChange={(e) => {
+                      const newSize = e.target.value
+                      const frameCount = selectedLayout?.frames?.length || 0
+                      if (activeFrameIndex !== null && frameCount > 0) {
+                        setPerFrameSizes(prev => {
+                          const sizes = prev.length >= frameCount ? [...prev] : new Array(frameCount).fill(printSize)
+                          sizes[activeFrameIndex] = newSize
+                          return sizes
+                        })
+                      } else {
+                        setPrintSize(newSize)
+                        setPerFrameSizes(prev => prev.length > 0 ? prev.map(() => newSize) : prev)
+                      }
+                    }}
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[130px]"
                     style={selectArrowStyle}
                   >
                     <option value="">Select size...</option>
@@ -839,12 +866,12 @@ const PRINT_SIZES = {
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-1">YOUR FRAME STYLE</label>
+                <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">YOUR FRAME STYLE</label>
                 <div className="relative">
                   <select
                     value={printStyle}
                     onChange={(e) => setPrintStyle(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-8 min-w-[120px]"
+                    className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#4a6741] cursor-pointer appearance-none pr-7 min-w-[110px]"
                     style={selectArrowStyle}
                   >
                     {PRINT_STYLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -933,6 +960,257 @@ const PRINT_SIZES = {
       </div>
 
       <MobileMenuModal />
+
+      {/* ---- Artwork Detail Modal ---- */}
+      {detailArtwork && (() => {
+        // Derive orientation from product tags
+        const orientationTag = detailArtwork.tags?.find(t =>
+          ['portrait', 'landscape', 'square', 'horizontal', 'vertical'].includes(t.toLowerCase())
+        )
+        const orientationLabelMap = { horizontal: 'Landscape', vertical: 'Portrait', portrait: 'Portrait', landscape: 'Landscape', square: 'Square' }
+        const orientationLabel = orientationTag
+          ? (orientationLabelMap[orientationTag.toLowerCase()] || 'Portrait')
+          : 'Portrait'
+
+        // Resolve style — metafield → productType → tags
+        const styleLabel = detailArtwork.styles?.[0]
+          || detailArtwork.productType
+          || detailArtwork.tags?.find(t => !['portrait','landscape','square','horizontal','vertical'].includes(t.toLowerCase()))
+          || 'Mixed'
+
+        // Resolve category — metafield → productType → fallback
+        const categoryLabel = (detailArtwork.category && detailArtwork.category !== 'Uncategorized')
+          ? detailArtwork.category
+          : detailArtwork.productType || 'Art Print'
+
+        // Resolve dominant color — metafield colors array → tags → fallback
+        const rawColor = detailArtwork.colors?.[0] || ''
+        // If the raw value is a hex color, convert to a name
+        const hexToName = {
+          '#ef4444': 'Red', '#3b82f6': 'Blue', '#22c55e': 'Green', '#f97316': 'Orange',
+          '#ec4899': 'Pink', '#a8a29e': 'Neutral', '#1a1a1a': 'Black', '#e5e5e5': 'White',
+          '#eab308': 'Yellow', '#a855f7': 'Purple', '#92400e': 'Brown', '#9ca3af': 'Grey',
+          '#ff0000': 'Red', '#0000ff': 'Blue', '#00ff00': 'Green', '#ffffff': 'White', '#000000': 'Black',
+        }
+        const dominantColor = rawColor.startsWith('#')
+          ? (hexToName[rawColor.toLowerCase()] || rawColor)
+          : (rawColor || 'Neutral')
+
+        const artistLabel = detailArtwork.artists?.[0] || detailArtwork.vendor || 'Unknown Artist'
+
+        // Color dot mapping
+        const colorDotMap = {
+          red: '#ef4444', blue: '#3b82f6', green: '#22c55e', orange: '#f97316',
+          pink: '#ec4899', neutral: '#a8a29e', black: '#1a1a1a', white: '#e5e5e5',
+          yellow: '#eab308', purple: '#a855f7', brown: '#92400e', grey: '#9ca3af', gray: '#9ca3af',
+          beige: '#d4b896', teal: '#14b8a6', navy: '#1e3a5f', gold: '#d4a017', cream: '#f5f0e1',
+        }
+        // If raw color is already a hex, use it directly for the dot; otherwise look up
+        const dotColor = rawColor.startsWith('#') ? rawColor : (colorDotMap[dominantColor.toLowerCase()] || '#9ca3af')
+
+        // Generated contextual description
+        const contextDescription = `"This piece from our ${styleLabel} collection perfectly complements the room's ${printStyle} frames. The ${orientationLabel} layout provides a focused visual anchor for your gallery wall."`
+
+        return (
+          <div className="fixed inset-0 z-[9999] bg-white flex flex-col lg:flex-row" style={{ fontFamily: "'Inter', sans-serif" }}>
+            {/* Close button */}
+            <button
+              onClick={() => setDetailArtwork(null)}
+              className="absolute top-4 right-4 lg:top-6 lg:right-6 z-10 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Left — Product Image */}
+            <div className="flex-1 bg-[#f5f5f3] flex items-center justify-center p-8 lg:p-16">
+              <div className="max-w-sm w-full flex items-center justify-center">
+                <img
+                  src={detailArtwork.image}
+                  alt={detailArtwork.title}
+                  className="max-w-full max-h-[65vh] object-contain"
+                  style={{
+                    border: `10px solid ${(FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black).border}`,
+                    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Right — Product Details */}
+            <div className="w-full lg:w-[440px] flex flex-col justify-center px-8 py-6 lg:px-12 lg:py-16 overflow-y-auto bg-white">
+              {/* Artist */}
+              <p className="text-[10px] lg:text-[11px] font-bold tracking-[0.2em] text-[#6b8f71] uppercase mb-2">
+                {artistLabel}
+              </p>
+              {/* Title */}
+              <h2 className="text-3xl lg:text-[36px] font-extrabold text-gray-900 mb-4 leading-[1.1]">
+                {detailArtwork.title}
+              </h2>
+              {/* Divider */}
+              <div className="w-8 h-[2px] bg-[#b0c4b8] mb-5" />
+
+              {/* Info grid */}
+              <div className="mb-5">
+                {/* Row 1: Style + Orientation */}
+                <div className="grid grid-cols-2 gap-x-10 pb-3.5 mb-3.5 border-b border-gray-100">
+                  <div>
+                    <p className="text-[9px] lg:text-[10px] font-bold tracking-[0.15em] text-[#6b8f71] uppercase mb-1.5">Style</p>
+                    <p className="text-sm lg:text-[15px] text-gray-900 font-semibold">{styleLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] lg:text-[10px] font-bold tracking-[0.15em] text-[#6b8f71] uppercase mb-1.5">Orientation</p>
+                    <p className="text-sm lg:text-[15px] text-gray-900 font-semibold">{orientationLabel}</p>
+                  </div>
+                </div>
+                {/* Row 2: Category + Dominant Color */}
+                <div className="grid grid-cols-2 gap-x-10">
+                  <div>
+                    <p className="text-[9px] lg:text-[10px] font-bold tracking-[0.15em] text-[#6b8f71] uppercase mb-1.5">Category</p>
+                    <p className="text-sm lg:text-[15px] text-gray-900 font-semibold">{categoryLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] lg:text-[10px] font-bold tracking-[0.15em] text-[#6b8f71] uppercase mb-1.5">Dominant Color</p>
+                    <p className="text-sm lg:text-[15px] text-gray-900 font-semibold flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
+                      {dominantColor}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description card with SELECT button inside */}
+              <div className="bg-[#f8faf8] rounded-2xl p-5 shadow-sm border border-gray-100">
+                <p className="text-[13px] text-gray-400 italic leading-relaxed mb-4">
+                  {contextDescription}
+                </p>
+                <button
+                  onClick={() => {
+                    const newArtworks = {
+                      ...selectedArtworks,
+                      [activeFrameIndex]: detailArtwork
+                    }
+                    setSelectedArtworks(newArtworks)
+                    advanceToNextFrame(newArtworks, activeFrameIndex)
+                    setDetailArtwork(null)
+                  }}
+                  className="w-full py-3.5 bg-[#6b8f71] hover:bg-[#5a7a60] text-white text-[13px] font-bold tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                >
+                  SELECT THIS ART
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ===== FULLSCREEN ENLARGE MODAL ===== */}
+      {showEnlarge && (
+        <div className="fixed inset-0 z-[9999] bg-[#1a1e2e] flex flex-col items-center overflow-hidden">
+          {/* Close button */}
+          <button
+            onClick={() => { setShowEnlarge(false); setEnlargeRuler(false) }}
+            className="absolute top-5 right-5 z-10 w-10 h-10 rounded-full bg-gray-700/60 hover:bg-gray-600 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Header */}
+          <div className="flex flex-col items-center pt-6 pb-2 flex-shrink-0">
+            <h1 className="text-white text-2xl lg:text-3xl font-extrabold tracking-[0.25em] uppercase mb-2">
+              {layoutLabel}
+            </h1>
+            <div className="w-10 h-[2px] bg-[#6b8f71] mb-1.5" />
+            <p className="text-gray-400 text-[10px] font-bold tracking-[0.3em] uppercase">
+              Full Screen Immersive View
+            </p>
+          </div>
+
+          {/* Show Measurement Ruler button */}
+          <button
+            onClick={() => setEnlargeRuler(!enlargeRuler)}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase transition-colors cursor-pointer mb-4 flex-shrink-0 ${
+              enlargeRuler
+                ? 'bg-[#4a6741] text-white'
+                : 'bg-gray-700/60 text-white hover:bg-gray-600'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+            </svg>
+            {enlargeRuler ? 'HIDE MEASUREMENT RULER' : 'SHOW MEASUREMENT RULER'}
+          </button>
+
+          {/* Canvas Preview */}
+          <div className="flex-1 w-full max-w-5xl px-8 pb-6 min-h-0 flex items-center justify-center">
+            <div
+              className="relative w-full h-full max-h-full bg-cover bg-center rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                backgroundImage: selectedBackground
+                  ? `url(${selectedBackground.image})`
+                  : selectedPlace
+                    ? `url(${selectedPlace.image})`
+                    : "url(https://res.cloudinary.com/desenio/image/upload/w_1400/backgrounds/welcome-bg.jpg?v=1)",
+                aspectRatio: '16 / 10',
+                maxWidth: '100%',
+                objectFit: 'contain',
+              }}
+            >
+              {/* Ruler Overlay inside enlarged canvas */}
+              {enlargeRuler && (
+                <Ruler onClose={() => setEnlargeRuler(false)} />
+              )}
+
+              {/* Frames */}
+              {selectedLayout && dynamicFrames && (() => {
+                const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
+                return dynamicFrames.map((frame, idx) => {
+                  const artwork = selectedArtworks[idx]
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute select-none"
+                      style={{
+                        top: `${frame.centerY}%`,
+                        left: `${frame.centerX}%`,
+                        width: frame.width,
+                        aspectRatio: frame.aspectRatio,
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: Math.round(100 - frame.centerY),
+                      }}
+                    >
+                      <div
+                        className="w-full h-full bg-white flex items-center justify-center overflow-hidden"
+                        style={{
+                          border: `${frame.borderWidth}px solid ${frameColor.border}`,
+                          borderRadius: '2px',
+                          boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                        }}
+                      >
+                        {artwork ? (
+                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                        ) : (
+                          <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-18px' }}>
+                        <span className="bg-white/90 backdrop-blur-sm text-gray-600 text-[7px] font-bold tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase">
+                          {frame.size}{/^A\d$/i.test(frame.size) ? '' : ` ${measurementUnit.toUpperCase()}`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

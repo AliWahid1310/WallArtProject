@@ -92,6 +92,30 @@ export async function fetchArtworkProducts() {
                     ... on GenericFile {
                       url
                     }
+                    ... on Metaobject {
+                      id
+                      type
+                      handle
+                      fields {
+                        key
+                        value
+                      }
+                    }
+                  }
+                  references(first: 20) {
+                    edges {
+                      node {
+                        ... on Metaobject {
+                          id
+                          type
+                          handle
+                          fields {
+                            key
+                            value
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -161,7 +185,18 @@ export async function fetchArtworkProducts() {
     ).length
     console.log(`🖼️ Products with frameless artwork_file: ${artworkFileCount}/${allProducts.length}`)
     
-    const transformedProducts = transformShopifyProducts(allProducts)
+    // Batch-resolve artist metaobject GIDs to display names
+    const artistGidMap = await resolveArtistMetaobjects(allProducts)
+    console.log('🎨 Artist GID map:', artistGidMap)
+    
+    const transformedProducts = transformShopifyProducts(allProducts, artistGidMap)
+    
+    // Debug: log all unique artist names found across products
+    const allArtistNames = new Set()
+    transformedProducts.forEach(p => {
+      p.artists?.forEach(a => allArtistNames.add(a))
+    })
+    console.log('🎨 All unique artist names found:', Array.from(allArtistNames))
     console.log('Transformed products:', transformedProducts)
     
     return transformedProducts
@@ -172,11 +207,160 @@ export async function fetchArtworkProducts() {
 }
 
 /**
+ * Batch-resolve ALL metaobject GIDs to their display names.
+ * Collects unique GIDs from all metafields across all products,
+ * then queries Shopify's `nodes` endpoint to get the actual metaobject fields.
+ *
+ * @param {Array} allProducts - Raw Shopify product edges
+ * @returns {Promise<Object>} Map of GID string → display name
+ */
+async function resolveArtistMetaobjects(allProducts) {
+  const gidMap = {}
+  const allGids = new Set()
+
+  // Metafield keys that may contain metaobject GID references
+  const metaKeysToResolve = ['filter_artists', 'filter_home_style', 'category', 'color', 'filter_rooms']
+
+  // Collect all unique GIDs from product metafields
+  for (const { node } of allProducts) {
+    for (const metaKey of metaKeysToResolve) {
+      const meta = node.metafields.find(m => m && m.key === metaKey)
+      if (!meta?.value) continue
+
+      // First check if references were already resolved inline
+      if (meta.references?.edges?.length > 0) {
+        for (const edge of meta.references.edges) {
+          const fields = edge.node?.fields || []
+          const nameField = fields.find(f =>
+            ['name', 'title', 'display_name', 'label', 'artist_name', 'color_name', 'color', 'value', 'category_name', 'style_name'].includes(f.key)
+          ) || fields.find(f => f.value && typeof f.value === 'string' && !f.value.startsWith('gid://') && !f.value.startsWith('#') && f.value.length < 50)
+          const displayName = nameField?.value || ''
+          if (edge.node?.id && displayName) {
+            gidMap[edge.node.id] = displayName
+          } else if (edge.node?.id && edge.node?.handle) {
+            gidMap[edge.node.id] = edge.node.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+          }
+        }
+        continue
+      }
+
+      // Single reference
+      if (meta.reference?.id) {
+        const ref = meta.reference
+        const fields = ref.fields || []
+        const nameField = fields.find(f =>
+          ['name', 'title', 'display_name', 'label', 'artist_name', 'color_name', 'color', 'value', 'category_name', 'style_name'].includes(f.key)
+        ) || fields.find(f => f.value && typeof f.value === 'string' && !f.value.startsWith('gid://') && !f.value.startsWith('#') && f.value.length < 50)
+        if (nameField?.value) {
+          gidMap[ref.id] = nameField.value
+        } else if (ref.handle) {
+          gidMap[ref.id] = ref.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        }
+        continue
+      }
+
+      // Otherwise parse GIDs from the value field for batch resolution
+      try {
+        const parsed = JSON.parse(meta.value)
+        const gids = Array.isArray(parsed) ? parsed : [parsed]
+        gids.forEach(gid => {
+          if (typeof gid === 'string' && gid.startsWith('gid://') && !gidMap[gid]) allGids.add(gid)
+        })
+      } catch (e) {
+        // comma-separated fallback
+        meta.value.split(',').forEach(s => {
+          const trimmed = s.trim()
+          if (trimmed.startsWith('gid://') && !gidMap[trimmed]) allGids.add(trimmed)
+        })
+      }
+    }
+  }
+
+  // If references were already resolved inline, return early
+  if (allGids.size === 0) {
+    console.log('[Metaobjects] All references resolved inline or no GIDs found. Map size:', Object.keys(gidMap).length)
+    return gidMap
+  }
+
+  console.log(`[Metaobjects] Resolving ${allGids.size} unique metaobject GIDs...`)
+
+  // Batch-resolve GIDs in chunks of 50 via the `nodes` query
+  const gidArray = Array.from(allGids)
+  for (let i = 0; i < gidArray.length; i += 50) {
+    const chunk = gidArray.slice(i, i + 50)
+    const idsString = chunk.map(id => `"${id}"`).join(', ')
+    const query = `
+      {
+        nodes(ids: [${idsString}]) {
+          ... on Metaobject {
+            id
+            type
+            handle
+            fields {
+              key
+              value
+            }
+          }
+        }
+      }
+    `
+    try {
+      const response = await fetch(
+        `https://${shopifyConfig.domain}/api/2024-04/graphql.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': shopifyConfig.storefrontAccessToken
+          },
+          body: JSON.stringify({ query })
+        }
+      )
+      const data = await response.json()
+      if (data.data?.nodes) {
+        for (const metaobj of data.data.nodes) {
+          if (!metaobj?.id) continue
+          const fields = metaobj.fields || []
+          // Try well-known field keys first
+          const nameField = fields.find(f =>
+            ['name', 'title', 'display_name', 'label', 'artist_name', 'color_name', 'color', 'category_name', 'style_name', 'value'].includes(f.key)
+          )
+          let displayName = nameField?.value || ''
+          // If no well-known key found, use first non-empty text field
+          if (!displayName) {
+            const anyTextField = fields.find(f => f.value && !f.value.startsWith('gid://') && !f.value.startsWith('{') && !f.value.startsWith('[') && !f.value.startsWith('#'))
+            displayName = anyTextField?.value || ''
+          }
+          // Fallback to handle → title case
+          if (!displayName && metaobj.handle) {
+            displayName = metaobj.handle
+              .split('-')
+              .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
+          }
+          if (displayName) {
+            gidMap[metaobj.id] = displayName
+          }
+          // Log for debugging
+          console.log(`[Metaobject] ${metaobj.id} (${metaobj.type}) → "${displayName}"`, fields.map(f => `${f.key}=${f.value}`))
+        }
+      }
+    } catch (err) {
+      console.error('[Metaobjects] Error resolving metaobject GIDs:', err)
+    }
+  }
+
+  console.log(`[Metaobjects] Resolved ${Object.keys(gidMap).length} display names`)
+  return gidMap
+}
+
+/**
  * Transform Shopify product data to match our application format
  * @param {Array} shopifyProducts - Raw Shopify product data
+ * @param {Object} artistGidMap - Map of artist GID → display name
  * @returns {Array} Formatted products
  */
-function transformShopifyProducts(shopifyProducts) {
+function transformShopifyProducts(shopifyProducts, artistGidMap = {}) {
   return shopifyProducts.map(({ node }) => {
     // Find metafields for sizes and category
     const sizesMetafield = node.metafields.find(m => m && m.key === 'frame_sizes')
@@ -186,6 +370,57 @@ function transformShopifyProducts(shopifyProducts) {
     const roomsMetafield = node.metafields.find(m => m && m.key === 'filter_rooms')
     const artistsMetafield = node.metafields.find(m => m && m.key === 'filter_artists')
     const artworkFileMetafield = node.metafields.find(m => m && m.key === 'artwork_file' && m.namespace === 'custom')
+
+    // Helper: extract display names from Metaobject references on a metafield
+    const getRefDisplayNames = (metafield) => {
+      if (!metafield) return []
+      const names = []
+      // Single reference
+      if (metafield.reference) {
+        const ref = metafield.reference
+        if (ref.fields) {
+          // Try known display-name keys first, then fall back to any non-empty text field
+          const displayField = ref.fields.find(f => ['display_name', 'name', 'title', 'label', 'color_name', 'color', 'value'].includes(f.key))
+            || ref.fields.find(f => f.value && typeof f.value === 'string' && !f.value.startsWith('gid://') && !f.value.startsWith('#') && f.value.length < 50)
+          if (displayField?.value) names.push(displayField.value)
+          else if (ref.handle) names.push(ref.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+        } else if (ref.handle) {
+          names.push(ref.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+        }
+      }
+      // List of references
+      if (metafield.references?.edges) {
+        for (const edge of metafield.references.edges) {
+          const obj = edge.node
+          if (!obj) continue
+          if (obj.fields) {
+            const displayField = obj.fields.find(f => ['display_name', 'name', 'title', 'label', 'color_name', 'color', 'value'].includes(f.key))
+              || obj.fields.find(f => f.value && typeof f.value === 'string' && !f.value.startsWith('gid://') && !f.value.startsWith('#') && f.value.length < 50)
+            if (displayField?.value) names.push(displayField.value)
+            else if (obj.handle) names.push(obj.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+          } else if (obj.handle) {
+            names.push(obj.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+          }
+        }
+      }
+      return names.filter(n => n)
+    }
+
+    // Helper: resolve GID references in a metafield value using the pre-built artistGidMap
+    // (works for any metaobject GID, not just artists)
+    const resolveGidsFromValue = (metafield) => {
+      if (!metafield?.value) return []
+      try {
+        const parsed = JSON.parse(metafield.value)
+        const items = Array.isArray(parsed) ? parsed : [parsed]
+        return items
+          .filter(v => typeof v === 'string' && v.startsWith('gid://'))
+          .map(gid => artistGidMap[gid] || '')
+          .filter(n => n)
+      } catch (e) {
+        return []
+      }
+    }
     
     // Debug: log artwork_file metafield for first few products
     if (artworkFileMetafield) {
@@ -203,15 +438,34 @@ function transformShopifyProducts(shopifyProducts) {
       }
     }
 
-    // Get category from metafield or tags
-    let category = categoryMetafield?.value || 'Uncategorized'
-    if (!categoryMetafield) {
+    // Get category: try reference display name → GID resolution → metafield value → tags
+    const categoryRefNames = getRefDisplayNames(categoryMetafield)
+    let category = categoryRefNames[0] || ''
+    if (!category) {
+      const catGids = resolveGidsFromValue(categoryMetafield)
+      if (catGids.length > 0) category = catGids[0]
+    }
+    if (!category && categoryMetafield?.value) {
+      // Plain text value (skip if it's a GID)
+      const val = categoryMetafield.value.trim()
+      if (!val.startsWith('gid://') && !val.startsWith('[')) category = val
+      // Try JSON array of plain strings
+      if (!category && val.startsWith('[')) {
+        try {
+          const arr = JSON.parse(val).filter(s => typeof s === 'string' && !s.startsWith('gid://'))
+          if (arr.length > 0) category = arr[0]
+        } catch (e) {}
+      }
+    }
+    if (!category) {
       // Try to find category from tags
       const categoryTag = node.tags.find(tag => 
-        ['Abstract', 'Botanical', 'Line Art', 'Geometric', 'Typography', 'Nature', 'Urban'].includes(tag)
+        ['Abstract', 'Botanical', 'Line Art', 'Geometric', 'Typography', 'Nature', 'Urban', 'Animals', 'Landscape', 'Figurative', 'Still Life', 'Architecture'].includes(tag)
       )
-      if (categoryTag) category = categoryTag
+      category = categoryTag || ''
     }
+    // Final fallback: use productType
+    if (!category && node.productType) category = node.productType
     
     // Get artwork image from artwork_file metafield (frameless), falling back to featured image
     // Try multiple paths: MediaImage reference, GenericFile reference, or direct URL in value
@@ -241,12 +495,12 @@ function transformShopifyProducts(shopifyProducts) {
       if (!metafield?.value) return []
       try {
         const parsed = JSON.parse(metafield.value)
-        // If it's an array, filter out empty values
+        // If it's an array, filter out empty values and GID references
         if (Array.isArray(parsed)) {
-          return parsed.filter(item => item && typeof item === 'string' && item.trim())
+          return parsed.filter(item => item && typeof item === 'string' && item.trim() && !item.startsWith('gid://'))
         }
-        // If it's a single string, wrap in array
-        if (typeof parsed === 'string' && parsed.trim()) {
+        // If it's a single string, wrap in array (skip GID references)
+        if (typeof parsed === 'string' && parsed.trim() && !parsed.startsWith('gid://')) {
           return [parsed.trim()]
         }
         return []
@@ -254,15 +508,85 @@ function transformShopifyProducts(shopifyProducts) {
         // If JSON parse fails, try comma-separated
         return metafield.value.split(',')
           .map(s => s.trim())
-          .filter(s => s) // Remove empty strings
+          .filter(s => s && !s.startsWith('gid://')) // Remove empty strings and GID references
       }
     }
     
-    // Parse all metafields
-    const colors = parseMetafieldArray(colorMetafield)
-    const styles = parseMetafieldArray(styleMetafield)
-    const rooms = parseMetafieldArray(roomsMetafield)
-    const artists = parseMetafieldArray(artistsMetafield)
+    // Parse all metafields — prefer reference display names → GID resolution → parsed text values
+    // Colors
+    let colors = getRefDisplayNames(colorMetafield)
+    if (colors.length === 0) colors = resolveGidsFromValue(colorMetafield)
+    if (colors.length === 0) colors = parseMetafieldArray(colorMetafield)
+    // If color metafield has a hex value, try to map it
+    if (colors.length === 0 && colorMetafield?.value) {
+      const val = colorMetafield.value.trim()
+      if (val.startsWith('#') || val.startsWith('rgb')) {
+        // Store raw hex/rgb as-is; the detail modal will handle display
+        colors = [val]
+      }
+    }
+    // Fallback: extract color names from product tags
+    if (colors.length === 0 && node.tags) {
+      const colorWords = ['red','blue','green','orange','pink','neutral','black','white','yellow','purple','brown','grey','gray','beige','teal','navy','gold','cream']
+      const colorTag = node.tags.find(t => colorWords.includes(t.toLowerCase()))
+      if (colorTag) colors = [colorTag.charAt(0).toUpperCase() + colorTag.slice(1).toLowerCase()]
+    }
+
+    // Styles
+    let styles = getRefDisplayNames(styleMetafield)
+    if (styles.length === 0) styles = resolveGidsFromValue(styleMetafield)
+    if (styles.length === 0) styles = parseMetafieldArray(styleMetafield)
+    // Fallback: try tags for style keywords
+    if (styles.length === 0 && node.tags) {
+      const styleWords = ['japanese','minimalist','modern','abstract','botanical','geometric','scandinavian','boho','vintage','retro','contemporary','classic','art deco','impressionist','pop art','watercolor']
+      const styleTag = node.tags.find(t => styleWords.includes(t.toLowerCase()))
+      if (styleTag) styles = [styleTag.charAt(0).toUpperCase() + styleTag.slice(1).toLowerCase()]
+    }
+
+    const roomsFromRefs = getRefDisplayNames(roomsMetafield)
+    const rooms = roomsFromRefs.length > 0 ? roomsFromRefs : parseMetafieldArray(roomsMetafield)
+
+    // Debug: log metafield raw data for first 3 products
+    const debugIdx = shopifyProducts.findIndex(p => p.node.id === node.id)
+    if (debugIdx < 3 && debugIdx >= 0) {
+      console.log(`[Metafield Debug] Product "${node.title}":`, {
+        colorMeta: colorMetafield ? { value: colorMetafield.value, type: colorMetafield.type, ref: colorMetafield.reference, refs: colorMetafield.references?.edges?.length } : null,
+        styleMeta: styleMetafield ? { value: styleMetafield.value, type: styleMetafield.type, ref: styleMetafield.reference, refs: styleMetafield.references?.edges?.length } : null,
+        categoryMeta: categoryMetafield ? { value: categoryMetafield.value, type: categoryMetafield.type, ref: categoryMetafield.reference, refs: categoryMetafield.references?.edges?.length } : null,
+        resolvedColors: colors,
+        resolvedStyles: styles,
+      })
+    }
+    // Resolve artist names from the pre-built GID map
+    let artists = []
+    if (artistsMetafield?.value) {
+      try {
+        const parsed = JSON.parse(artistsMetafield.value)
+        const gids = Array.isArray(parsed) ? parsed : [parsed]
+        artists = gids
+          .map(gid => {
+            if (typeof gid === 'string' && gid.startsWith('gid://')) {
+              return artistGidMap[gid] || ''
+            }
+            // If value is already a plain text name, keep it
+            return (typeof gid === 'string' && gid.trim()) ? gid.trim() : ''
+          })
+          .filter(name => name)
+      } catch (e) {
+        // Comma-separated fallback
+        artists = artistsMetafield.value.split(',')
+          .map(s => {
+            const trimmed = s.trim()
+            if (trimmed.startsWith('gid://')) return artistGidMap[trimmed] || ''
+            return trimmed
+          })
+          .filter(s => s)
+      }
+    }
+    // Final fallback to vendor if still empty
+    if (artists.length === 0 && node.vendor) {
+      artists = [node.vendor]
+    }
     
     const finalSizes = sizeOptions.size > 0 ? Array.from(sizeOptions) : sizes
     

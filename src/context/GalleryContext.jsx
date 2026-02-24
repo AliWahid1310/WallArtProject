@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, us
 import { fetchArtworkProducts, createCheckout } from '../utils/shopify'
 import { useMobileDetection, useFullscreen } from '../hooks'
 import { portraitLayoutOptions, placeCategories, roomImages } from '../data'
+import { getVariantForSize, getVariantPrice } from '../utils/helpers'
 
 const DEFAULT_LAYOUT = portraitLayoutOptions[0] // Single Portrait
 
@@ -244,6 +245,13 @@ export function GalleryProvider({ children }) {
   useEffect(() => { localStorage.setItem('gallerySelectedArtworks', JSON.stringify(selectedArtworks)) }, [selectedArtworks])
   useEffect(() => { localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames)) }, [selectedFrames])
   useEffect(() => { localStorage.setItem('galleryGroupOffset', JSON.stringify(groupOffset)) }, [groupOffset])
+
+  // Ensure perFrameSizes is initialized whenever a layout with frames exists
+  useEffect(() => {
+    if (selectedLayout?.frames?.length > 0 && perFrameSizes.length === 0) {
+      setPerFrameSizes(new Array(selectedLayout.frames.length).fill(printSize))
+    }
+  }, [selectedLayout?.id])
 
   // Reset displayed count when active frame or filter changes
   useEffect(() => {
@@ -569,7 +577,12 @@ export function GalleryProvider({ children }) {
     let total = 0
     Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
       const quantity = quantities.artworks[frameIdx] || 1
-      total += (parseFloat(artwork.price) || 0) * quantity
+      // Resolve the print size for this frame
+      const framePrintSize = perFrameSizes.length > 0
+        ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+        : printSize
+      const price = parseFloat(getVariantPrice(artwork, framePrintSize)) || 0
+      total += price * quantity
     })
     Object.entries(selectedFrames).forEach(([frameIdx, frame]) => {
       const quantity = quantities.frames[frameIdx] || 1
@@ -583,7 +596,8 @@ export function GalleryProvider({ children }) {
     if (cartItems.artworks && typeof cartItems.artworks === 'object') {
       Object.entries(cartItems.artworks).forEach(([frameIdx, artwork]) => {
         const quantity = quantities.artworks?.[frameIdx] || 1
-        const price = parseFloat(artwork.price) || 0
+        // Use resolvedPrice (set during addToCart) if available, otherwise fall back
+        const price = parseFloat(artwork.resolvedPrice || artwork.price) || 0
         total += price * quantity
       })
     }
@@ -750,9 +764,18 @@ export function GalleryProvider({ children }) {
     const artworksWithSize = {}
     Object.entries(selectedArtworks).forEach(([frameIdx, artwork]) => {
       const frameSize = selectedLayout?.frames[parseInt(frameIdx)]?.size || artwork.size
+      // Resolve the print size for this frame (from per-frame overrides or global)
+      const framePrintSize = perFrameSizes.length > 0
+        ? (perFrameSizes[parseInt(frameIdx)] || printSize)
+        : printSize
+      // Resolve the matching variant for this size
+      const resolved = getVariantForSize(artwork, framePrintSize)
       artworksWithSize[frameIdx] = {
         ...artwork,
-        frameSize: frameSize
+        frameSize: frameSize,
+        resolvedVariantId: resolved?.variantId || artwork.variants?.[0]?.id || null,
+        resolvedPrice: resolved?.variantPrice || artwork.price,
+        resolvedVariantTitle: resolved?.variantTitle || '',
       }
     })
     setCartItems({
@@ -787,8 +810,12 @@ export function GalleryProvider({ children }) {
         console.log('Artwork title:', artwork.title)
         console.log('Artwork frameSize:', artwork.frameSize)
         console.log('Artwork has variants:', artwork.variants?.length || 0)
-        let variantId = artwork.variants?.[0]?.id || artwork.shopifyProductId
-        if (artwork.frameSize && artwork.variants && artwork.variants.length > 0) {
+
+        // Prefer the pre-resolved variant ID from handleAddToCart
+        let variantId = artwork.resolvedVariantId || artwork.variants?.[0]?.id || artwork.shopifyProductId
+
+        // Fallback: if no pre-resolved variant, try matching by frame size
+        if (!artwork.resolvedVariantId && artwork.frameSize && artwork.variants && artwork.variants.length > 0) {
           const normalizedFrameSize = artwork.frameSize.replace(/\s+/g, '').toUpperCase().replace(/[×]/g, 'X')
           console.log('Normalized frame size to match:', normalizedFrameSize)
           console.log('Available variants:')
@@ -808,6 +835,8 @@ export function GalleryProvider({ children }) {
           } else {
             console.warn('✗ NO MATCH FOUND for size', artwork.frameSize, '- Using first variant:', artwork.variants[0]?.title)
           }
+        } else if (artwork.resolvedVariantId) {
+          console.log('✓ Using pre-resolved variant ID:', artwork.resolvedVariantId, 'Title:', artwork.resolvedVariantTitle)
         } else {
           console.log('Skipping variant matching (no frameSize or no variants)')
         }

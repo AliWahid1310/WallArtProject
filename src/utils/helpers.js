@@ -484,6 +484,69 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
 }
 
 /**
+ * Resolve the best-matching variant for a given print size.
+ *
+ * The function normalises the size string (strips spaces, replaces ×/x, uppercases)
+ * and looks for a variant whose `title` or `selectedOptions` value contains that
+ * normalised size.  If a match is found the variant's price is returned; otherwise
+ * the product-level (minVariantPrice) price is used as fallback.
+ *
+ * @param {Object}  artwork   – a transformed Shopify product (must have .variants[])
+ * @param {string}  printSize – current print size, e.g. "50 × 70"
+ * @returns {{ variantId: string, variantPrice: string, variantTitle: string } | null}
+ */
+export const getVariantForSize = (artwork, printSize) => {
+  if (!artwork?.variants || artwork.variants.length === 0 || !printSize) return null
+
+  // Normalise the incoming size string: "50 × 70" → "50X70"
+  const normalise = (s) =>
+    s.replace(/\s+/g, '').toUpperCase().replace(/[×]/g, 'X')
+
+  const target = normalise(printSize)
+
+  // Try to find a variant whose title or size option contains the target
+  const match = artwork.variants.find((v) => {
+    // Check variant title (e.g. "50 x 70 cm")
+    if (v.title && normalise(v.title).includes(target)) return true
+
+    // Check selectedOptions for a "Size" option
+    if (v.selectedOptions) {
+      const sizeOpt = v.selectedOptions.find(
+        (o) => o.name.toLowerCase() === 'size'
+      )
+      if (sizeOpt && normalise(sizeOpt.value).includes(target)) return true
+    }
+
+    return false
+  })
+
+  if (match) {
+    return {
+      variantId: match.id,
+      variantPrice: match.price,
+      variantTitle: match.title,
+    }
+  }
+
+  return null
+}
+
+/**
+ * Get the display price for an artwork at a specific print size.
+ * Returns the variant price if a matching variant is found, otherwise
+ * falls back to the product's base price (minVariantPrice).
+ *
+ * @param {Object} artwork   – transformed Shopify product
+ * @param {string} printSize – e.g. "50 × 70"
+ * @returns {string} price formatted to 2 decimal places
+ */
+export const getVariantPrice = (artwork, printSize) => {
+  if (!artwork) return '0.00'
+  const resolved = getVariantForSize(artwork, printSize)
+  return resolved ? resolved.variantPrice : artwork.price
+}
+
+/**
  * Prepare cart data for Shopify Ajax API
  * (For future Shopify integration)
  */
