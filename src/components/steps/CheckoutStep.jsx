@@ -53,6 +53,10 @@ const PRINT_SIZES = {
     groupOffset, dragOffset,
     handleDragStart,
     wasDraggingRef,
+    isLocked, setIsLocked,
+    individualOffsets, activeDragFrameIdx, individualDragLive,
+    handleIndividualDragStart,
+    resetPositions,
     handleQuantityChange,
     handleAddToCart,
     handleCheckout,
@@ -434,7 +438,7 @@ const PRINT_SIZES = {
 
                 {/* Ruler Overlay */}
                 {showRuler && (
-                  <Ruler onClose={() => setShowRuler(false)} />
+                  <Ruler onClose={() => setShowRuler(false)} measurementUnit={measurementUnit} wallScale={wallScale} />
                 )}
 
                 {/* Frame Preview on Canvas */}
@@ -502,20 +506,25 @@ const PRINT_SIZES = {
                         const frameColor = FRAME_STYLE_COLORS[printStyle] || FRAME_STYLE_COLORS.Black
                         return dynamicFrames.map((frame, idx) => {
                           const artwork = selectedArtworks[idx]
+                          const indivBase = individualOffsets[idx] || { x: 0, y: 0 }
+                          const indivLive = (!isLocked && activeDragFrameIdx === idx) ? individualDragLive : { x: 0, y: 0 }
+                          const indivX = indivBase.x + indivLive.x
+                          const indivY = indivBase.y + indivLive.y
                           return (
                             <div
                               key={idx}
                               className="absolute select-none"
-                              onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e) }}
-                              onTouchStart={(e) => { e.stopPropagation(); handleDragStart(e) }}
+                              onMouseDown={(e) => { e.stopPropagation(); isLocked ? handleDragStart(e) : handleIndividualDragStart(e, idx) }}
+                              onTouchStart={(e) => { e.stopPropagation(); isLocked ? handleDragStart(e) : handleIndividualDragStart(e, idx) }}
                               style={{
                                 top: `${frame.centerY}%`,
                                 left: `${frame.centerX}%`,
                                 width: frame.width,
                                 aspectRatio: frame.aspectRatio,
-                                transform: 'translate(-50%, -50%)',
-                                zIndex: Math.round(100 - frame.centerY),
-                                cursor: isDragging ? 'grabbing' : 'grab',
+                                transform: `translate(calc(-50% + ${indivX}px), calc(-50% + ${indivY}px))`,
+                                zIndex: activeDragFrameIdx === idx ? 999 : Math.round(100 - frame.centerY),
+                                cursor: (isDragging || activeDragFrameIdx === idx) ? 'grabbing' : 'grab',
+                                transition: activeDragFrameIdx === idx ? 'none' : 'transform 0.2s ease',
                               }}
                             >
                               <div
@@ -577,14 +586,17 @@ const PRINT_SIZES = {
                 {/* ---- Canvas Overlay Controls ---- */}
                 <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <input
-                    type="range"
-                    min={-50}
-                    max={50}
-                    value={wallScale}
-                    onChange={(e) => setWallScale(parseInt(e.target.value))}
-                    className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
-                  />
+                  <div className="relative flex flex-col items-center">
+                    <input
+                      type="range"
+                      min={-50}
+                      max={50}
+                      value={wallScale}
+                      onChange={(e) => setWallScale(parseInt(e.target.value))}
+                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                    />
+                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-gray-400 leading-none">0</span>
+                  </div>
                   <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
                 <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
@@ -630,15 +642,30 @@ const PRINT_SIZES = {
                   </button>
                 </div>
                 <div className="hidden lg:flex absolute bottom-4 right-4 z-20 items-center gap-2">
-                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
+                  <button
+                    onClick={resetPositions}
+                    title="Restore original positions"
+                    className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h13a5 5 0 010 10h-3" />
                     </svg>
                   </button>
-                  <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
+                  <button
+                    onClick={() => setIsLocked(l => !l)}
+                    title={isLocked ? 'Unlock to drag frames individually' : 'Lock to drag all frames together'}
+                    className={`w-8 h-8 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center transition-colors cursor-pointer ${
+                      isLocked ? 'bg-white/90 hover:bg-gray-100' : 'bg-[#4a6741]/10 hover:bg-[#4a6741]/20'
+                    }`}
+                  >
+                    {isLocked ? (
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 text-[#4a6741]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
@@ -956,7 +983,7 @@ const PRINT_SIZES = {
             >
               {/* Ruler Overlay inside enlarged canvas */}
               {enlargeRuler && (
-                <Ruler onClose={() => setEnlargeRuler(false)} />
+                <Ruler onClose={() => setEnlargeRuler(false)} measurementUnit={measurementUnit} wallScale={wallScale} />
               )}
 
               {/* Frames */}

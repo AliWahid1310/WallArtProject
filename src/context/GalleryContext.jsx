@@ -120,8 +120,14 @@ export function GalleryProvider({ children }) {
   const canvasRef = useRef(null)
 
   // Lock / individual-drag state
-  const [isLocked, setIsLocked] = useState(true)   // true = collective drag, false = individual
-  const [individualOffsets, setIndividualOffsets] = useState({}) // { frameIdx: {x,y} }
+  const [isLocked, setIsLocked] = useState(() => {
+    const saved = localStorage.getItem('galleryIsLocked')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+  const [individualOffsets, setIndividualOffsets] = useState(() => {
+    const saved = localStorage.getItem('galleryIndividualOffsets')
+    return saved ? JSON.parse(saved) : {}
+  })
   const [activeDragFrameIdx, setActiveDragFrameIdx] = useState(null)
   const [individualDragStart, setIndividualDragStart] = useState({ x: 0, y: 0 })
   const [individualDragLive, setIndividualDragLive] = useState({ x: 0, y: 0 })
@@ -245,6 +251,8 @@ export function GalleryProvider({ children }) {
   useEffect(() => { localStorage.setItem('gallerySelectedArtworks', JSON.stringify(selectedArtworks)) }, [selectedArtworks])
   useEffect(() => { localStorage.setItem('gallerySelectedFrames', JSON.stringify(selectedFrames)) }, [selectedFrames])
   useEffect(() => { localStorage.setItem('galleryGroupOffset', JSON.stringify(groupOffset)) }, [groupOffset])
+  useEffect(() => { localStorage.setItem('galleryIsLocked', JSON.stringify(isLocked)) }, [isLocked])
+  useEffect(() => { localStorage.setItem('galleryIndividualOffsets', JSON.stringify(individualOffsets)) }, [individualOffsets])
 
   // Ensure perFrameSizes is initialized whenever a layout with frames exists
   useEffect(() => {
@@ -887,6 +895,9 @@ export function GalleryProvider({ children }) {
     localStorage.removeItem('gallerySelectedFrames')
     localStorage.removeItem('galleryCart')
     localStorage.removeItem('galleryQuantities')
+    localStorage.removeItem('galleryGroupOffset')
+    localStorage.removeItem('galleryIsLocked')
+    localStorage.removeItem('galleryIndividualOffsets')
     setCurrentStep('step1')
     setSelectedPlace(_defaultPlace)
     setSelectedBackground(_defaultBg)
@@ -912,6 +923,8 @@ export function GalleryProvider({ children }) {
     setMeasurementUnit('cm')
     setWallScale(0)
     setGroupOffset({ x: 0, y: 0 })
+    setIsLocked(true)
+    setIndividualOffsets({})
   }
 
   const value = {

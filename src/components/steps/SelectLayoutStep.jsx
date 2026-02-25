@@ -730,7 +730,7 @@ export default function SelectLayoutStep() {
 
                 {/* Ruler Overlay */}
                 {showRuler && (
-                  <Ruler onClose={() => setShowRuler(false)} />
+                  <Ruler onClose={() => setShowRuler(false)} measurementUnit={measurementUnit} wallScale={wallScale} />
                 )}
 
                 {/* Frame Preview on Canvas */}
@@ -873,14 +873,17 @@ export default function SelectLayoutStep() {
                 {/* ---- Canvas Overlay Controls ---- */}
                 <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <input
-                    type="range"
-                    min={-50}
-                    max={50}
-                    value={wallScale}
-                    onChange={(e) => setWallScale(parseInt(e.target.value))}
-                    className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
-                  />
+                  <div className="relative flex flex-col items-center">
+                    <input
+                      type="range"
+                      min={-50}
+                      max={50}
+                      value={wallScale}
+                      onChange={(e) => setWallScale(parseInt(e.target.value))}
+                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                    />
+                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-gray-400 leading-none">0</span>
+                  </div>
                   <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
                 <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
