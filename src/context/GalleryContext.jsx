@@ -933,6 +933,9 @@ export function GalleryProvider({ children }) {
     isFullscreen, enterFullscreen, exitFullscreen,
     // Steps
     currentStep, setCurrentStep,
+    // Checkout readiness: all frames have artworks assigned
+    isCheckoutReady: (selectedLayout?.frames?.length > 0) &&
+      (Object.keys(selectedArtworks).length >= (selectedLayout?.frames?.length || 0)),
     // Selections
     selectedPlace, setSelectedPlace,
     selectedBackground, setSelectedBackground,

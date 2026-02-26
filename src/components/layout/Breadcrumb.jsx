@@ -19,7 +19,7 @@ function getStepIndex(currentStep) {
 }
 
 export default function Breadcrumb() {
-  const { currentStep, setCurrentStep } = useGallery()
+  const { currentStep, setCurrentStep, isCheckoutReady } = useGallery()
   const activeIndex = getStepIndex(currentStep)
 
   return (
@@ -29,7 +29,9 @@ export default function Breadcrumb() {
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex
             const isCompleted = idx < activeIndex
-            const isClickable = isCompleted
+            // Steps 1-3 always clickable; step 4 only when all artworks are assigned
+            const isCheckout = step.key === 'checkout'
+            const isClickable = isCheckout ? isCheckoutReady : true
 
             return (
               <div key={step.key} className="flex items-center flex-1 last:flex-none">
@@ -48,7 +50,9 @@ export default function Breadcrumb() {
                         ? 'border-2 border-[#4a6741] text-[#4a6741] bg-white'
                         : isActive
                           ? 'bg-[#4a6741] text-white'
-                          : 'border-2 border-gray-300 text-gray-400 bg-white'
+                          : isClickable
+                            ? 'border-2 border-gray-400 text-gray-500 bg-white hover:border-[#4a6741] hover:text-[#4a6741]'
+                            : 'border-2 border-gray-300 text-gray-400 bg-white'
                     }`}
                   >
                     {isCompleted ? (
@@ -66,7 +70,9 @@ export default function Breadcrumb() {
                         ? 'font-semibold text-gray-900'
                         : isCompleted
                           ? 'font-medium text-gray-600 group-hover:text-gray-900'
-                          : 'font-normal text-gray-400'
+                          : isClickable
+                            ? 'font-normal text-gray-500 group-hover:text-gray-900'
+                            : 'font-normal text-gray-400'
                     }`}
                   >
                     {step.label}
