@@ -413,10 +413,10 @@ const PRINT_SIZES = {
             </div>
 
             {/* ---- Canvas Area ---- */}
-            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
+            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-2 lg:p-3">
               <div
                 ref={canvasRef}
-                className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500"
+                className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500 rounded-2xl"
                 style={{
                   backgroundImage: selectedBackground
                     ? `url(${selectedBackground.image})`

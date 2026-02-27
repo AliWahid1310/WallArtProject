@@ -62,7 +62,7 @@ export default function TopNavBar() {
 
       {/* ── Left: Brand ── */}
       <div className="flex items-center">
-        <img src={BrandLogo} alt="Gallery Wall Planner powered by Laboo Studio" className="h-[52px] object-contain" />
+        <img src={BrandLogo} alt="Gallery Wall Planner powered by Laboo Studio" className="h-[65px] object-contain" />
       </div>
 
       {/* ── Right: Actions ── */}
@@ -174,7 +174,7 @@ export default function TopNavBar() {
         {/* Checkout Button */}
         <button
           onClick={() => { handleAddToCart(); setTimeout(() => handleCheckout(), 100) }}
-          className="bg-[#3d3d3d] text-white px-7 py-2.5 font-bold text-[13px] tracking-widest uppercase rounded-md hover:bg-[#2a2a2a] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+          className="bg-[#4a6741] text-white px-7 py-2.5 font-bold text-[13px] tracking-widest uppercase rounded-full hover:bg-[#3d5636] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
         >
           CHECKOUT
         </button>

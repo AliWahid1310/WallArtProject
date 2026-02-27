@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useGallery } from '../../context/GalleryContext'
 import { placeCategories, backgroundOptions, roomImages } from '../../data'
 import { TopNavBar, Breadcrumb, MobileBottomNav, MobileMenuModal, ResetModal } from '../layout'
@@ -147,6 +147,22 @@ export default function SelectPlaceStep() {
   const [showEnlarge, setShowEnlarge] = useState(false)
   const [enlargeRuler, setEnlargeRuler] = useState(false)
 
+  // Custom photo upload
+  const uploadInputRef = useRef(null)
+  const [customBgObjectUrl, setCustomBgObjectUrl] = useState(null)
+
+  const handleCustomUpload = useCallback((e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Revoke previous object URL to avoid memory leaks
+    if (customBgObjectUrl) URL.revokeObjectURL(customBgObjectUrl)
+    const url = URL.createObjectURL(file)
+    setCustomBgObjectUrl(url)
+    setSelectedBackground({ id: 'custom-upload', image: url, name: 'My Photo' })
+    // Reset input so the same file can be re-selected
+    e.target.value = ''
+  }, [customBgObjectUrl, setSelectedBackground])
+
   // Dropdown arrow style
   const selectArrowStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
@@ -244,6 +260,66 @@ export default function SelectPlaceStep() {
                       <p className="text-[6px] lg:text-[10px] font-bold text-gray-500 text-center mt-0.5 lg:mt-1 uppercase leading-tight tracking-wide">{item.label}</p>
                     </div>
                   ))}
+
+                  {/* ── Upload Your Own Photo card ── */}
+                  <div
+                    onClick={() => uploadInputRef.current?.click()}
+                    className="cursor-pointer group"
+                  >
+                    <div className={`relative aspect-square rounded-lg border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center gap-1 ${
+                      selectedBackground?.id === 'custom-upload'
+                        ? 'border-[#4a6741] bg-green-50/60 shadow-md'
+                        : 'border-gray-300 bg-gray-50 hover:border-[#4a6741] hover:bg-green-50/40'
+                    }`}>
+                      {/* Show thumbnail if an image was uploaded, else show icon */}
+                      {customBgObjectUrl ? (
+                        <>
+                          <img
+                            src={customBgObjectUrl}
+                            alt="Your photo"
+                            className="absolute inset-0 w-full h-full object-cover rounded-md opacity-60"
+                          />
+                          {selectedBackground?.id === 'custom-upload' && (
+                            <div className="absolute top-0.5 left-0.5 lg:top-1.5 lg:left-1.5 w-4 h-4 lg:w-5 lg:h-5 bg-[#4a6741]/90 rounded-full flex items-center justify-center z-10">
+                              <svg className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                          {/* Re-upload icon overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <svg className="w-5 h-5 lg:w-6 lg:h-6 text-[#4a6741] drop-shadow" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Photo placeholder icon */}
+                          <svg className={`w-5 h-5 lg:w-7 lg:h-7 transition-colors ${
+                            selectedBackground?.id === 'custom-upload' ? 'text-[#4a6741]' : 'text-gray-400 group-hover:text-[#4a6741]'
+                          }`} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                          </svg>
+                          <span className={`text-[5px] lg:text-[8px] font-bold text-center uppercase tracking-wide leading-tight px-1 transition-colors ${
+                            selectedBackground?.id === 'custom-upload' ? 'text-[#4a6741]' : 'text-gray-400 group-hover:text-[#4a6741]'
+                          }`}>ADD YOUR<br/>OWN PHOTO</span>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-[6px] lg:text-[10px] font-bold text-gray-500 text-center mt-0.5 lg:mt-1 uppercase leading-tight tracking-wide">
+                      {customBgObjectUrl ? 'CHANGE PHOTO' : 'QUICK ADD'}
+                    </p>
+                  </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCustomUpload}
+                  />
                 </div>
               </div>
             </div>
@@ -345,10 +421,10 @@ export default function SelectPlaceStep() {
             </div>
 
             {/* ---- Canvas Area ---- */}
-            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen">
+            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-2 lg:p-3">
               <div
                 ref={canvasRef}
-                className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500"
+                className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500 rounded-2xl"
                 style={{
                   backgroundImage: selectedBackground
                     ? `url(${selectedBackground.image})`

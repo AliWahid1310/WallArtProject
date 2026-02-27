@@ -207,8 +207,9 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   const firstParsed = parsePrintSize(sizesArr[0])
   if (!firstParsed) return frames
 
-  // 1 cm ≈ 0.52% of canvas width  (canvas represents ≈ 192 cm wall)
-  const CM_SCALE = 0.52
+  // 1 cm ≈ 0.29% of canvas width  (canvas represents ≈ 192 cm wall)
+  // Adjusted so frames appear at the correct natural size when wallScale = 0
+  const CM_SCALE = 0.29
 
   // Canvas aspect ratio (width / height) — the canvas container is typically
   // ~1.6 : 1 landscape.  We need this to convert width-% to height-% so we
@@ -289,13 +290,14 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
     return { frame, wPct, hPctH, cx, cy, fwCm, fhCm, sizeLabel, borderWidth }
   })
 
-  // ---------- Pass 1b: position frames so inter-frame gap = spacingValue ----------
-  // For each pair, compute the centroid-scale factor k that places that pair's edges
-  // exactly targetGap apart.  bestK = max over all pairs so the TIGHTEST pair gets
-  // exactly targetGap and every other pair gets ≥ targetGap.
-  // Works for any wallScale: frame sizes already embed scaleFactor via wPct/hPctH.
-  const spacingCm  = measurementUnit === 'in' ? spacingValue * 2.54 : spacingValue
-  const targetGap  = spacingCm * CM_SCALE  // desired gap in width-%
+  // User spacing converted to width-% space — used in Pass 2b collision clearance
+  const spacingCm    = measurementUnit === 'in' ? spacingValue * 2.54 : spacingValue
+  const spacingGap_w = spacingCm * CM_SCALE   // user gap in width-% space
+
+  // ---------- Pass 1b: spread frames from their original layout centres ----------
+  // Uses a fixed 1 cm base gap just to ensure frames have correct relative positions
+  // before Pass 2b applies the actual user-controlled spacing.
+  const targetGap  = 1 * CM_SCALE  // fixed ~1 cm minimum spread; user spacing is in Pass 2b
   if (raw.length > 1) {
     const gcx = raw.reduce((s, r) => s + r.cx, 0) / raw.length
     const gcy = raw.reduce((s, r) => s + r.cy, 0) / raw.length
@@ -368,8 +370,8 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
   //       → push these two frames horizontally only.
   //   • Diagonal pair (neither axis dominates)
   //       → skip entirely (preserves step / triangle / pyramid layouts).
-  const LABEL_PAD  = 2.0   // vertical clearance in width-% (minimal — lets user spacing control work)
-  const HORIZ_GAP  = 1.5   // horizontal gap between side-by-side frames (width-%)
+  const LABEL_PAD  = 2.5 + spacingGap_w  // vertical clearance: 2.5% fixed label min + user spacing
+  const HORIZ_GAP  = 1.5 + spacingGap_w  // horizontal clearance: 1.5% fixed min + user spacing
   const AXIS_RATIO = 2.0   // dominance threshold: catches grid rows (≈2.5) but skips triangle apex (≈1.96)
 
   // Pre-compute original centres for axis classification
@@ -451,8 +453,31 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
             else               { a.cx += push; b.cx -= push }
             moved = true
           }
+        } else {
+          // Diagonal pair (staggered / step / pyramid layouts) —
+          // push apart along the actual centre-to-centre direction so the
+          // diagonal angle is preserved but spacing slider still works.
+          const ddx  = b.cx - a.cx
+          const ddy  = b.cy - a.cy
+          const dist = Math.sqrt(ddx * ddx + ddy * ddy)
+          if (dist < 0.001) continue
+          const nx = ddx / dist  // unit vector
+          const ny = ddy / dist
+          // Rectangle "reach" in direction (nx, ny): hw·|nx| + hh·|ny|
+          const rA = a.hw * Math.abs(nx) + a.hh * Math.abs(ny)
+          const rB = b.hw * Math.abs(nx) + b.hh * Math.abs(ny)
+          // Gap = user spacing + proportional label clearance for the vertical component
+          const need = rA + rB + spacingGap_w + 2.5 * Math.abs(ny)
+          const ov   = need - dist
+          if (ov > 0) {
+            const push = ov / 2
+            a.cx -= nx * push
+            a.cy -= ny * push
+            b.cx += nx * push
+            b.cy += ny * push
+            moved = true
+          }
         }
-        // else: diagonal pair — skip to preserve step/triangle/pyramid layouts
       }
     }
     if (!moved) break
