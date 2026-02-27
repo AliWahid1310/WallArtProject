@@ -222,7 +222,6 @@ const PRINT_SIZES = {
       <ResetModal />
       <div className="h-screen bg-white flex flex-col overflow-hidden">
         <TopNavBar />
-        <Breadcrumb />
         <div className="flex flex-row flex-1 overflow-hidden">
         {/* Left Sidebar - Order Summary */}
         <div className="w-28 lg:w-[35%] bg-white border-r border-gray-300 flex flex-col h-full">
@@ -409,10 +408,21 @@ const PRINT_SIZES = {
                   </svg>
                   <span className="tracking-wide">ENLARGE</span>
                 </button>
+
+                <div className="w-px h-8 bg-gray-200 mx-1" />
+
+                {/* Reset App */}
+                <button
+                  onClick={handleReset}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                  </svg>
+                  <span className="tracking-wide">RESET APP</span>
+                </button>
               </div>
             </div>
-
-            {/* ---- Canvas Area ---- */}
             <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-2 lg:p-3">
               <div
                 ref={canvasRef}
@@ -912,7 +922,7 @@ const PRINT_SIZES = {
                   </button>
                   <button 
                     onClick={() => {
-                      setShowResetModal(true)
+                      handleReset()
                       setShowMobileMenu(false)
                     }}
                     className="w-full px-4 py-3 border-2 border-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-black hover:text-white transition-all duration-200"

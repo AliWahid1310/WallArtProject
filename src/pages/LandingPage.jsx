@@ -28,18 +28,12 @@ function GalleryRouter() {
     return <FullscreenPrompt isIOS={isIOS} onEnterFullscreen={enterFullscreen} />
   }
 
-  switch (currentStep) {
-    case 'step1':
-      return <SelectPlaceStep />
-    case 'step2':
-      return <SelectLayoutStep />
-    case 'step3':
-      return <SelectDesignStep />
-    case 'checkout':
-      return <CheckoutStep />
-    default:
-      return <SelectPlaceStep />
-  }
+  let StepComponent = SelectPlaceStep
+  if (currentStep === 'step2') StepComponent = SelectLayoutStep
+  else if (currentStep === 'step3') StepComponent = SelectDesignStep
+  else if (currentStep === 'checkout') StepComponent = CheckoutStep
+
+  return <StepComponent />
 }
 
 export default function LandingPage() {
