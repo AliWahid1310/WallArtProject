@@ -95,12 +95,9 @@ export function GalleryProvider({ children }) {
   const [perFrameSizes, setPerFrameSizes] = useState([]) // per-frame size overrides
   const [spacingPreset, setSpacingPreset] = useState('tight')
   const [spacingValue, setSpacingValue] = useState(2) // in cm
-  const [innerShadow, setInnerShadow] = useState({
-    xOffset: 0,
-    yOffset: 2,
-    blur: 10,
-    spread: 0,
-    opacity: 20,
+  const [innerShadow, setInnerShadow] = useState(() => {
+    const saved = localStorage.getItem('galleryInnerShadow')
+    return saved ? JSON.parse(saved) : { xOffset: 0, yOffset: 2, blur: 10, spread: 0, opacity: 20 }
   })
 
   // Canvas overlay controls
@@ -253,6 +250,7 @@ export function GalleryProvider({ children }) {
   useEffect(() => { localStorage.setItem('galleryGroupOffset', JSON.stringify(groupOffset)) }, [groupOffset])
   useEffect(() => { localStorage.setItem('galleryIsLocked', JSON.stringify(isLocked)) }, [isLocked])
   useEffect(() => { localStorage.setItem('galleryIndividualOffsets', JSON.stringify(individualOffsets)) }, [individualOffsets])
+  useEffect(() => { localStorage.setItem('galleryInnerShadow', JSON.stringify(innerShadow)) }, [innerShadow])
 
   // Ensure perFrameSizes is initialized whenever a layout with frames exists
   useEffect(() => {
@@ -667,16 +665,22 @@ export function GalleryProvider({ children }) {
     setDragOffset({ x: deltaX, y: deltaY })
   }, [isDragging, dragStart, groupOffset])
 
+  const GRID_SNAP_PX = 30
+
   const handleDragEnd = useCallback(() => {
     if (!isDragging) return
     let finalX = groupOffset.x + dragOffset.x
     let finalY = groupOffset.y + dragOffset.y
     finalX = Math.max(-DRAG_BOUNDARY.left, Math.min(DRAG_BOUNDARY.right, finalX))
     finalY = Math.max(-DRAG_BOUNDARY.top, Math.min(DRAG_BOUNDARY.bottom, finalY))
+    if (showGrid) {
+      finalX = Math.round(finalX / GRID_SNAP_PX) * GRID_SNAP_PX
+      finalY = Math.round(finalY / GRID_SNAP_PX) * GRID_SNAP_PX
+    }
     setGroupOffset({ x: finalX, y: finalY })
     setIsDragging(false)
     setDragOffset({ x: 0, y: 0 })
-  }, [isDragging, dragOffset, groupOffset])
+  }, [isDragging, dragOffset, groupOffset, showGrid])
 
   // Reset group offset when layout changes
   useEffect(() => {
@@ -711,13 +715,19 @@ export function GalleryProvider({ children }) {
   const handleIndividualDragEnd = useCallback(() => {
     if (activeDragFrameIdx === null) return
     const prev = individualOffsets[activeDragFrameIdx] || { x: 0, y: 0 }
+    let newX = prev.x + individualDragLive.x
+    let newY = prev.y + individualDragLive.y
+    if (showGrid) {
+      newX = Math.round(newX / GRID_SNAP_PX) * GRID_SNAP_PX
+      newY = Math.round(newY / GRID_SNAP_PX) * GRID_SNAP_PX
+    }
     setIndividualOffsets(o => ({
       ...o,
-      [activeDragFrameIdx]: { x: prev.x + individualDragLive.x, y: prev.y + individualDragLive.y }
+      [activeDragFrameIdx]: { x: newX, y: newY }
     }))
     setActiveDragFrameIdx(null)
     setIndividualDragLive({ x: 0, y: 0 })
-  }, [activeDragFrameIdx, individualOffsets, individualDragLive])
+  }, [activeDragFrameIdx, individualOffsets, individualDragLive, showGrid])
 
   useEffect(() => {
     if (activeDragFrameIdx !== null) {
@@ -898,6 +908,7 @@ export function GalleryProvider({ children }) {
     localStorage.removeItem('galleryGroupOffset')
     localStorage.removeItem('galleryIsLocked')
     localStorage.removeItem('galleryIndividualOffsets')
+    localStorage.removeItem('galleryInnerShadow')
     setCurrentStep('step1')
     setSelectedPlace(_defaultPlace)
     setSelectedBackground(_defaultBg)
@@ -921,6 +932,7 @@ export function GalleryProvider({ children }) {
     setPrintSize('13 × 18')
     setPrintStyle('Black')
     setMeasurementUnit('cm')
+    setInnerShadow({ xOffset: 0, yOffset: 2, blur: 10, spread: 0, opacity: 20 })
     setWallScale(0)
     setGroupOffset({ x: 0, y: 0 })
     setIsLocked(true)

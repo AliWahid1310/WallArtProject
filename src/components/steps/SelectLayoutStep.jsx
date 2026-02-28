@@ -227,6 +227,9 @@ export default function SelectLayoutStep() {
   // Resolve the human-readable background label
   const getBackgroundLabel = () => {
     if (!selectedBackground) return ''
+    if (selectedBackground.id?.includes('-local-')) {
+      return selectedBackground.name?.toUpperCase() || ''
+    }
     for (const section of backgroundOptions) {
       for (const v of section.variants) {
         if (v.id === selectedBackground.id) return (section.label || section.section).toUpperCase()
@@ -291,7 +294,7 @@ export default function SelectLayoutStep() {
                     {/* bottom-right large panel */}
                     <rect x="10" y="10" width="13" height="13" rx="1" />
                   </svg>
-                  <p className="text-base font-bold text-gray-900">Customize Your Prints</p>
+                  <p className="text-lg font-semibold tracking-normal text-gray-800 font-['Inter']">Customize Your Prints</p>
                 </div>
               </div>
 
@@ -651,12 +654,12 @@ export default function SelectLayoutStep() {
           <div className="flex-1 flex flex-col overflow-hidden">
 
             {/* ---- Canvas Header Bar ---- */}
-            <div className="hidden lg:flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <h3 className="text-sm font-extrabold tracking-wide text-gray-900 uppercase leading-tight">
+                <h3 className="text-base font-semibold tracking-wider text-gray-900 uppercase leading-tight font-['Inter']">
                   {getBackgroundLabel() || 'SELECT A BACKGROUND'}
                 </h3>
-                <p className="text-[10px] text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Previewing Layout: {layoutLabel}
                 </p>
               </div>
@@ -718,7 +721,7 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* ---- Canvas Area ---- */}
-            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-2 lg:p-3">
+            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-4 lg:p-6">
               <div
                 ref={canvasRef}
                 className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500 rounded-2xl"
@@ -735,8 +738,8 @@ export default function SelectLayoutStep() {
                   <div
                     className="absolute inset-0 pointer-events-none z-10"
                     style={{
-                      backgroundImage: 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
-                      backgroundSize: '40px 40px',
+                      backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+                      backgroundSize: '30px 30px',
                     }}
                   />
                 )}
@@ -884,19 +887,21 @@ export default function SelectLayoutStep() {
                 )}
                 
                 {/* ---- Canvas Overlay Controls ---- */}
-                <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md">
+                <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-3 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <div className="relative flex flex-col items-center">
+                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">−</span>
+                  <div className="relative" style={{marginBottom: '10px'}}>
                     <input
                       type="range"
                       min={-50}
                       max={50}
                       value={wallScale}
                       onChange={(e) => setWallScale(parseInt(e.target.value))}
-                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741] block"
                     />
-                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-gray-400 leading-none">0</span>
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-[8px] font-bold text-gray-400 leading-none whitespace-nowrap">0</span>
                   </div>
+                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">+</span>
                   <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
                 <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
@@ -975,7 +980,7 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 border-t border-gray-200 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
                 <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">
                   {selectedFrameIdx !== null ? `PRINT SIZE — FRAME ${selectedFrameIdx + 1}` : 'PRINT SIZE'}

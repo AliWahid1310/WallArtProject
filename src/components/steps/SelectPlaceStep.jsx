@@ -189,7 +189,7 @@ export default function SelectPlaceStep() {
                 <svg className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                 </svg>
-                <h2 className="text-[10px] lg:text-base font-bold text-gray-900">Choose Room</h2>
+                <h2 className="text-[10px] lg:text-lg font-semibold tracking-normal text-gray-800 font-['Inter']">Choose Room</h2>
               </div>
               <button className="flex items-center gap-1 lg:gap-1.5 px-1.5 lg:px-3 py-0.5 lg:py-1.5 border border-gray-300 text-gray-600 rounded-md text-[7px] lg:text-[11px] font-semibold hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer tracking-wide">
                 <svg className="hidden lg:block w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -303,7 +303,7 @@ export default function SelectPlaceStep() {
                           </svg>
                           <span className={`text-[5px] lg:text-[8px] font-bold text-center uppercase tracking-wide leading-tight px-1 transition-colors ${
                             selectedBackground?.id === 'custom-upload' ? 'text-[#4a6741]' : 'text-gray-400 group-hover:text-[#4a6741]'
-                          }`}>ADD YOUR<br/>OWN PHOTO</span>
+                          }`}>ADD TO LIVING<br/>ROOM</span>
                         </>
                       )}
                     </div>
@@ -354,13 +354,13 @@ export default function SelectPlaceStep() {
           <div className="flex-1 flex flex-col overflow-hidden">
 
             {/* ---- Canvas Header Bar ---- */}
-            <div className="hidden lg:flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white flex-shrink-0">
               {/* Left: background name + layout subtitle */}
               <div className="flex-shrink-0">
-                <h3 className="text-sm font-extrabold tracking-wide text-gray-900 uppercase leading-tight">
+                <h3 className="text-base font-semibold tracking-wider text-gray-900 uppercase leading-tight font-['Inter']">
                   {getBackgroundLabel() || 'SELECT A BACKGROUND'}
                 </h3>
-                <p className="text-[10px] text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Previewing Layout: {layoutLabel}
                 </p>
               </div>
@@ -434,7 +434,7 @@ export default function SelectPlaceStep() {
             </div>
 
             {/* ---- Canvas Area ---- */}
-            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-2 lg:p-3">
+            <div className="flex-1 flex flex-col overflow-hidden no-scroll-fullscreen p-4 lg:p-6">
               <div
                 ref={canvasRef}
                 className="flex-1 relative bg-cover bg-center overflow-hidden transition-all duration-500 rounded-2xl"
@@ -451,8 +451,8 @@ export default function SelectPlaceStep() {
                   <div
                     className="absolute inset-0 pointer-events-none z-10"
                     style={{
-                      backgroundImage: 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
-                      backgroundSize: '40px 40px',
+                      backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+                      backgroundSize: '30px 30px',
                     }}
                   />
                 )}
@@ -492,7 +492,7 @@ export default function SelectPlaceStep() {
                                   height: `${frame.height * scale}vw`,
                                   border: `${Math.max(1, frame.borderWidth - 1)}px solid ${frameColor.border}`,
                                   borderRadius: '1px',
-                                  boxShadow: `0 4px 16px ${frameColor.shadow}, inset 0 0 0 1px rgba(255,255,255,0.1)`,
+                                  boxShadow: `0 4px 16px ${frameColor.shadow}, ${innerShadowCSS}`,
                                 }}
                               >
                                 {selectedArtworks[idx] ? (
@@ -548,7 +548,7 @@ export default function SelectPlaceStep() {
                               style={{
                                 border: `${frame.borderWidth}px solid ${frameColor.border}`,
                                 borderRadius: '2px',
-                                boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                                boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), ${innerShadowCSS}`,
                               }}
                             >
                               {artwork ? (
@@ -594,19 +594,21 @@ export default function SelectPlaceStep() {
                 {/* ---- Canvas Overlay Controls ---- */}
 
                 {/* Wall Scale Slider - top left */}
-                <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md">
+                <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-3 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <div className="relative flex flex-col items-center">
+                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">−</span>
+                  <div className="relative" style={{marginBottom: '10px'}}>
                     <input
                       type="range"
                       min={-50}
                       max={50}
                       value={wallScale}
                       onChange={(e) => setWallScale(parseInt(e.target.value))}
-                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741]"
+                      className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#4a6741] block"
                     />
-                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-gray-400 leading-none">0</span>
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-[8px] font-bold text-gray-400 leading-none whitespace-nowrap">0</span>
                   </div>
+                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">+</span>
                   <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
 
@@ -688,7 +690,7 @@ export default function SelectPlaceStep() {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-4 px-4 py-1.5 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 border-t border-gray-200 bg-white flex-shrink-0">
               {/* Print Size */}
               <div className="flex-shrink-0">
                 <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">{activeFrameIndex !== null ? `PRINT SIZE — FRAME ${activeFrameIndex + 1}` : 'PRINT SIZE'}</label>
@@ -830,7 +832,7 @@ export default function SelectPlaceStep() {
                         style={{
                           border: `${frame.borderWidth}px solid ${frameColor.border}`,
                           borderRadius: '2px',
-                          boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+                          boxShadow: `0 6px 24px ${frameColor.shadow}, 0 2px 8px rgba(0,0,0,0.12), ${innerShadowCSS}`,
                         }}
                       >
                         {artwork ? (
