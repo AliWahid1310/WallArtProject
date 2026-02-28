@@ -230,7 +230,7 @@ const PRINT_SIZES = {
         <div className="w-28 lg:w-[35%] bg-white border-r border-gray-300 flex flex-col h-full">
 
           {/* Header */}
-          <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-5 py-4 border-b border-gray-200">
+          <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-5 pt-6 pb-4">
             <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
             </svg>
@@ -289,7 +289,7 @@ const PRINT_SIZES = {
           </div>
 
           {/* Total + Navigation - pinned to bottom */}
-          <div className="flex-shrink-0 border-t border-gray-200">
+          <div className="flex-shrink-0">
             {/* Total Row */}
             {Object.keys(selectedArtworks).length > 0 && (
               <div className="hidden lg:flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -361,12 +361,12 @@ const PRINT_SIZES = {
         <div className="flex-1 flex flex-col overflow-hidden">
 
             {/* ---- Canvas Header Bar ---- */}
-            <div className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center justify-between px-8 pt-7 pb-4 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <h3 className="text-base font-semibold tracking-wider text-gray-900 uppercase leading-tight font-['Inter']">
-                  {getBackgroundLabel() || 'SELECT A BACKGROUND'}
+                <h3 className="text-base font-bold tracking-wider text-gray-900 capitalize leading-tight font-['Inter']">
+                  {(getBackgroundLabel() || 'Select a Background').toLowerCase()}
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5 font-['Inter']">
                   Previewing Layout: {layoutLabel}
                 </p>
               </div>
@@ -497,7 +497,10 @@ const PRINT_SIZES = {
                                   }}
                                 >
                                   {artwork ? (
-                                    <img src={artwork.image} alt={artwork.title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                    <>
+                                      <img src={artwork.image} alt={artwork.title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                      <div className="absolute inset-0 pointer-events-none rounded-[1px]" style={{boxShadow: innerShadowCSS}} />
+                                    </>
                                   ) : (
                                     <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -559,6 +562,7 @@ const PRINT_SIZES = {
                                   <>
                                     <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                                     <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" />
+                                    <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                                   </>
                                 ) : (
                                   <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -599,7 +603,7 @@ const PRINT_SIZES = {
                 {/* ---- Canvas Overlay Controls ---- */}
                 <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-3 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">−</span>
+                  <span className="text-[15px] font-bold text-gray-400 leading-none select-none">−</span>
                   <div className="relative" style={{marginBottom: '10px'}}>
                     <input
                       type="range"
@@ -611,8 +615,8 @@ const PRINT_SIZES = {
                     />
                     <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-[8px] font-bold text-gray-400 leading-none whitespace-nowrap">0</span>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">+</span>
-                  <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
+                  <span className="text-[15px] font-bold text-gray-400 leading-none select-none">+</span>
+                  <span className="text-[11px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
                 <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
                   <button
@@ -687,7 +691,7 @@ const PRINT_SIZES = {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
                 <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">{activeFrameIndex !== null ? `PRINT SIZE — FRAME ${activeFrameIndex + 1}` : 'PRINT SIZE'}</label>
                 <div className="relative">
@@ -1028,7 +1032,10 @@ const PRINT_SIZES = {
                         }}
                       >
                         {artwork ? (
-                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                          <>
+                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                            <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
+                          </>
                         ) : (
                           <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />

@@ -11,7 +11,7 @@ export default function TopNavBar() {
   const displayPrice = calculateTotalPrice()
 
   return (
-    <div className="hidden lg:grid bg-[#f5f3ee] border-b border-gray-200 px-6 py-1" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+    <div className="hidden lg:grid bg-[#f5f3ee] border-b border-gray-200 px-6 pt-4 pb-2" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
 
       {/* Left: Brand */}
       <div className="flex items-center">

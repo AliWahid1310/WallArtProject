@@ -281,10 +281,10 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* Scrollable sidebar content */}
-            <div className="flex-1 overflow-y-auto px-1 lg:px-5 py-1 lg:py-3">
+            <div className="flex-1 overflow-y-auto px-1 lg:px-5 pt-4 lg:pt-6 pb-1 lg:pb-3">
 
               {/* Step heading - desktop */}
-              <div className="hidden lg:flex items-center justify-between pb-3 mb-1 border-b border-gray-200 flex-shrink-0">
+              <div className="hidden lg:flex items-center justify-between pb-3 mb-1 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     {/* top bar */}
@@ -627,7 +627,7 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* Bottom Navigation Buttons - pinned at bottom */}
-            <div className="hidden lg:flex flex-shrink-0 px-5 py-3 border-t border-gray-200 items-center justify-between gap-2">
+            <div className="hidden lg:flex flex-shrink-0 px-5 py-3 items-center justify-between gap-2">
               <button
                 onClick={() => setCurrentStep('step1')}
                 className="flex items-center gap-1.5 text-gray-400 text-[10px] font-bold tracking-widest uppercase hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
@@ -654,12 +654,12 @@ export default function SelectLayoutStep() {
           <div className="flex-1 flex flex-col overflow-hidden">
 
             {/* ---- Canvas Header Bar ---- */}
-            <div className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center justify-between px-8 pt-7 pb-4 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
-                <h3 className="text-base font-semibold tracking-wider text-gray-900 uppercase leading-tight font-['Inter']">
-                  {getBackgroundLabel() || 'SELECT A BACKGROUND'}
+                <h3 className="text-base font-bold tracking-wider text-gray-900 capitalize leading-tight font-['Inter']">
+                  {(getBackgroundLabel() || 'Select a Background').toLowerCase()}
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5 font-['Inter']">
                   Previewing Layout: {layoutLabel}
                 </p>
               </div>
@@ -784,7 +784,10 @@ export default function SelectLayoutStep() {
                                 }}
                               >
                                 {selectedArtworks[idx] ? (
-                                  <img src={selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                  <>
+                                    <img src={selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                    <div className="absolute inset-0 pointer-events-none rounded-[1px]" style={{boxShadow: innerShadowCSS}} />
+                                  </>
                                 ) : (
                                   <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -836,13 +839,16 @@ export default function SelectLayoutStep() {
                                 }}
                               >
                                 {selectedArtworks[idx] ? (
-                                  <img
-                                    src={selectedArtworks[idx].image}
-                                    alt={selectedArtworks[idx].title}
-                                    className="w-full h-full object-cover pointer-events-none"
-                                    draggable={false}
-                                    onClick={(e) => { e.stopPropagation(); setActiveFrameIndex(idx); setCurrentStep('step3') }}
-                                  />
+                                  <>
+                                    <img
+                                      src={selectedArtworks[idx].image}
+                                      alt={selectedArtworks[idx].title}
+                                      className="w-full h-full object-cover pointer-events-none"
+                                      draggable={false}
+                                      onClick={(e) => { e.stopPropagation(); setActiveFrameIndex(idx); setCurrentStep('step3') }}
+                                    />
+                                    <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
+                                  </>
                                 ) : (
                                   <button
                                     className="flex items-center justify-center text-gray-300 hover:text-[#4a6741] transition-colors cursor-pointer"
@@ -889,7 +895,7 @@ export default function SelectLayoutStep() {
                 {/* ---- Canvas Overlay Controls ---- */}
                 <div className="hidden lg:flex absolute top-4 left-4 z-20 items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-3 shadow-md">
                   <span className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Wall Scale</span>
-                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">−</span>
+                  <span className="text-[15px] font-bold text-gray-400 leading-none select-none">−</span>
                   <div className="relative" style={{marginBottom: '10px'}}>
                     <input
                       type="range"
@@ -901,8 +907,8 @@ export default function SelectLayoutStep() {
                     />
                     <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-[8px] font-bold text-gray-400 leading-none whitespace-nowrap">0</span>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-400 leading-none select-none">+</span>
-                  <span className="text-[9px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
+                  <span className="text-[15px] font-bold text-gray-400 leading-none select-none">+</span>
+                  <span className="text-[11px] font-bold text-gray-500 min-w-[20px] text-right">{wallScale}</span>
                 </div>
                 <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-2">
                   <button
@@ -980,7 +986,7 @@ export default function SelectLayoutStep() {
             </div>
 
             {/* ---- Bottom Bar: Print Size + Frame Style + Description ---- */}
-            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-4 px-8 pt-3 pb-5 bg-white flex-shrink-0">
               <div className="flex-shrink-0">
                 <label className="block text-[9px] font-bold tracking-widest text-gray-400 mb-0.5">
                   {selectedFrameIdx !== null ? `PRINT SIZE — FRAME ${selectedFrameIdx + 1}` : 'PRINT SIZE'}
@@ -1165,7 +1171,10 @@ export default function SelectLayoutStep() {
                         }}
                       >
                         {artwork ? (
-                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                          <>
+                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                            <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
+                          </>
                         ) : (
                           <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
