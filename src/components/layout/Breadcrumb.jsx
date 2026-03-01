@@ -40,7 +40,7 @@ export default function Breadcrumb({ inline = false }) {
               disabled={!isClickable}
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200 flex-shrink-0 leading-none ${
+                className={`w-7 h-7 rounded-full grid place-items-center text-xs font-semibold transition-all duration-200 flex-shrink-0 ${
                   isCompleted
                     ? 'border-2 border-[#4a6741] text-[#4a6741] bg-white'
                     : isActive

@@ -225,9 +225,13 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
     const sizeStr = sizesArr[i] ?? sizesArr[0]
     const parsed = parsePrintSize(sizeStr) || firstParsed
 
+    // Keep original parsed values for label display
+    const parsedW = parsed.w
+    const parsedH = parsed.h
+    const isInches = !parsed.isCm && measurementUnit === 'in'
     let widthCm = parsed.w
     let heightCm = parsed.h
-    if (!parsed.isCm && measurementUnit === 'in') {
+    if (isInches) {
       widthCm *= 2.54
       heightCm *= 2.54
     }
@@ -237,9 +241,9 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
 
     let fwCm = widthCm
     let fhCm = heightCm
+    const isLandscapeFrame = origW > origH
+    const isPortraitSize  = widthCm < heightCm
     if (printOrientation === 'Mix') {
-      const isLandscapeFrame = origW > origH
-      const isPortraitSize  = widthCm < heightCm
       if (isLandscapeFrame && isPortraitSize) {
         fwCm = heightCm
         fhCm = widthCm
@@ -278,11 +282,14 @@ export const getDynamicFrames = (frames, printSizes, measurementUnit, printOrien
 
     // Size label
     const isALabel = parsed.isCm && /^A\d$/i.test(sizeStr.trim())
+    // For the label, show original values (inches when in inch mode, cm otherwise)
+    const labelW = isInches ? (isLandscapeFrame && isPortraitSize ? parsedH : parsedW) : fwCm
+    const labelH = isInches ? (isLandscapeFrame && isPortraitSize ? parsedW : parsedH) : fhCm
     const sizeLabel = isALabel
       ? sizeStr.trim().toUpperCase()
-      : Number.isInteger(fwCm) && Number.isInteger(fhCm)
-        ? `${fwCm}x${fhCm}`
-        : `${parseFloat(fwCm.toFixed(1))}x${parseFloat(fhCm.toFixed(1))}`
+      : Number.isInteger(labelW) && Number.isInteger(labelH)
+        ? `${labelW}X${labelH}`
+        : `${parseFloat(labelW.toFixed(1))}X${parseFloat(labelH.toFixed(1))}`
 
     const avgDim = (fwCm + fhCm) / 2
     const borderWidth = avgDim < 25 ? 2 : avgDim < 55 ? 3 : 4

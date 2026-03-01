@@ -79,9 +79,14 @@ export default function SelectPlaceStep() {
   const sizeOptions = PRINT_SIZES[printOrientation]?.[unit] || PRINT_SIZES['Portrait'][unit]
 
   const handleUnitChange = (newUnit) => {
+    const oldUnit = measurementUnit
+    const oldSizes = PRINT_SIZES[printOrientation]?.[oldUnit] || PRINT_SIZES['Portrait'][oldUnit]
+    const newSizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Portrait'][newUnit]
+    // Find the index of the current size in the old unit list, map to the same index in the new unit list
+    const currentIdx = oldSizes?.indexOf(printSize) ?? -1
+    const newSize = (currentIdx >= 0 && newSizes?.[currentIdx]) ? newSizes[currentIdx] : (newSizes?.[0] || printSize)
     setMeasurementUnit(newUnit)
-    const sizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Landscape'][newUnit]
-    if (sizes?.length) setPrintSize(sizes[0])
+    setPrintSize(newSize)
   }
 
   // Auto-select the first local image whenever the room changes and nothing is selected
@@ -204,7 +209,7 @@ export default function SelectPlaceStep() {
               {/* Room Type Dropdown */}
               <div className="mb-3 lg:mb-4">
                 <label className="block text-[7px] lg:text-[11px] font-bold text-gray-400 tracking-widest mb-1 lg:mb-1.5">ROOM TYPE</label>
-                <div className="relative rounded-lg border border-gray-300 focus-within:border-[#4a6741] focus-within:border-2 bg-white transition-colors">
+                <div className="relative inline-flex rounded-lg border border-gray-300 focus-within:border-[#4a6741] focus-within:border-2 bg-white transition-colors">
                   <select
                     value={selectedPlace?.id || ''}
                     onChange={(e) => {
@@ -212,7 +217,7 @@ export default function SelectPlaceStep() {
                       setSelectedPlace(place || null)
                       setSelectedBackground(null)  // clear old background when room changes
                     }}
-                    className="w-full rounded-lg px-2 lg:px-3 py-1.5 lg:py-2.5 text-[9px] lg:text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer appearance-none pr-7 lg:pr-8"
+                    className="rounded-lg px-2 lg:px-3 py-1.5 lg:py-2.5 text-[9px] lg:text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer appearance-none pr-7 lg:pr-8"
                   >
                     {placeCategories.map(place => (
                       <option key={place.id} value={place.id}>{place.name}</option>
@@ -497,7 +502,7 @@ export default function SelectPlaceStep() {
                               >
                                 {selectedArtworks[idx] ? (
                                   <>
-                                    <img src={selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                    <img src={selectedArtworks[idx].artworkFile || selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
                                     <div className="absolute inset-0 pointer-events-none rounded-[1px]" style={{boxShadow: innerShadowCSS}} />
                                   </>
                                 ) : (
@@ -556,7 +561,7 @@ export default function SelectPlaceStep() {
                             >
                               {artwork ? (
                                 <>
-                                  <img src={artwork.image} alt={artwork.title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                  <img src={artwork.artworkFile || artwork.image} alt={artwork.title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
                                   <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                                 </>
                               ) : (
@@ -843,7 +848,7 @@ export default function SelectPlaceStep() {
                       >
                         {artwork ? (
                           <>
-                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                            <img src={artwork.artworkFile || artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                             <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                           </>
                         ) : (

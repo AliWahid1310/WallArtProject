@@ -191,9 +191,21 @@ export default function SelectLayoutStep() {
   }
 
   const handleUnitChange = (newUnit) => {
+    const oldUnit = measurementUnit
+    const oldSizes = PRINT_SIZES[printOrientation]?.[oldUnit] || PRINT_SIZES['Portrait'][oldUnit]
+    const newSizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Portrait'][newUnit]
+    // Find the index of the current size in the old unit list, map to the same index in the new unit list
+    const currentIdx = oldSizes?.indexOf(printSize) ?? -1
+    const newSize = (currentIdx >= 0 && newSizes?.[currentIdx]) ? newSizes[currentIdx] : (newSizes?.[0] || printSize)
     setMeasurementUnit(newUnit)
-    const sizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Landscape'][newUnit]
-    if (sizes?.length) setPrintSize(sizes[0])
+    setPrintSize(newSize)
+    // Also map per-frame sizes to the corresponding values in the new unit
+    if (perFrameSizes.length > 0 && oldSizes && newSizes) {
+      setPerFrameSizes(prev => prev.map(s => {
+        const idx = oldSizes.indexOf(s)
+        return (idx >= 0 && newSizes[idx]) ? newSizes[idx] : newSize
+      }))
+    }
   }
 
   // Reset per-frame sizes whenever the layout changes to a DIFFERENT layout
@@ -785,7 +797,7 @@ export default function SelectLayoutStep() {
                               >
                                 {selectedArtworks[idx] ? (
                                   <>
-                                    <img src={selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                    <img src={selectedArtworks[idx].artworkFile || selectedArtworks[idx].image} alt={selectedArtworks[idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
                                     <div className="absolute inset-0 pointer-events-none rounded-[1px]" style={{boxShadow: innerShadowCSS}} />
                                   </>
                                 ) : (
@@ -841,7 +853,7 @@ export default function SelectLayoutStep() {
                                 {selectedArtworks[idx] ? (
                                   <>
                                     <img
-                                      src={selectedArtworks[idx].image}
+                                      src={selectedArtworks[idx].artworkFile || selectedArtworks[idx].image}
                                       alt={selectedArtworks[idx].title}
                                       className="w-full h-full object-cover pointer-events-none"
                                       draggable={false}
@@ -1172,7 +1184,7 @@ export default function SelectLayoutStep() {
                       >
                         {artwork ? (
                           <>
-                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                            <img src={artwork.artworkFile || artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                             <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                           </>
                         ) : (

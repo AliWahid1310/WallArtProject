@@ -142,9 +142,21 @@ const PRINT_SIZES = {
   const sizeOptions = PRINT_SIZES[printOrientation]?.[unit] || PRINT_SIZES['Portrait'][unit]
 
   const handleUnitChange = (newUnit) => {
+    const oldUnit = measurementUnit
+    const oldSizes = PRINT_SIZES[printOrientation]?.[oldUnit] || PRINT_SIZES['Portrait'][oldUnit]
+    const newSizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Portrait'][newUnit]
+    // Find the index of the current size in the old unit list, map to the same index in the new unit list
+    const currentIdx = oldSizes?.indexOf(printSize) ?? -1
+    const newSize = (currentIdx >= 0 && newSizes?.[currentIdx]) ? newSizes[currentIdx] : (newSizes?.[0] || printSize)
     setMeasurementUnit(newUnit)
-    const sizes = PRINT_SIZES[printOrientation]?.[newUnit] || PRINT_SIZES['Landscape'][newUnit]
-    if (sizes?.length) setPrintSize(sizes[0])
+    setPrintSize(newSize)
+    // Also map per-frame sizes to the corresponding values in the new unit
+    if (perFrameSizes.length > 0 && oldSizes && newSizes) {
+      setPerFrameSizes(prev => prev.map(s => {
+        const idx = oldSizes.indexOf(s)
+        return (idx >= 0 && newSizes[idx]) ? newSizes[idx] : newSize
+      }))
+    }
   }
 
   // Resolve the human-readable background label
@@ -698,7 +710,7 @@ const PRINT_SIZES = {
                               >
                                 {selectedArtworks[frame.idx] ? (
                                   <>
-                                    <img src={selectedArtworks[frame.idx].image} alt={selectedArtworks[frame.idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
+                                    <img src={selectedArtworks[frame.idx].artworkFile || selectedArtworks[frame.idx].image} alt={selectedArtworks[frame.idx].title} className="w-full h-full object-contain bg-gray-100 pointer-events-none" draggable={false} />
                                     <div className="absolute inset-0 pointer-events-none rounded-[1px]" style={{boxShadow: innerShadowCSS}} />
                                   </>
                                 ) : (
@@ -756,7 +768,7 @@ const PRINT_SIZES = {
                               >
                                 {artwork ? (
                                   <>
-                                    <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                                    <img src={artwork.artworkFile || artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                                     <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                                   </>
                                 ) : (
@@ -1241,7 +1253,7 @@ const PRINT_SIZES = {
                       >
                         {artwork ? (
                           <>
-                            <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                            <img src={artwork.artworkFile || artwork.image} alt={artwork.title} className="w-full h-full object-cover pointer-events-none" draggable={false} />
                             <div className="absolute inset-0 pointer-events-none" style={{boxShadow: innerShadowCSS}} />
                           </>
                         ) : (

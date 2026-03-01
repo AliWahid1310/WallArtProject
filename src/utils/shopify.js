@@ -467,7 +467,7 @@ function transformShopifyProducts(shopifyProducts, artistGidMap = {}) {
     // Final fallback: use productType
     if (!category && node.productType) category = node.productType
     
-    // Get artwork image from artwork_file metafield (frameless), falling back to featured image
+    // Get artwork image from artwork_file metafield (frameless version for canvas frames)
     // Try multiple paths: MediaImage reference, GenericFile reference, or direct URL in value
     let artworkFileUrl = ''
     if (artworkFileMetafield) {
@@ -479,7 +479,10 @@ function transformShopifyProducts(shopifyProducts, artistGidMap = {}) {
         || (artworkFileMetafield.value?.startsWith?.('http') ? artworkFileMetafield.value : '')
         || ''
     }
-    const imageUrl = artworkFileUrl || node.featuredImage?.url || node.images.edges[0]?.node.url || ''
+    // Normal product image (with borders/frame) — used for sidebar browsing
+    const imageUrl = node.featuredImage?.url || node.images.edges[0]?.node.url || artworkFileUrl || ''
+    // Frameless artwork file — used inside canvas frames
+    const artworkFileImage = artworkFileUrl || imageUrl
     
     // Extract size options from variants
     const sizeOptions = new Set()
@@ -603,6 +606,7 @@ function transformShopifyProducts(shopifyProducts, artistGidMap = {}) {
       productType: node.productType || '', // Collection filtering
       vendor: node.vendor || '', // Vendor/Artist name
       image: imageUrl,
+      artworkFile: artworkFileImage,
       price: parseFloat(node.priceRange.minVariantPrice.amount).toFixed(2),
       currency: node.priceRange.minVariantPrice.currencyCode,
       shopifyProductId: node.id,
