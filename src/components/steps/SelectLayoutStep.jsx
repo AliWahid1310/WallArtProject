@@ -318,8 +318,8 @@ export default function SelectLayoutStep() {
                     onClick={() => handleUnitChange('cm')}
                     className={`px-4 py-1.5 text-xs font-bold tracking-wide border transition-all duration-150 cursor-pointer ${
                       measurementUnit === 'cm'
-                        ? 'bg-white text-[#4a6741] border-[#4a6741]'
-                        : 'bg-white text-gray-400 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
                     } rounded-l-md`}
                   >
                     CM
@@ -328,8 +328,8 @@ export default function SelectLayoutStep() {
                     onClick={() => handleUnitChange('in')}
                     className={`px-4 py-1.5 text-xs font-bold tracking-wide border-t border-b border-r transition-all duration-150 cursor-pointer ${
                       measurementUnit === 'in'
-                        ? 'bg-white text-[#4a6741] border-[#4a6741]'
-                        : 'bg-white text-gray-400 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
+                        : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
                     } rounded-r-md`}
                   >
                     IN
@@ -947,7 +947,7 @@ export default function SelectLayoutStep() {
                     onClick={() => handleUnitChange('cm')}
                     className={`px-3 py-1.5 text-[10px] font-bold tracking-wide border transition-all duration-150 cursor-pointer rounded-l-md ${
                       measurementUnit === 'cm'
-                        ? 'bg-white text-[#4a6741] border-[#4a6741]'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
                         : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
                     }`}
                   >
@@ -957,7 +957,7 @@ export default function SelectLayoutStep() {
                     onClick={() => handleUnitChange('in')}
                     className={`px-3 py-1.5 text-[10px] font-bold tracking-wide border-t border-b border-r transition-all duration-150 cursor-pointer rounded-r-md ${
                       measurementUnit === 'in'
-                        ? 'bg-white text-[#4a6741] border-[#4a6741]'
+                        ? 'bg-[#4a6741] text-white border-[#4a6741]'
                         : 'bg-white/90 text-gray-400 border-gray-300 hover:bg-gray-100'
                     }`}
                   >
