@@ -87,6 +87,13 @@ export default function SelectPlaceStep() {
     const newSize = (currentIdx >= 0 && newSizes?.[currentIdx]) ? newSizes[currentIdx] : (newSizes?.[0] || printSize)
     setMeasurementUnit(newUnit)
     setPrintSize(newSize)
+    // Also map per-frame sizes to the corresponding values in the new unit
+    if (perFrameSizes.length > 0 && oldSizes && newSizes) {
+      setPerFrameSizes(prev => prev.map(s => {
+        const idx = oldSizes.indexOf(s)
+        return (idx >= 0 && newSizes[idx]) ? newSizes[idx] : newSize
+      }))
+    }
   }
 
   // Auto-select the first local image whenever the room changes and nothing is selected
