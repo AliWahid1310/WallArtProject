@@ -922,7 +922,7 @@ const PRINT_SIZES = {
                     style={selectArrowStyle}
                   >
                     <option value="">Select size...</option>
-                    {sizeOptions.map(s => <option key={s} value={s}>{s.startsWith('A') ? s : `${s} ${unit === 'in' ? '"' : unit}`}</option>)}
+                    {sizeOptions.map(s => { const cmA = unit === 'cm' ? {'21 × 29.7':'A4','29.7 × 42':'A3','42 × 59.4':'A2','59.5 × 84.1':'A1','84.1 × 118.9':'A0'}[s] : null; return <option key={s} value={s}>{cmA ? `${cmA} - ${s} cm` : s.startsWith('A') ? s : `${s} ${unit === 'in' ? '"' : unit}`}</option>; })}
                   </select>
                 </div>
               </div>
